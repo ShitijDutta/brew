@@ -1,0 +1,741 @@
+{
+  "1789018200000": {
+    "id": 1789018200000,
+    "at": "2026-09-10T05:30:00.000Z",
+    "rev": 1789021800000,
+    "recipe": "black",
+    "mode": "direct",
+    "params": {
+      "tgt": 300,
+      "ratio": 16.7,
+      "pratio": 12,
+      "temp": 98,
+      "ved": 20,
+      "loc": "Delhi"
+    },
+    "bean": {
+      "name": "Old Selection",
+      "roaster": "Test Roasters",
+      "roasted": "2026-09-03",
+      "bought": "2026-09-08",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "packId": "p-old-select",
+      "roastAge": 7,
+      "groundAge": 2,
+      "groundAgeEst": true
+    },
+    "calc": {
+      "boil": 395,
+      "cm": 0,
+      "decant": 300,
+      "dose": 18,
+      "ice": 0,
+      "jug": 300,
+      "milk": 0,
+      "pour": 300,
+      "press": 330,
+      "ro": 316,
+      "vedica": 79
+    },
+    "steps": [
+      {
+        "k": "prep",
+        "t": "Dose the carafe",
+        "target": 0,
+        "actual": 3
+      },
+      {
+        "k": "dose",
+        "t": "Weigh the water",
+        "target": 0,
+        "actual": 4
+      },
+      {
+        "k": "pour",
+        "t": "Boil and pour",
+        "target": 10,
+        "actual": 12
+      },
+      {
+        "k": "steep",
+        "t": "Steep",
+        "target": 240,
+        "actual": 240
+      },
+      {
+        "k": "crust",
+        "t": "Break the crust",
+        "target": 45,
+        "actual": 46
+      },
+      {
+        "k": "settle",
+        "t": "Settle",
+        "target": 300,
+        "actual": 300
+      },
+      {
+        "k": "plunge",
+        "t": "Plunge",
+        "target": 15,
+        "actual": 15
+      },
+      {
+        "k": "decant",
+        "t": "Pour into the cup",
+        "target": 0,
+        "actual": 40
+      }
+    ],
+    "total": 660,
+    "contact": 600,
+    "log": {
+      "temp": 57,
+      "decant": 300,
+      "score": 3,
+      "tastes": [
+        "Chocolatey"
+      ],
+      "faults": [],
+      "note": "Test brew 1",
+      "share": 1,
+      "drank": 300
+    }
+  },
+  "1789277820000": {
+    "id": 1789277820000,
+    "at": "2026-09-13T05:37:00.000Z",
+    "rev": 1789281420000,
+    "recipe": "black",
+    "mode": "direct",
+    "params": {
+      "tgt": 300,
+      "ratio": 16.7,
+      "pratio": 12,
+      "temp": 98,
+      "ved": 20,
+      "loc": "Delhi"
+    },
+    "bean": {
+      "name": "Old Selection",
+      "roaster": "Test Roasters",
+      "roasted": "2026-09-03",
+      "bought": "2026-09-08",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "packId": "p-old-select",
+      "roastAge": 10,
+      "groundAge": 5,
+      "groundAgeEst": true
+    },
+    "calc": {
+      "boil": 395,
+      "cm": 0,
+      "decant": 300,
+      "dose": 18,
+      "ice": 0,
+      "jug": 300,
+      "milk": 0,
+      "pour": 300,
+      "press": 330,
+      "ro": 316,
+      "vedica": 79
+    },
+    "steps": [
+      {
+        "k": "prep",
+        "t": "Dose the carafe",
+        "target": 0,
+        "actual": 3
+      },
+      {
+        "k": "dose",
+        "t": "Weigh the water",
+        "target": 0,
+        "actual": 4
+      },
+      {
+        "k": "pour",
+        "t": "Boil and pour",
+        "target": 10,
+        "actual": 12
+      },
+      {
+        "k": "steep",
+        "t": "Steep",
+        "target": 240,
+        "actual": 241
+      },
+      {
+        "k": "crust",
+        "t": "Break the crust",
+        "target": 45,
+        "actual": 46
+      },
+      {
+        "k": "settle",
+        "t": "Settle",
+        "target": 300,
+        "actual": 310
+      },
+      {
+        "k": "plunge",
+        "t": "Plunge",
+        "target": 15,
+        "actual": 15
+      },
+      {
+        "k": "decant",
+        "t": "Pour into the cup",
+        "target": 0,
+        "actual": 40
+      }
+    ],
+    "total": 661,
+    "contact": 610,
+    "log": {
+      "temp": 58,
+      "decant": 300,
+      "score": 3.5,
+      "tastes": [
+        "Fruity",
+        "Sweet"
+      ],
+      "faults": [],
+      "note": "Test brew 2",
+      "share": 1,
+      "drank": 300
+    }
+  },
+  "1789537440000": {
+    "id": 1789537440000,
+    "at": "2026-09-16T05:44:00.000Z",
+    "rev": 1789541040000,
+    "recipe": "black",
+    "mode": "direct",
+    "params": {
+      "tgt": 300,
+      "ratio": 16.7,
+      "pratio": 12,
+      "temp": 98,
+      "ved": 20,
+      "loc": "Delhi"
+    },
+    "bean": {
+      "name": "Old Selection",
+      "roaster": "Test Roasters",
+      "roasted": "2026-09-03",
+      "bought": "2026-09-08",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "packId": "p-old-select",
+      "roastAge": 13,
+      "groundAge": 8,
+      "groundAgeEst": true
+    },
+    "calc": {
+      "boil": 395,
+      "cm": 0,
+      "decant": 300,
+      "dose": 18,
+      "ice": 0,
+      "jug": 300,
+      "milk": 0,
+      "pour": 300,
+      "press": 330,
+      "ro": 316,
+      "vedica": 79
+    },
+    "steps": [
+      {
+        "k": "prep",
+        "t": "Dose the carafe",
+        "target": 0,
+        "actual": 3
+      },
+      {
+        "k": "dose",
+        "t": "Weigh the water",
+        "target": 0,
+        "actual": 4
+      },
+      {
+        "k": "pour",
+        "t": "Boil and pour",
+        "target": 10,
+        "actual": 12
+      },
+      {
+        "k": "steep",
+        "t": "Steep",
+        "target": 240,
+        "actual": 242
+      },
+      {
+        "k": "crust",
+        "t": "Break the crust",
+        "target": 45,
+        "actual": 46
+      },
+      {
+        "k": "settle",
+        "t": "Settle",
+        "target": 300,
+        "actual": 320
+      },
+      {
+        "k": "plunge",
+        "t": "Plunge",
+        "target": 15,
+        "actual": 15
+      },
+      {
+        "k": "decant",
+        "t": "Pour into the cup",
+        "target": 0,
+        "actual": 40
+      }
+    ],
+    "total": 662,
+    "contact": 620,
+    "log": {
+      "temp": 59,
+      "decant": 300,
+      "score": 4,
+      "tastes": [
+        "Nutty"
+      ],
+      "faults": [
+        "Silty"
+      ],
+      "note": "Test brew 3",
+      "share": 1,
+      "drank": 300
+    }
+  },
+  "1789797060000": {
+    "id": 1789797060000,
+    "at": "2026-09-19T05:51:00.000Z",
+    "rev": 1789800660000,
+    "recipe": "black",
+    "mode": "direct",
+    "params": {
+      "tgt": 300,
+      "ratio": 16.7,
+      "pratio": 12,
+      "temp": 98,
+      "ved": 20,
+      "loc": "Delhi"
+    },
+    "bean": {
+      "name": "Old Selection",
+      "roaster": "Test Roasters",
+      "roasted": "2026-09-03",
+      "bought": "2026-09-08",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "packId": "p-old-select",
+      "roastAge": 16,
+      "groundAge": 11,
+      "groundAgeEst": true
+    },
+    "calc": {
+      "boil": 395,
+      "cm": 0,
+      "decant": 300,
+      "dose": 18,
+      "ice": 0,
+      "jug": 300,
+      "milk": 0,
+      "pour": 300,
+      "press": 330,
+      "ro": 316,
+      "vedica": 79
+    },
+    "steps": [
+      {
+        "k": "prep",
+        "t": "Dose the carafe",
+        "target": 0,
+        "actual": 3
+      },
+      {
+        "k": "dose",
+        "t": "Weigh the water",
+        "target": 0,
+        "actual": 4
+      },
+      {
+        "k": "pour",
+        "t": "Boil and pour",
+        "target": 10,
+        "actual": 12
+      },
+      {
+        "k": "steep",
+        "t": "Steep",
+        "target": 240,
+        "actual": 240
+      },
+      {
+        "k": "crust",
+        "t": "Break the crust",
+        "target": 45,
+        "actual": 46
+      },
+      {
+        "k": "settle",
+        "t": "Settle",
+        "target": 300,
+        "actual": 330
+      },
+      {
+        "k": "plunge",
+        "t": "Plunge",
+        "target": 15,
+        "actual": 15
+      },
+      {
+        "k": "decant",
+        "t": "Pour into the cup",
+        "target": 0,
+        "actual": 40
+      }
+    ],
+    "total": 663,
+    "contact": 630,
+    "log": {
+      "temp": 57,
+      "decant": 300,
+      "score": 2.5,
+      "tastes": [
+        "Caramel"
+      ],
+      "faults": [],
+      "note": "Test brew 4",
+      "share": 1,
+      "drank": 300
+    }
+  },
+  "1790056680000": {
+    "id": 1790056680000,
+    "at": "2026-09-22T05:58:00.000Z",
+    "rev": 1790060280000,
+    "recipe": "black",
+    "mode": "direct",
+    "params": {
+      "tgt": 300,
+      "ratio": 16.7,
+      "pratio": 12,
+      "temp": 98,
+      "ved": 20,
+      "loc": "Delhi"
+    },
+    "bean": {
+      "name": "Old Selection",
+      "roaster": "Test Roasters",
+      "roasted": "2026-09-03",
+      "bought": "2026-09-08",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "packId": "p-old-select",
+      "roastAge": 19,
+      "groundAge": 14,
+      "groundAgeEst": true
+    },
+    "calc": {
+      "boil": 395,
+      "cm": 0,
+      "decant": 300,
+      "dose": 18,
+      "ice": 0,
+      "jug": 300,
+      "milk": 0,
+      "pour": 300,
+      "press": 330,
+      "ro": 316,
+      "vedica": 79
+    },
+    "steps": [
+      {
+        "k": "prep",
+        "t": "Dose the carafe",
+        "target": 0,
+        "actual": 3
+      },
+      {
+        "k": "dose",
+        "t": "Weigh the water",
+        "target": 0,
+        "actual": 4
+      },
+      {
+        "k": "pour",
+        "t": "Boil and pour",
+        "target": 10,
+        "actual": 12
+      },
+      {
+        "k": "steep",
+        "t": "Steep",
+        "target": 240,
+        "actual": 241
+      },
+      {
+        "k": "crust",
+        "t": "Break the crust",
+        "target": 45,
+        "actual": 46
+      },
+      {
+        "k": "settle",
+        "t": "Settle",
+        "target": 300,
+        "actual": 300
+      },
+      {
+        "k": "plunge",
+        "t": "Plunge",
+        "target": 15,
+        "actual": 15
+      },
+      {
+        "k": "decant",
+        "t": "Pour into the cup",
+        "target": 0,
+        "actual": 40
+      }
+    ],
+    "total": 664,
+    "contact": 640,
+    "log": {
+      "temp": 58,
+      "decant": 300,
+      "score": 4.5,
+      "tastes": [],
+      "faults": [
+        "Bitter"
+      ],
+      "note": "Test brew 5",
+      "share": 1,
+      "drank": 300
+    }
+  },
+  "1790316300000": {
+    "id": 1790316300000,
+    "at": "2026-09-25T06:05:00.000Z",
+    "rev": 1790319900000,
+    "recipe": "black",
+    "mode": "direct",
+    "params": {
+      "tgt": 300,
+      "ratio": 16.7,
+      "pratio": 12,
+      "temp": 98,
+      "ved": 20,
+      "loc": "Delhi"
+    },
+    "bean": {
+      "name": "Ridge Honey",
+      "roaster": "Test Roasters",
+      "roasted": "2026-09-20",
+      "bought": "2026-09-24",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "packId": "p-ridge",
+      "roastAge": 5,
+      "groundAge": 1,
+      "groundAgeEst": true
+    },
+    "calc": {
+      "boil": 395,
+      "cm": 0,
+      "decant": 300,
+      "dose": 18,
+      "ice": 0,
+      "jug": 300,
+      "milk": 0,
+      "pour": 300,
+      "press": 330,
+      "ro": 316,
+      "vedica": 79
+    },
+    "steps": [
+      {
+        "k": "prep",
+        "t": "Dose the carafe",
+        "target": 0,
+        "actual": 3
+      },
+      {
+        "k": "dose",
+        "t": "Weigh the water",
+        "target": 0,
+        "actual": 4
+      },
+      {
+        "k": "pour",
+        "t": "Boil and pour",
+        "target": 10,
+        "actual": 12
+      },
+      {
+        "k": "steep",
+        "t": "Steep",
+        "target": 240,
+        "actual": 242
+      },
+      {
+        "k": "crust",
+        "t": "Break the crust",
+        "target": 45,
+        "actual": 46
+      },
+      {
+        "k": "settle",
+        "t": "Settle",
+        "target": 300,
+        "actual": 310
+      },
+      {
+        "k": "plunge",
+        "t": "Plunge",
+        "target": 15,
+        "actual": 15
+      },
+      {
+        "k": "decant",
+        "t": "Pour into the cup",
+        "target": 0,
+        "actual": 40
+      }
+    ],
+    "total": 665,
+    "contact": 600,
+    "log": {
+      "temp": 59,
+      "decant": 300,
+      "score": 3,
+      "tastes": [
+        "Chocolatey"
+      ],
+      "faults": [],
+      "note": "Test brew 6",
+      "share": 1,
+      "drank": 300
+    }
+  },
+  "1790575920000": {
+    "id": 1790575920000,
+    "at": "2026-09-28T06:12:00.000Z",
+    "rev": 1790579520000,
+    "recipe": "black",
+    "mode": "direct",
+    "params": {
+      "tgt": 300,
+      "ratio": 16.7,
+      "pratio": 12,
+      "temp": 98,
+      "ved": 20,
+      "loc": "Delhi"
+    },
+    "bean": {
+      "name": "Ridge Honey",
+      "roaster": "Test Roasters",
+      "roasted": "2026-09-20",
+      "bought": "2026-09-24",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "packId": "p-ridge",
+      "roastAge": 8,
+      "groundAge": 4,
+      "groundAgeEst": true
+    },
+    "calc": {
+      "boil": 395,
+      "cm": 0,
+      "decant": 300,
+      "dose": 18,
+      "ice": 0,
+      "jug": 300,
+      "milk": 0,
+      "pour": 300,
+      "press": 330,
+      "ro": 316,
+      "vedica": 79
+    },
+    "steps": [
+      {
+        "k": "prep",
+        "t": "Dose the carafe",
+        "target": 0,
+        "actual": 3
+      },
+      {
+        "k": "dose",
+        "t": "Weigh the water",
+        "target": 0,
+        "actual": 4
+      },
+      {
+        "k": "pour",
+        "t": "Boil and pour",
+        "target": 10,
+        "actual": 12
+      },
+      {
+        "k": "steep",
+        "t": "Steep",
+        "target": 240,
+        "actual": 240
+      },
+      {
+        "k": "crust",
+        "t": "Break the crust",
+        "target": 45,
+        "actual": 46
+      },
+      {
+        "k": "settle",
+        "t": "Settle",
+        "target": 300,
+        "actual": 320
+      },
+      {
+        "k": "plunge",
+        "t": "Plunge",
+        "target": 15,
+        "actual": 15
+      },
+      {
+        "k": "decant",
+        "t": "Pour into the cup",
+        "target": 0,
+        "actual": 40
+      }
+    ],
+    "total": 666,
+    "contact": 610,
+    "log": {
+      "temp": 57,
+      "decant": 300,
+      "score": 4,
+      "tastes": [
+        "Fruity",
+        "Sweet"
+      ],
+      "faults": [],
+      "note": "Test brew 7",
+      "share": 1,
+      "drank": 300
+    }
+  }
+}

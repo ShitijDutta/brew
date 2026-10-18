@@ -1,0 +1,171 @@
+{
+  "active": "p-hill",
+  "extras": [],
+  "loc": "delhi",
+  "packs": [
+    {
+      "id": "p-old-reserve",
+      "name": "Old Reserve",
+      "roaster": "Test Roasters",
+      "roasted": "2026-09-01",
+      "bought": "2026-09-05",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "size": 250,
+      "base": 250,
+      "status": "finished",
+      "created": "2026-09-05T08:00:00.000Z",
+      "since": "2026-09-05T08:00:00.000Z",
+      "finishedAt": "2026-10-02"
+    },
+    {
+      "id": "p-old-select",
+      "name": "Old Selection",
+      "roaster": "Test Roasters",
+      "roasted": "2026-09-03",
+      "bought": "2026-09-08",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "size": 250,
+      "base": 250,
+      "status": "finished",
+      "created": "2026-09-08T08:00:00.000Z",
+      "since": "2026-09-08T08:00:00.000Z",
+      "finishedAt": "2026-10-08"
+    },
+    {
+      "id": "p-ridge",
+      "name": "Ridge Honey",
+      "roaster": "Test Roasters",
+      "roasted": "2026-09-20",
+      "bought": "2026-09-24",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "size": 250,
+      "base": 250,
+      "status": "open",
+      "created": "2026-09-24T08:00:00.000Z",
+      "since": "2026-09-24T08:00:00.000Z"
+    },
+    {
+      "id": "p-river",
+      "name": "River Washed",
+      "roaster": "Test Roasters",
+      "roasted": "2026-09-25",
+      "bought": "2026-10-01",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "size": 250,
+      "base": 250,
+      "status": "open",
+      "created": "2026-10-01T08:00:00.000Z",
+      "since": "2026-10-01T08:00:00.000Z"
+    },
+    {
+      "id": "p-valley",
+      "name": "Valley Natural",
+      "roaster": "Test Roasters",
+      "roasted": "2026-10-01",
+      "bought": "2026-10-05",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "size": 250,
+      "base": 250,
+      "status": "open",
+      "created": "2026-10-05T08:00:00.000Z",
+      "since": "2026-10-05T08:00:00.000Z"
+    },
+    {
+      "id": "p-hill",
+      "name": "Hill Estate",
+      "roaster": "Test Roasters",
+      "roasted": "2026-10-06",
+      "bought": "2026-10-10",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "size": 250,
+      "base": 250,
+      "status": "open",
+      "created": "2026-10-10T08:00:00.000Z",
+      "since": "2026-10-10T08:00:00.000Z"
+    }
+  ],
+  "profiles": [
+    {
+      "ceil": 450,
+      "id": "delhi",
+      "name": "Delhi",
+      "panloss": 30,
+      "temp": 98,
+      "ved": 20
+    },
+    {
+      "ceil": 450,
+      "id": "bangalore",
+      "name": "Bangalore",
+      "panloss": 30,
+      "temp": 96,
+      "ved": 20
+    }
+  ],
+  "rev": 1792231200000,
+  "tries": [
+    {
+      "id": "sb-pearl-omni",
+      "g": "now",
+      "n": "Project Pearl, Ratnagiri — Naturals + Anaerobic Honey",
+      "b": "Project Pearl Omni",
+      "r": "Subko",
+      "st": "todo",
+      "added": "2026-10-15"
+    },
+    {
+      "id": "test-fruity",
+      "g": "now",
+      "n": "Test Fruity Natural",
+      "b": "Fruity Natural",
+      "r": "Test Roasters",
+      "notes": "Berries, honey",
+      "st": "todo",
+      "added": "2026-10-15"
+    },
+    {
+      "id": "test-honey",
+      "g": "now",
+      "n": "Test Honey Process",
+      "b": "Honey Process",
+      "r": "Test Roasters",
+      "notes": "Caramel, stone fruit",
+      "st": "todo",
+      "added": "2026-10-15"
+    },
+    {
+      "id": "test-later",
+      "g": "later",
+      "n": "Test Light Roast",
+      "b": "Light Roast",
+      "r": "Test Roasters",
+      "notes": "Better with a grinder",
+      "st": "todo",
+      "added": "2026-10-15"
+    },
+    {
+      "id": "test-notify",
+      "g": "notify",
+      "n": "Test Micro Lot",
+      "b": "Micro Lot",
+      "r": "Test Roasters",
+      "notes": "Sold out, waiting for restock",
+      "st": "todo",
+      "added": "2026-10-15"
+    }
+  ],
+  "tryGone": [],
+  "trySeed": 1
+}

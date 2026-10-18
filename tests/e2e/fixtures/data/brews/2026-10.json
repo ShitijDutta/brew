@@ -1,0 +1,1268 @@
+{
+  "1790835540000": {
+    "id": 1790835540000,
+    "at": "2026-10-01T06:19:00.000Z",
+    "rev": 1790839140000,
+    "recipe": "black",
+    "mode": "direct",
+    "params": {
+      "tgt": 300,
+      "ratio": 16.7,
+      "pratio": 12,
+      "temp": 98,
+      "ved": 20,
+      "loc": "Delhi"
+    },
+    "bean": {
+      "name": "River Washed",
+      "roaster": "Test Roasters",
+      "roasted": "2026-09-25",
+      "bought": "2026-10-01",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "packId": "p-river",
+      "roastAge": 6,
+      "groundAge": 0,
+      "groundAgeEst": true
+    },
+    "calc": {
+      "boil": 395,
+      "cm": 0,
+      "decant": 300,
+      "dose": 18,
+      "ice": 0,
+      "jug": 300,
+      "milk": 0,
+      "pour": 300,
+      "press": 330,
+      "ro": 316,
+      "vedica": 79
+    },
+    "steps": [
+      {
+        "k": "prep",
+        "t": "Dose the carafe",
+        "target": 0,
+        "actual": 3
+      },
+      {
+        "k": "dose",
+        "t": "Weigh the water",
+        "target": 0,
+        "actual": 4
+      },
+      {
+        "k": "pour",
+        "t": "Boil and pour",
+        "target": 10,
+        "actual": 12
+      },
+      {
+        "k": "steep",
+        "t": "Steep",
+        "target": 240,
+        "actual": 241
+      },
+      {
+        "k": "crust",
+        "t": "Break the crust",
+        "target": 45,
+        "actual": 46
+      },
+      {
+        "k": "settle",
+        "t": "Settle",
+        "target": 300,
+        "actual": 330
+      },
+      {
+        "k": "plunge",
+        "t": "Plunge",
+        "target": 15,
+        "actual": 15
+      },
+      {
+        "k": "decant",
+        "t": "Pour into the cup",
+        "target": 0,
+        "actual": 40
+      }
+    ],
+    "total": 667,
+    "contact": 620,
+    "log": {
+      "temp": 58,
+      "decant": 300,
+      "score": 3.5,
+      "tastes": [
+        "Nutty"
+      ],
+      "faults": [
+        "Silty"
+      ],
+      "note": "Test brew 8",
+      "share": 1,
+      "drank": 300
+    }
+  },
+  "1791008760000": {
+    "id": 1791008760000,
+    "at": "2026-10-03T06:26:00.000Z",
+    "rev": 1791012360000,
+    "recipe": "black",
+    "mode": "direct",
+    "params": {
+      "tgt": 300,
+      "ratio": 16.7,
+      "pratio": 12,
+      "temp": 98,
+      "ved": 20,
+      "loc": "Delhi"
+    },
+    "bean": {
+      "name": "River Washed",
+      "roaster": "Test Roasters",
+      "roasted": "2026-09-25",
+      "bought": "2026-10-01",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "packId": "p-river",
+      "roastAge": 8,
+      "groundAge": 2,
+      "groundAgeEst": true
+    },
+    "calc": {
+      "boil": 395,
+      "cm": 0,
+      "decant": 300,
+      "dose": 18,
+      "ice": 0,
+      "jug": 300,
+      "milk": 0,
+      "pour": 300,
+      "press": 330,
+      "ro": 316,
+      "vedica": 79
+    },
+    "steps": [
+      {
+        "k": "prep",
+        "t": "Dose the carafe",
+        "target": 0,
+        "actual": 3
+      },
+      {
+        "k": "dose",
+        "t": "Weigh the water",
+        "target": 0,
+        "actual": 4
+      },
+      {
+        "k": "pour",
+        "t": "Boil and pour",
+        "target": 10,
+        "actual": 12
+      },
+      {
+        "k": "steep",
+        "t": "Steep",
+        "target": 240,
+        "actual": 242
+      },
+      {
+        "k": "crust",
+        "t": "Break the crust",
+        "target": 45,
+        "actual": 46
+      },
+      {
+        "k": "settle",
+        "t": "Settle",
+        "target": 300,
+        "actual": 300
+      },
+      {
+        "k": "plunge",
+        "t": "Plunge",
+        "target": 15,
+        "actual": 15
+      },
+      {
+        "k": "decant",
+        "t": "Pour into the cup",
+        "target": 0,
+        "actual": 40
+      }
+    ],
+    "total": 668,
+    "contact": 630,
+    "log": {
+      "temp": 59,
+      "decant": 300,
+      "score": 5,
+      "tastes": [
+        "Caramel"
+      ],
+      "faults": [],
+      "note": "Test brew 9",
+      "share": 1,
+      "drank": 300
+    }
+  },
+  "1791181980000": {
+    "id": 1791181980000,
+    "at": "2026-10-05T06:33:00.000Z",
+    "rev": 1791185580000,
+    "recipe": "hoff",
+    "mode": "direct",
+    "params": {
+      "tgt": 300,
+      "ratio": 16.7,
+      "pratio": 12,
+      "temp": 98,
+      "ved": 20,
+      "loc": "Delhi"
+    },
+    "bean": {
+      "name": "Valley Natural",
+      "roaster": "Test Roasters",
+      "roasted": "2026-10-01",
+      "bought": "2026-10-05",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "packId": "p-valley",
+      "roastAge": 4,
+      "groundAge": 0,
+      "groundAgeEst": true
+    },
+    "calc": {
+      "boil": 395,
+      "cm": 0,
+      "decant": 300,
+      "dose": 22,
+      "ice": 0,
+      "jug": 300,
+      "milk": 0,
+      "pour": 300,
+      "press": 365,
+      "ro": 316,
+      "vedica": 79
+    },
+    "steps": [
+      {
+        "k": "prep",
+        "t": "Dose the carafe",
+        "target": 0,
+        "actual": 3
+      },
+      {
+        "k": "dose",
+        "t": "Weigh the water",
+        "target": 0,
+        "actual": 4
+      },
+      {
+        "k": "pour",
+        "t": "Boil and pour",
+        "target": 10,
+        "actual": 12
+      },
+      {
+        "k": "steep",
+        "t": "Steep",
+        "target": 240,
+        "actual": 240
+      },
+      {
+        "k": "crust",
+        "t": "Break the crust",
+        "target": 45,
+        "actual": 46
+      },
+      {
+        "k": "settle",
+        "t": "Settle",
+        "target": 300,
+        "actual": 310
+      },
+      {
+        "k": "plunge",
+        "t": "Plunge",
+        "target": 15,
+        "actual": 15
+      },
+      {
+        "k": "decant",
+        "t": "Pour into the cup",
+        "target": 0,
+        "actual": 40
+      }
+    ],
+    "total": 669,
+    "contact": 640,
+    "log": {
+      "temp": 57,
+      "decant": 300,
+      "score": 2,
+      "tastes": [],
+      "faults": [
+        "Bitter"
+      ],
+      "note": "Test brew 10",
+      "share": 1,
+      "drank": 300
+    }
+  },
+  "1791355200000": {
+    "id": 1791355200000,
+    "at": "2026-10-07T06:40:00.000Z",
+    "rev": 1791358800000,
+    "recipe": "black",
+    "mode": "direct",
+    "params": {
+      "tgt": 300,
+      "ratio": 16.7,
+      "pratio": 12,
+      "temp": 98,
+      "ved": 20,
+      "loc": "Delhi"
+    },
+    "bean": {
+      "name": "Valley Natural",
+      "roaster": "Test Roasters",
+      "roasted": "2026-10-01",
+      "bought": "2026-10-05",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "packId": "p-valley",
+      "roastAge": 6,
+      "groundAge": 2,
+      "groundAgeEst": true
+    },
+    "calc": {
+      "boil": 395,
+      "cm": 0,
+      "decant": 300,
+      "dose": 18,
+      "ice": 0,
+      "jug": 300,
+      "milk": 0,
+      "pour": 300,
+      "press": 330,
+      "ro": 316,
+      "vedica": 79
+    },
+    "steps": [
+      {
+        "k": "prep",
+        "t": "Dose the carafe",
+        "target": 0,
+        "actual": 3
+      },
+      {
+        "k": "dose",
+        "t": "Weigh the water",
+        "target": 0,
+        "actual": 4
+      },
+      {
+        "k": "pour",
+        "t": "Boil and pour",
+        "target": 10,
+        "actual": 12
+      },
+      {
+        "k": "steep",
+        "t": "Steep",
+        "target": 240,
+        "actual": 241
+      },
+      {
+        "k": "crust",
+        "t": "Break the crust",
+        "target": 45,
+        "actual": 46
+      },
+      {
+        "k": "settle",
+        "t": "Settle",
+        "target": 300,
+        "actual": 320
+      },
+      {
+        "k": "plunge",
+        "t": "Plunge",
+        "target": 15,
+        "actual": 15
+      },
+      {
+        "k": "decant",
+        "t": "Pour into the cup",
+        "target": 0,
+        "actual": 40
+      }
+    ],
+    "total": 670,
+    "contact": 600,
+    "log": {
+      "temp": 58,
+      "decant": 300,
+      "score": 4,
+      "tastes": [
+        "Chocolatey"
+      ],
+      "faults": [],
+      "note": "Test brew 11",
+      "share": 1,
+      "drank": 300
+    }
+  },
+  "1791528420000": {
+    "id": 1791528420000,
+    "at": "2026-10-09T06:47:00.000Z",
+    "rev": 1791532020000,
+    "recipe": "black",
+    "mode": "direct",
+    "params": {
+      "tgt": 300,
+      "ratio": 16.7,
+      "pratio": 12,
+      "temp": 98,
+      "ved": 20,
+      "loc": "Delhi"
+    },
+    "bean": {
+      "name": "Valley Natural",
+      "roaster": "Test Roasters",
+      "roasted": "2026-10-01",
+      "bought": "2026-10-05",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "packId": "p-valley",
+      "roastAge": 8,
+      "groundAge": 4,
+      "groundAgeEst": true
+    },
+    "calc": {
+      "boil": 395,
+      "cm": 0,
+      "decant": 300,
+      "dose": 18,
+      "ice": 0,
+      "jug": 300,
+      "milk": 0,
+      "pour": 300,
+      "press": 330,
+      "ro": 316,
+      "vedica": 79
+    },
+    "steps": [
+      {
+        "k": "prep",
+        "t": "Dose the carafe",
+        "target": 0,
+        "actual": 3
+      },
+      {
+        "k": "dose",
+        "t": "Weigh the water",
+        "target": 0,
+        "actual": 4
+      },
+      {
+        "k": "pour",
+        "t": "Boil and pour",
+        "target": 10,
+        "actual": 12
+      },
+      {
+        "k": "steep",
+        "t": "Steep",
+        "target": 240,
+        "actual": 242
+      },
+      {
+        "k": "crust",
+        "t": "Break the crust",
+        "target": 45,
+        "actual": 46
+      },
+      {
+        "k": "settle",
+        "t": "Settle",
+        "target": 300,
+        "actual": 330
+      },
+      {
+        "k": "plunge",
+        "t": "Plunge",
+        "target": 15,
+        "actual": 15
+      },
+      {
+        "k": "decant",
+        "t": "Pour into the cup",
+        "target": 0,
+        "actual": 40
+      }
+    ],
+    "total": 671,
+    "contact": 610,
+    "log": {
+      "temp": 59,
+      "decant": 300,
+      "score": 3.5,
+      "tastes": [
+        "Fruity",
+        "Sweet"
+      ],
+      "faults": [],
+      "note": "Test brew 12",
+      "share": 1,
+      "drank": 300
+    }
+  },
+  "1791701640000": {
+    "id": 1791701640000,
+    "at": "2026-10-11T06:54:00.000Z",
+    "rev": 1791705240000,
+    "recipe": "black",
+    "mode": "direct",
+    "params": {
+      "tgt": 300,
+      "ratio": 16.7,
+      "pratio": 12,
+      "temp": 98,
+      "ved": 20,
+      "loc": "Delhi"
+    },
+    "bean": {
+      "name": "Hill Estate",
+      "roaster": "Test Roasters",
+      "roasted": "2026-10-06",
+      "bought": "2026-10-10",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "packId": "p-hill",
+      "roastAge": 5,
+      "groundAge": 1,
+      "groundAgeEst": true
+    },
+    "calc": {
+      "boil": 395,
+      "cm": 0,
+      "decant": 300,
+      "dose": 18,
+      "ice": 0,
+      "jug": 300,
+      "milk": 0,
+      "pour": 300,
+      "press": 330,
+      "ro": 316,
+      "vedica": 79
+    },
+    "steps": [
+      {
+        "k": "prep",
+        "t": "Dose the carafe",
+        "target": 0,
+        "actual": 3
+      },
+      {
+        "k": "dose",
+        "t": "Weigh the water",
+        "target": 0,
+        "actual": 4
+      },
+      {
+        "k": "pour",
+        "t": "Boil and pour",
+        "target": 10,
+        "actual": 12
+      },
+      {
+        "k": "steep",
+        "t": "Steep",
+        "target": 240,
+        "actual": 240
+      },
+      {
+        "k": "crust",
+        "t": "Break the crust",
+        "target": 45,
+        "actual": 46
+      },
+      {
+        "k": "settle",
+        "t": "Settle",
+        "target": 300,
+        "actual": 300
+      },
+      {
+        "k": "plunge",
+        "t": "Plunge",
+        "target": 15,
+        "actual": 15
+      },
+      {
+        "k": "decant",
+        "t": "Pour into the cup",
+        "target": 0,
+        "actual": 40
+      }
+    ],
+    "total": 672,
+    "contact": 620,
+    "log": {
+      "temp": 57,
+      "decant": 300,
+      "score": 4,
+      "tastes": [
+        "Nutty"
+      ],
+      "faults": [
+        "Silty"
+      ],
+      "note": "Test brew 13",
+      "share": 1,
+      "drank": 300
+    }
+  },
+  "1791788460000": {
+    "id": 1791788460000,
+    "at": "2026-10-12T07:01:00.000Z",
+    "rev": 1791792060000,
+    "recipe": "black",
+    "mode": "direct",
+    "params": {
+      "tgt": 300,
+      "ratio": 16.7,
+      "pratio": 12,
+      "temp": 98,
+      "ved": 20,
+      "loc": "Delhi"
+    },
+    "bean": {
+      "name": "Hill Estate",
+      "roaster": "Test Roasters",
+      "roasted": "2026-10-06",
+      "bought": "2026-10-10",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "packId": "p-hill",
+      "roastAge": 6,
+      "groundAge": 2,
+      "groundAgeEst": true
+    },
+    "calc": {
+      "boil": 395,
+      "cm": 0,
+      "decant": 300,
+      "dose": 18,
+      "ice": 0,
+      "jug": 300,
+      "milk": 0,
+      "pour": 300,
+      "press": 330,
+      "ro": 316,
+      "vedica": 79
+    },
+    "steps": [
+      {
+        "k": "prep",
+        "t": "Dose the carafe",
+        "target": 0,
+        "actual": 3
+      },
+      {
+        "k": "dose",
+        "t": "Weigh the water",
+        "target": 0,
+        "actual": 4
+      },
+      {
+        "k": "pour",
+        "t": "Boil and pour",
+        "target": 10,
+        "actual": 12
+      },
+      {
+        "k": "steep",
+        "t": "Steep",
+        "target": 240,
+        "actual": 241
+      },
+      {
+        "k": "crust",
+        "t": "Break the crust",
+        "target": 45,
+        "actual": 46
+      },
+      {
+        "k": "settle",
+        "t": "Settle",
+        "target": 300,
+        "actual": 310
+      },
+      {
+        "k": "plunge",
+        "t": "Plunge",
+        "target": 15,
+        "actual": 15
+      },
+      {
+        "k": "decant",
+        "t": "Pour into the cup",
+        "target": 0,
+        "actual": 40
+      }
+    ],
+    "total": 673,
+    "contact": 630,
+    "log": {
+      "temp": 58,
+      "decant": 300,
+      "score": 3,
+      "tastes": [
+        "Caramel"
+      ],
+      "faults": [],
+      "note": "Test brew 14",
+      "share": 1,
+      "drank": 300
+    }
+  },
+  "1791875280000": {
+    "id": 1791875280000,
+    "at": "2026-10-13T07:08:00.000Z",
+    "rev": 1791878880000,
+    "recipe": "viet",
+    "mode": "direct",
+    "params": {
+      "tgt": 140,
+      "ratio": 7.3,
+      "pratio": 11,
+      "temp": 98,
+      "ved": 20,
+      "loc": "Delhi",
+      "vmode": "hot"
+    },
+    "bean": {
+      "name": "Hill Estate",
+      "roaster": "Test Roasters",
+      "roasted": "2026-10-06",
+      "bought": "2026-10-10",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "packId": "p-hill",
+      "roastAge": 7,
+      "groundAge": 3,
+      "groundAgeEst": true
+    },
+    "calc": {
+      "boil": 300,
+      "cm": 30,
+      "decant": 110,
+      "dose": 18,
+      "ice": 0,
+      "jug": 110,
+      "milk": 0,
+      "pour": 110,
+      "press": 170,
+      "ro": 240,
+      "vedica": 60
+    },
+    "steps": [
+      {
+        "k": "prep",
+        "t": "Dose the carafe",
+        "target": 0,
+        "actual": 3
+      },
+      {
+        "k": "dose",
+        "t": "Weigh the water",
+        "target": 0,
+        "actual": 4
+      },
+      {
+        "k": "pour",
+        "t": "Boil and pour",
+        "target": 10,
+        "actual": 12
+      },
+      {
+        "k": "steep",
+        "t": "Steep",
+        "target": 240,
+        "actual": 242
+      },
+      {
+        "k": "crust",
+        "t": "Break the crust",
+        "target": 45,
+        "actual": 46
+      },
+      {
+        "k": "settle",
+        "t": "Settle",
+        "target": 300,
+        "actual": 320
+      },
+      {
+        "k": "plunge",
+        "t": "Plunge",
+        "target": 15,
+        "actual": 15
+      },
+      {
+        "k": "decant",
+        "t": "Pour into the cup",
+        "target": 0,
+        "actual": 40
+      }
+    ],
+    "total": 674,
+    "contact": 640,
+    "log": {
+      "temp": 59,
+      "decant": 110,
+      "score": 4.5,
+      "tastes": [],
+      "faults": [
+        "Bitter"
+      ],
+      "note": "Test brew 15",
+      "share": 1,
+      "drank": 110
+    }
+  },
+  "1791962100000": {
+    "id": 1791962100000,
+    "at": "2026-10-14T07:15:00.000Z",
+    "rev": 1791965700000,
+    "recipe": "black",
+    "mode": "direct",
+    "params": {
+      "tgt": 300,
+      "ratio": 16.7,
+      "pratio": 12,
+      "temp": 98,
+      "ved": 20,
+      "loc": "Delhi"
+    },
+    "bean": {
+      "name": "Hill Estate",
+      "roaster": "Test Roasters",
+      "roasted": "2026-10-06",
+      "bought": "2026-10-10",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "packId": "p-hill",
+      "roastAge": 8,
+      "groundAge": 4,
+      "groundAgeEst": true
+    },
+    "calc": {
+      "boil": 395,
+      "cm": 0,
+      "decant": 300,
+      "dose": 18,
+      "ice": 0,
+      "jug": 300,
+      "milk": 0,
+      "pour": 300,
+      "press": 330,
+      "ro": 316,
+      "vedica": 79
+    },
+    "steps": [
+      {
+        "k": "prep",
+        "t": "Dose the carafe",
+        "target": 0,
+        "actual": 3
+      },
+      {
+        "k": "dose",
+        "t": "Weigh the water",
+        "target": 0,
+        "actual": 4
+      },
+      {
+        "k": "pour",
+        "t": "Boil and pour",
+        "target": 10,
+        "actual": 12
+      },
+      {
+        "k": "steep",
+        "t": "Steep",
+        "target": 240,
+        "actual": 240
+      },
+      {
+        "k": "crust",
+        "t": "Break the crust",
+        "target": 45,
+        "actual": 46
+      },
+      {
+        "k": "settle",
+        "t": "Settle",
+        "target": 300,
+        "actual": 330
+      },
+      {
+        "k": "plunge",
+        "t": "Plunge",
+        "target": 15,
+        "actual": 15
+      },
+      {
+        "k": "decant",
+        "t": "Pour into the cup",
+        "target": 0,
+        "actual": 40
+      }
+    ],
+    "total": 675,
+    "contact": 600,
+    "log": {
+      "temp": 57,
+      "decant": 300,
+      "score": 3.5,
+      "tastes": [
+        "Chocolatey"
+      ],
+      "faults": [],
+      "note": "Test brew 16",
+      "share": 1,
+      "drank": 300
+    }
+  },
+  "1792048920000": {
+    "id": 1792048920000,
+    "at": "2026-10-15T07:22:00.000Z",
+    "rev": 1792052520000,
+    "recipe": "iced",
+    "mode": "direct",
+    "params": {
+      "tgt": 300,
+      "ratio": 16.7,
+      "pratio": 12,
+      "temp": 98,
+      "ved": 20,
+      "loc": "Delhi"
+    },
+    "bean": {
+      "name": "Hill Estate",
+      "roaster": "Test Roasters",
+      "roasted": "2026-10-06",
+      "bought": "2026-10-10",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "packId": "p-hill",
+      "roastAge": 9,
+      "groundAge": 5,
+      "groundAgeEst": true
+    },
+    "calc": {
+      "boil": 260,
+      "cm": 0,
+      "decant": 170,
+      "dose": 18,
+      "ice": 130,
+      "jug": 170,
+      "milk": 0,
+      "pour": 170,
+      "press": 200,
+      "ro": 208,
+      "vedica": 52
+    },
+    "steps": [
+      {
+        "k": "prep",
+        "t": "Dose the carafe",
+        "target": 0,
+        "actual": 3
+      },
+      {
+        "k": "dose",
+        "t": "Weigh the water",
+        "target": 0,
+        "actual": 4
+      },
+      {
+        "k": "pour",
+        "t": "Boil and pour",
+        "target": 10,
+        "actual": 12
+      },
+      {
+        "k": "steep",
+        "t": "Steep",
+        "target": 240,
+        "actual": 241
+      },
+      {
+        "k": "crust",
+        "t": "Break the crust",
+        "target": 45,
+        "actual": 46
+      },
+      {
+        "k": "settle",
+        "t": "Settle",
+        "target": 300,
+        "actual": 300
+      },
+      {
+        "k": "plunge",
+        "t": "Plunge",
+        "target": 15,
+        "actual": 15
+      },
+      {
+        "k": "decant",
+        "t": "Pour into the cup",
+        "target": 0,
+        "actual": 40
+      }
+    ],
+    "total": 676,
+    "contact": 610,
+    "log": {
+      "temp": 58,
+      "decant": 170,
+      "score": 4,
+      "tastes": [
+        "Fruity",
+        "Sweet"
+      ],
+      "faults": [],
+      "note": "Test brew 17",
+      "share": 1,
+      "drank": 170
+    }
+  },
+  "1792135740000": {
+    "id": 1792135740000,
+    "at": "2026-10-16T07:29:00.000Z",
+    "rev": 1792139340000,
+    "recipe": "black",
+    "mode": "direct",
+    "params": {
+      "tgt": 300,
+      "ratio": 16.7,
+      "pratio": 12,
+      "temp": 98,
+      "ved": 20,
+      "loc": "Delhi"
+    },
+    "bean": {
+      "name": "Hill Estate",
+      "roaster": "Test Roasters",
+      "roasted": "2026-10-06",
+      "bought": "2026-10-10",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "packId": "p-hill",
+      "roastAge": 10,
+      "groundAge": 6,
+      "groundAgeEst": true
+    },
+    "calc": {
+      "boil": 395,
+      "cm": 0,
+      "decant": 300,
+      "dose": 18,
+      "ice": 0,
+      "jug": 300,
+      "milk": 0,
+      "pour": 300,
+      "press": 330,
+      "ro": 316,
+      "vedica": 79
+    },
+    "steps": [
+      {
+        "k": "prep",
+        "t": "Dose the carafe",
+        "target": 0,
+        "actual": 3
+      },
+      {
+        "k": "dose",
+        "t": "Weigh the water",
+        "target": 0,
+        "actual": 4
+      },
+      {
+        "k": "pour",
+        "t": "Boil and pour",
+        "target": 10,
+        "actual": 12
+      },
+      {
+        "k": "steep",
+        "t": "Steep",
+        "target": 240,
+        "actual": 242
+      },
+      {
+        "k": "crust",
+        "t": "Break the crust",
+        "target": 45,
+        "actual": 46
+      },
+      {
+        "k": "settle",
+        "t": "Settle",
+        "target": 300,
+        "actual": 310
+      },
+      {
+        "k": "plunge",
+        "t": "Plunge",
+        "target": 15,
+        "actual": 15
+      },
+      {
+        "k": "decant",
+        "t": "Pour into the cup",
+        "target": 0,
+        "actual": 40
+      }
+    ],
+    "total": 677,
+    "contact": 620,
+    "log": {
+      "temp": 59,
+      "decant": 300,
+      "score": 3,
+      "tastes": [
+        "Nutty"
+      ],
+      "faults": [
+        "Silty"
+      ],
+      "note": "Test brew 18",
+      "share": 1,
+      "drank": 300
+    }
+  },
+  "1792308960000": {
+    "id": 1792308960000,
+    "at": "2026-10-18T07:36:00.000Z",
+    "rev": 1792308960000,
+    "recipe": "black",
+    "mode": "direct",
+    "params": {
+      "tgt": 300,
+      "ratio": 16.7,
+      "pratio": 12,
+      "temp": 98,
+      "ved": 20,
+      "loc": "Delhi"
+    },
+    "bean": {
+      "name": "Hill Estate",
+      "roaster": "Test Roasters",
+      "roasted": "2026-10-06",
+      "bought": "2026-10-10",
+      "ground": "",
+      "pre": true,
+      "grind": "French Press Coarse",
+      "packId": "p-hill",
+      "roastAge": 12,
+      "groundAge": 8,
+      "groundAgeEst": true
+    },
+    "calc": {
+      "boil": 395,
+      "cm": 0,
+      "decant": 300,
+      "dose": 18,
+      "ice": 0,
+      "jug": 300,
+      "milk": 0,
+      "pour": 300,
+      "press": 330,
+      "ro": 316,
+      "vedica": 79
+    },
+    "steps": [
+      {
+        "k": "prep",
+        "t": "Dose the carafe",
+        "target": 0,
+        "actual": 3
+      },
+      {
+        "k": "dose",
+        "t": "Weigh the water",
+        "target": 0,
+        "actual": 4
+      },
+      {
+        "k": "pour",
+        "t": "Boil and pour",
+        "target": 10,
+        "actual": 12
+      },
+      {
+        "k": "steep",
+        "t": "Steep",
+        "target": 240,
+        "actual": 240
+      },
+      {
+        "k": "crust",
+        "t": "Break the crust",
+        "target": 45,
+        "actual": 46
+      },
+      {
+        "k": "settle",
+        "t": "Settle",
+        "target": 300,
+        "actual": 320
+      },
+      {
+        "k": "plunge",
+        "t": "Plunge",
+        "target": 15,
+        "actual": 15
+      },
+      {
+        "k": "decant",
+        "t": "Pour into the cup",
+        "target": 0,
+        "actual": 40
+      }
+    ],
+    "total": 678,
+    "contact": 630,
+    "log": {
+      "temp": null,
+      "decant": null,
+      "score": null,
+      "tastes": [],
+      "faults": [],
+      "note": ""
+    },
+    "pending": true
+  }
+}
