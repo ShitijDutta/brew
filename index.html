@@ -17,6 +17,8 @@
     <h1>French press</h1>
     <div class="topb"><button class="ghost" id="open-try">To try</button><button class="ghost" id="open-log">Log</button><button class="ghost" id="open-settings">Settings</button></div>
   </div>
+  <div class="whorow hide" id="who-row"><p>Brewing as <b id="who-name"></b></p><button class="ghost" id="who-sw">Switch</button></div>
+  <div class="chips hide" id="who-pick" role="group" aria-label="Brew as someone else"></div>
   <div id="banners"></div>
   <div class="rpick" id="rpick" role="group" aria-label="Recipe"></div>
 
@@ -121,16 +123,20 @@
   <div class="top"><h1 id="rv-title">How was it</h1><div class="toprt"><button class="ghost" id="later">Score later</button><button class="ghost" id="skip">Discard</button></div></div>
   <div class="hl" id="rv-summary"></div>
   <div class="flag w hide" id="rv-pack"></div>
+  <div id="rv-wt-wrap">
   <label class="lab" for="rv-wt">Water temperature when poured &deg;C</label>
   <div class="stp"><button type="button" class="sb" data-st="rv-wt" data-d="-0.5" aria-label="Lower water temperature">&minus;</button><input type="number" id="rv-wt" class="tin sv" inputmode="decimal" enterkeyhint="done" min="60" max="100" step="0.5" placeholder=""><button type="button" class="sb" data-st="rv-wt" data-d="0.5" aria-label="Raise water temperature">+</button></div>
+  </div>
   <div id="rv-jug-wrap" class="hide">
     <label class="lab" for="rv-jug">Jug temperature after stirring &deg;C</label>
     <div class="stp"><button type="button" class="sb" data-st="rv-jug" data-d="-0.5" aria-label="Lower jug temperature">&minus;</button><input type="number" id="rv-jug" class="tin sv" inputmode="decimal" enterkeyhint="done" min="0" max="40" step="0.5" placeholder="not taken" data-def="8"><button type="button" class="sb" data-st="rv-jug" data-d="0.5" aria-label="Raise jug temperature">+</button></div>
   </div>
   <label class="lab" for="rv-temp">Cup temperature at first sip &deg;C</label>
   <div class="stp"><button type="button" class="sb" data-st="rv-temp" data-d="-1" aria-label="Lower cup temperature">&minus;</button><input type="number" id="rv-temp" class="tin sv" inputmode="decimal" enterkeyhint="done" min="0" max="95" step="1" placeholder="not taken"><button type="button" class="sb" data-st="rv-temp" data-d="1" aria-label="Raise cup temperature">+</button></div>
+  <div id="rv-dec-wrap">
   <label class="lab" for="rv-dec">Grams actually decanted</label>
   <div class="stp"><button type="button" class="sb" data-st="rv-dec" data-d="-1" aria-label="Lower grams decanted">&minus;</button><input type="number" id="rv-dec" class="tin sv" inputmode="decimal" enterkeyhint="done" min="0" max="900" step="1" placeholder=""><button type="button" class="sb" data-st="rv-dec" data-d="1" aria-label="Raise grams decanted">+</button></div>
+  </div>
   <label class="lab" for="rv-fine">Overall <span class="sval" id="rv-val"></span></label>
   <div class="scale" id="rv-score" role="group" aria-label="Score">
     <button data-v="1" aria-pressed="false">1</button><button data-v="2" aria-pressed="false">2</button>
@@ -138,6 +144,11 @@
     <button data-v="5" aria-pressed="false">5</button>
   </div>
   <div class="fine"><input type="range" id="rv-fine" min="1" max="5" step="0.1" value="3"><span class="fh">slide to fine-tune</span></div>
+  <div id="rv-with-wrap" class="hide">
+    <label class="lab">Shared this carafe with</label>
+    <div class="chips" id="rv-with" role="group" aria-label="Shared with"></div>
+    <p class="note" id="rv-with-note" style="margin:-10px 0 20px"></p>
+  </div>
   <label class="lab">How much of this brew did you drink</label>
   <div class="chips" id="rv-share"></div>
   <label class="sr" for="rv-drank">Grams you drank</label>
@@ -157,8 +168,9 @@
 <div id="sc-log" class="hide">
   <div class="top"><h1>Brew log</h1><button class="ghost" id="log-back">&larr; Recipe</button></div>
   <div class="flag s hide" id="log-err">This browser refused to save the log, so the latest change will be lost when the page closes. Tap Copy all as JSON now and keep the text somewhere safe.</div>
-  <div class="logseg" role="group" aria-label="Which log">
+  <div class="logseg" id="log-seg" role="group" aria-label="Which log">
     <button id="lv-real" aria-pressed="true">Brews</button>
+    <button id="lv-all" class="hide" aria-pressed="false">Everyone</button>
     <button id="lv-test" aria-pressed="false">Dry runs</button>
   </div>
   <p class="syncl" id="log-sync" role="status"></p>
@@ -209,6 +221,10 @@
     <input type="password" id="gh-token" class="tin" autocomplete="off" spellcheck="false" enterkeyhint="go" placeholder="github_pat_&hellip;">
     <p class="flag s hide" id="gh-err"></p>
     <p class="flag w hide" id="gh-warn"></p>
+    <div id="gh-who" class="hide">
+      <p class="note" style="margin:0 0 10px">Who uses this phone? Tap your name to finish connecting.</p>
+      <div class="chips" id="gh-who-list"></div>
+    </div>
     <button class="go" id="gh-connect">Connect</button>
     <details class="howto">
       <summary>How to make the access token</summary>
@@ -223,6 +239,19 @@
   </div>
   <div id="gh-on" class="hide">
     <div class="edacts"><button class="flat" id="gh-off">Disconnect</button><button class="go" id="gh-sync">Sync now</button></div>
+  </div>
+  <div id="ppl" class="hide">
+    <h2 class="sh2">People</h2>
+    <p class="note" id="ppl-me" style="margin-bottom:8px"></p>
+    <div id="ppl-list"></div>
+    <p class="flag s hide" id="ppl-err"></p>
+    <details class="howto" id="ppl-add">
+      <summary>Add a person</summary>
+      <label class="lab" for="ppl-name">Name</label>
+      <input type="text" id="ppl-name" class="tin" autocomplete="off" enterkeyhint="done" placeholder="Their name">
+      <button class="go" id="ppl-save">Add person</button>
+      <p class="note">They get their own packs, places, To try list, log and caffeine count. To use the app on their own phone: install it there, connect with a token made for that phone (same steps as above, a second token), then pick their name. When you share a carafe, each of you scores your own cup.</p>
+    </details>
   </div>
   <h2 class="sh2">Appearance</h2>
   <button class="flat" id="theme">Theme</button>

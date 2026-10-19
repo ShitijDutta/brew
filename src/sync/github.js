@@ -28,15 +28,21 @@ export function readConfig(storage = globalThis.localStorage) {
   } catch (e) { /* ignore */ }
   return null;
 }
-export function saveConfig(cfg, storage = globalThis.localStorage) {
+/* joinSuffix names the person this phone joins as ('' for the person whose data sits at the repository root) */
+export function saveConfig(cfg, storage = globalThis.localStorage, joinSuffix = '') {
   const c = { owner: cfg.owner.trim(), repo: cfg.repo.trim(), token: cfg.token.trim() };
   storage.setItem(CFG_KEY, JSON.stringify(c));
-  storage.setItem(JOIN_KEY, c.owner + '/' + c.repo);
+  storage.setItem(JOIN_KEY + joinSuffix, c.owner + '/' + c.repo);
 }
 export function clearConfig(storage = globalThis.localStorage) {
-  storage.removeItem(CFG_KEY);
-  storage.removeItem(CACHE_KEY);
-  storage.removeItem(JOIN_KEY);
+  const kill = [CFG_KEY, CACHE_KEY, JOIN_KEY];
+  try {
+    for (let i = 0; i < (storage.length || 0); i++) {
+      const k = storage.key(i);
+      if (k && (k.indexOf(CACHE_KEY + '@') === 0 || k.indexOf(JOIN_KEY + '@') === 0)) kill.push(k);
+    }
+  } catch (e) { /* storage without key listing */ }
+  kill.forEach(k => storage.removeItem(k));
 }
 
 export function b64encode(str) {
@@ -78,18 +84,24 @@ export function createGithubDb(cfg, opts = {}) {
   const pollMs = opts.pollMs === undefined ? 60000 : opts.pollMs;
   const debounceMs = opts.debounceMs === undefined ? 250 : opts.debounceMs;
   const base = 'https://api.github.com/repos/' + encodeURIComponent(cfg.owner) + '/' + encodeURIComponent(cfg.repo) + '/contents/';
+  /* each person's packs and brews live in their own folder: '' (the repository root) or e.g. 'people/ananya' */
+  const prefix = String(opts.prefix || '').replace(/^\/+|\/+$/g, '');
+  const cacheKey = CACHE_KEY + (opts.suffix || '');
+  const cacheId = cfg.owner + '/' + cfg.repo + (prefix ? ':' + prefix : '');
+  const full = path => [prefix, path].filter(Boolean).join('/');
+  const rel = path => (prefix && String(path).indexOf(prefix + '/') === 0 ? String(path).slice(prefix.length + 1) : String(path));
 
-  /* files: path -> { sha, data }  — the last copy read from or written to GitHub */
+  /* files: path -> { sha, data }  — the last copy read from or written to GitHub (paths are relative to the person's folder) */
   let files = {};
   let etags = {};
   let listing = { root: null, brews: null };
   let loaded = false;           // a full refresh has completed at least once
   try {
-    const c = JSON.parse(storage.getItem(CACHE_KEY) || 'null');
-    if (c && c.repo === cfg.owner + '/' + cfg.repo) { files = c.files || {}; }
+    const c = JSON.parse(storage.getItem(cacheKey) || 'null');
+    if (c && c.repo === cacheId) { files = c.files || {}; }
   } catch (e) { /* ignore */ }
   function saveCache() {
-    try { storage.setItem(CACHE_KEY, JSON.stringify({ repo: cfg.owner + '/' + cfg.repo, files })); } catch (e) { /* quota: cache is optional */ }
+    try { storage.setItem(cacheKey, JSON.stringify({ repo: cacheId, files })); } catch (e) { /* quota: cache is optional */ }
   }
 
   const colListeners = new Set();
@@ -102,9 +114,10 @@ export function createGithubDb(cfg, opts = {}) {
     const headers = { Authorization: 'Bearer ' + cfg.token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
     if (etag) headers['If-None-Match'] = etag;
     if (body) headers['Content-Type'] = 'application/json';
+    const url = base + full(path).split('/').filter(Boolean).map(encodeURIComponent).join('/');
     let res;
     try {
-      res = await fetchImpl(base + path, { method, headers, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' });
+      res = await fetchImpl(url, { method, headers, body: body ? JSON.stringify(body) : undefined, cache: 'no-store' });
     } catch (e) {
       throw new SyncError('unavailable', 'Offline or GitHub unreachable.');
     }
@@ -116,17 +129,16 @@ export function createGithubDb(cfg, opts = {}) {
 
   /* directory listing; [] for a missing directory or an empty repository */
   async function listDir(dir, key) {
-    const path = dir ? dir.split('/').map(encodeURIComponent).join('/') : '';
-    const r = await gh('GET', path, null, etags[key] && listing[key] ? etags[key] : null);
+    const r = await gh('GET', dir || '', null, etags[key] && listing[key] ? etags[key] : null);
     if (r.status === 304) return listing[key];
     if (r.status === 404) { listing[key] = []; etags[key] = null; return []; }
     if (r.status !== 200) throw errFor(r.status, r.json);
-    const items = Array.isArray(r.json) ? r.json.map(x => ({ name: x.name, path: x.path, sha: x.sha, type: x.type })) : [];
+    const items = Array.isArray(r.json) ? r.json.map(x => ({ name: x.name, path: rel(x.path), sha: x.sha, type: x.type })) : [];
     listing[key] = items; etags[key] = r.etag;
     return items;
   }
   async function getFile(path) {
-    const r = await gh('GET', path.split('/').map(encodeURIComponent).join('/'));
+    const r = await gh('GET', path);
     if (r.status === 404) return null;
     if (r.status !== 200) throw errFor(r.status, r.json);
     let data;
@@ -138,7 +150,7 @@ export function createGithubDb(cfg, opts = {}) {
   async function putFile(path, data, sha, message) {
     const body = { message, content: b64encode(pretty(data)) };
     if (sha) body.sha = sha;
-    const r = await gh('PUT', path.split('/').map(encodeURIComponent).join('/'), body);
+    const r = await gh('PUT', path, body);
     if (r.status === 200 || r.status === 201) return { ok: true, sha: r.json && r.json.content && r.json.content.sha };
     if (r.status === 409 || r.status === 422) return { ok: false, conflict: true };
     throw errFor(r.status, r.json);
@@ -256,15 +268,16 @@ export function createGithubDb(cfg, opts = {}) {
     for (const p of Object.keys(pending)) { if (pending[p].ops.has(id)) return p; }
     return null;
   }
+  const who = opts.label ? opts.label + ': ' : '';
   function message(path, p) {
-    if (path === DOC_PATH) return 'Update packs and settings';
+    if (path === DOC_PATH) return who + 'Update packs and settings';
     let set = 0, del = 0;
     p.ops.forEach(op => { if (op.type === 'set') set++; else del++; });
     const month = path.slice(BREW_DIR.length + 1, -5);
     const parts = [];
     if (set) parts.push(set + ' saved');
     if (del) parts.push(del + ' deleted');
-    return 'Brews ' + month + ': ' + parts.join(', ');
+    return who + 'Brews ' + month + ': ' + parts.join(', ');
   }
   async function writePath(path, p) {
     const isDoc = path === DOC_PATH;
@@ -421,18 +434,3 @@ export async function testConnection(cfg, fetchImpl = globalThis.fetch.bind(glob
   return { ok: false, message: (body && body.message) || ('GitHub responded ' + res.status) };
 }
 
-/* used by the app at start-up: if a connection is saved, the app syncs through GitHub */
-export function installGithubDb() {
-  const cfg = readConfig();
-  if (!cfg) return null;
-  const db = createGithubDb(cfg);
-  globalThis.claude = {
-    use(name) {
-      if (name === 'db') return Promise.resolve(db);
-      if (name === 'user') return Promise.resolve({ id: () => Promise.resolve(cfg.owner) });
-      return Promise.resolve(null);
-    }
-  };
-  globalThis.__ghdb = db;
-  return db;
-}

@@ -28,9 +28,23 @@ The app syncs through a GitHub token that only works for `brew-data` and is stor
 Each saved brew becomes a commit in `brew-data`, so there is full history and nothing is ever silently overwritten.
 Without a connection the app still works and keeps everything on the phone.
 
+## People
+
+Each person who brews gets their own packs, places, To try list, log and caffeine count, all in the same data repository.
+
+- **Add someone:** Settings → People → Add a person.
+- **Switch on one phone:** tap *Switch* under the title on the recipe screen ("Brewing as …").
+- **Their own phone:** install the app there, make a second token (same steps as above), connect, and pick their name.
+- **A shared carafe:** when scoring, tick who you shared it with under *Shared this carafe with*. They get a
+  "shared with you" banner and score their own cup (their score, notes and how much they drank). Each of you sees the
+  other's score in the brew's details, and caffeine is counted per person.
+- **Everyone:** the Log has *Mine*, *Everyone* (all brews, read-only) and *Dry runs*.
+
 ## How sync works
 
 - `coffee.json` holds packs, locations, caffeine extras and the To try list; `brews/YYYY-MM.json` holds that month's brews keyed by id.
+- `people.json` lists everyone. The first person's files sit at the repository root; everyone else's live in `people/<id>/`
+  with the same layout.
 - Every record carries `rev` (a millisecond timestamp). The newer revision wins, per brew and for `coffee.json`.
 - The app reads on start, when it comes back to the foreground, when the connection returns, and every minute while open.
   Unchanged files cost nothing (conditional requests).
@@ -55,6 +69,8 @@ index.html              screens and markup
 src/app.js              the app: recipes, timer, review, log, packs, To try, sync logic
 src/settings.js         Settings screen: GitHub connection, theme, backup
 src/sync/github.js      GitHub contents-API storage with the same small API the app was written against
+src/sync/people.js      people.json: who brews with the app, and which folder holds each person's data
+src/sync/install.js     runs first: picks who this phone brews as and opens their folder (others read-only)
 src/styles.css
 public/                 manifest and icons
 vite.config.js          build, plus the generated service worker (offline cache)

@@ -4,10 +4,12 @@ function r5(x){return Math.round(x/5)*5}
 function mmss(s){s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+('0'+(s%60)).slice(-2)}
 function signed(s){s=Math.round(s);return (s>0?'+':s<0?'\u2212':'')+Math.abs(s)+'s'}
 
-var SKEY='fp.v1', LKEY='fp.log.v1', TKEY='fp.log.test.v1';
+/* who this phone brews as: each person keeps their own settings, log, packs and places (sync/install.js sets this up) */
+var WHO=window.__who||{id:'me',name:'',dir:'',suffix:'',people:[],connected:false};
+var SKEY='fp.v1'+WHO.suffix, LKEY='fp.log.v1'+WHO.suffix, TKEY='fp.log.test.v1'+WHO.suffix;
 var FAULTS=['Sour','Grassy','Bitter','Astringent','Flat','Thin','Silty','Stalled pour','Too hot','Too cool'];
 var TASTES=['Sweet','Juicy','Fruity','Floral','Citrus','Chocolatey','Nutty','Winey'];
-var DKEY='fp.log.del.v1';
+var DKEY='fp.log.del.v1'+WHO.suffix;
 var CONTACT={pour:1,steep:1,crust:1,settle:1,plunge:1,decant:1};
 /* step times can be corrected after the fact, e.g. when a timer kept running because Next was tapped late */
 function stepEditHTML(e,px){
@@ -50,11 +52,13 @@ try{var raw=localStorage.getItem(SKEY);if(raw){var p=JSON.parse(raw);for(var k i
 if(S.r&&S.r.viet&&!S.r.vietIced){var ov=S.r.viet,oc=ov.tgt>0?ov.tgt:110,orr=ov.ratio>0?ov.ratio:7.3;
   S.r.vietHot={tgt:Math.round(oc*1.27/5)*5,ratio:orr};S.r.vietIced={tgt:Math.round(oc*2.63/5)*5,ratio:orr};delete S.r.viet}
 if(S.vmode!=='hot')S.vmode='iced';
+/* the theme belongs to the phone, not the person */
+try{var th=localStorage.getItem('fp.theme.v1');if(th!==null)S.theme=th}catch(e){}
 try{var lr=localStorage.getItem(LKEY);if(lr){var la=JSON.parse(lr);if(la&&la.length)LOG=la}}catch(e){}
 try{var tr=localStorage.getItem(TKEY);if(tr){var ta2=JSON.parse(tr);if(ta2&&ta2.length)TLOG=ta2}}catch(e){}
 var DEL=[]; try{var dl=localStorage.getItem(DKEY);if(dl){var da=JSON.parse(dl);if(da&&da.length)DEL=da}}catch(e){}
 function saveDel(){try{localStorage.setItem(DKEY,JSON.stringify(DEL.slice(-500)))}catch(e){}}
-var PKEY='fp.packs.v1', RKEY='fp.run.v1';
+var PKEY='fp.packs.v1'+WHO.suffix, RKEY='fp.run.v1'+WHO.suffix;
 var PK={packs:[],active:null,rev:0};
 try{var pkr=localStorage.getItem(PKEY);if(pkr){var pkp=JSON.parse(pkr);if(pkp&&pkp.packs)PK=pkp}}catch(e){}
 function normalize(e){
@@ -69,13 +73,78 @@ function saveS(){try{localStorage.setItem(SKEY,JSON.stringify(S))}catch(e){}}
 var saveFail=false;
 function saveL(){try{localStorage.setItem(LKEY,JSON.stringify(LOG));saveFail=false}catch(e){saveFail=true}}
 function saveT(){try{localStorage.setItem(TKEY,JSON.stringify(TLOG.slice(0,20)))}catch(e){}}
-function viewArr(){return logView==='test'?TLOG:LOG}
+/* cups someone said they didn't drink stay in the data (so they are not asked again) but not in the log */
+function viewArr(){if(logView==='test')return TLOG;if(logView==='all')return allArr();return LOG.filter(function(e){return !e.skipped})}
 var beanFilter=null;
 function beanKey(e){return brewPack(e)||''}
-function baseArr(){var a=viewArr();if(logView==='test'||beanFilter===null)return a;return a.filter(function(e){return beanKey(e)===beanFilter})}
+function baseArr(){var a=viewArr();if(logView!=='real'||beanFilter===null)return a;return a.filter(function(e){return beanKey(e)===beanFilter})}
+
+/* ---------- people ---------- */
+function people(){return WHO.people||[]}
+function multi(){return people().length>1}
+function othersList(){return people().filter(function(p){return p.id!==WHO.id})}
+function nameOf(id){if(id===WHO.id)return WHO.name||'You';var n='';people().forEach(function(p){if(p.id===id)n=p.name});return n||(OTH[id]&&OTH[id].name)||'Someone'}
+function switchTo(id){try{localStorage.setItem('fp.who.v1',id)}catch(e){}location.reload()}
+/* everyone else's brews, read-only: shared carafes and the Everyone log */
+var OTH={};
+function subOthers(){
+  (window.__others||[]).forEach(function(o){
+    if(OTH[o.id]){OTH[o.id].name=o.name;return}
+    OTH[o.id]={name:o.name,brews:[]};
+    try{o.db.doc('x').collection('brews').onSnapshot(function(snap){
+      var arr=[];snap.docs.forEach(function(d){var v=d.data();if(v&&v.id!==undefined)arr.push(v)});
+      arr.sort(byDate);OTH[o.id].brews=arr;
+      whenIdle('oth',function(){paintBanners();relogIfVisible()});
+    },function(){})}catch(err){}
+  });
+}
+function refBrew(e){var r=null,o=e&&e.ref&&OTH[e.ref.who];if(o)o.brews.forEach(function(b){if(String(b.id)===String(e.ref.id))r=b});return r}
+/* my cup of someone else's brew */
+function cupFor(pid,bid){var r=null;LOG.forEach(function(e){if(e.ref&&e.ref.who===pid&&String(e.ref.id)===String(bid))r=e});return r}
+/* anyone's cup of a brew by owner */
+function cupOf(pid,owner,bid){
+  if(pid===WHO.id)return cupFor(owner,bid);
+  var r=null,o=OTH[pid];if(o)o.brews.forEach(function(c){if(c.ref&&c.ref.who===owner&&String(c.ref.id)===String(bid))r=c});return r;
+}
+/* brews other people shared with me that I have not scored or waved off yet */
+function sharedPending(){
+  var out=[],cut=Date.now()-30*86400000;
+  Object.keys(OTH).forEach(function(pid){(OTH[pid].brews||[]).forEach(function(b){
+    if(b.test||b.ref||!b.with||b.with.indexOf(WHO.id)<0||new Date(b.at).getTime()<cut)return;
+    if(cupFor(pid,b.id))return;
+    out.push({pid:pid,b:b});
+  })});
+  return out.sort(function(x,y){return new Date(y.b.at)-new Date(x.b.at)});
+}
+/* my cup of a shared carafe: the brew as it was made, with my own score, share and notes */
+function makeCup(pid,bid,skip){
+  var b=null,o=OTH[pid];if(o)o.brews.forEach(function(x){if(String(x.id)===String(bid))b=x});if(!b||cupFor(pid,bid))return cupFor(pid,bid);
+  var n=(b.with||[]).length||1, bl=b.log||{}, bs=(bl.share!==undefined&&bl.share!==null)?bl.share:1;
+  var share=bs<1?Math.max(0,(1-bs)/n):1/(n+1);
+  var e=JSON.parse(JSON.stringify({id:b.id,at:b.at,rev:Date.now(),ref:{who:pid,id:String(b.id)},recipe:b.recipe,mode:b.mode,bean:b.bean,params:b.params,calc:b.calc,
+    steps:b.steps||[],total:b.total,contact:b.contact,log:{temp:null,decant:bl.decant||null,score:null,tastes:[],faults:[],note:'',share:Math.round(share*1000)/1000}}));
+  if(skip){e.skipped=true;e.log.share=0}else e.pending=true;
+  LOG.push(e);LOG.sort(byDate);saveL();pushPending();
+  return e;
+}
+function allArr(){
+  var out=[];
+  LOG.forEach(function(e){if(e.ref||e.skipped||e.test)return;var c=JSON.parse(JSON.stringify(e));c._by=WHO.id;out.push(c)});
+  Object.keys(OTH).forEach(function(pid){(OTH[pid].brews||[]).forEach(function(b){if(b.ref||b.skipped||b.test)return;var c=JSON.parse(JSON.stringify(b));c._by=pid;out.push(c)})});
+  return out.sort(byDate);
+}
+var whoOpen=false;
+function paintWho(){
+  var row=$('who-row'),pick=$('who-pick');
+  if(!multi()){row.classList.add('hide');pick.classList.add('hide');return}
+  row.classList.remove('hide');$('who-name').textContent=WHO.name;
+  $('who-sw').textContent=whoOpen?'Close':'Switch';
+  pick.classList.toggle('hide',!whoOpen);
+  if(whoOpen)pick.innerHTML=othersList().map(function(p){return '<button class="chip" data-who="'+esc(p.id)+'">'+esc(p.name)+'</button>'}).join('');
+}
 function paintBeans(){
   var box=$('log-beans');
-  if(logView==='test'){box.classList.add('hide');return}
+  if(logView!=='real'){box.classList.add('hide');return}
   var seen={},list=[];
   LOG.forEach(function(e){var k=beanKey(e);if(!(k in seen)){seen[k]=1;list.push([k,k?packLabel(k,e):'No pack'])}});
   if(beanFilter!==null&&!(beanFilter in seen))beanFilter=null;
@@ -249,9 +318,11 @@ function checkPackAfterBrew(e){
   return '';
 }
 function tryMigrate(){
-  if(PK.packs.length)return;
+  /* only for logs from before packs existed; a person added later never had those */
+  if(PK.packs.length||WHO.dir)return;
   var seen={},list=[];
   LOG.slice().reverse().forEach(function(e){
+    if(e.ref)return;
     var b=e.bean||{},id=legacyId(b); if(!id)return;
     if(!seen[id]){seen[id]={id:id,name:b.name,roaster:b.roaster||'',roasted:b.roasted||'',ground:b.ground||'',bought:b.bought||'',pre:!!b.pre,grind:b.grind||'',size:null,adj:0,created:e.at,last:e.at};list.push(seen[id])}
     else seen[id].last=e.at;
@@ -609,41 +680,55 @@ function finishBrew(){
 var RV=null;
 function openReview(id,notice,fresh){
   var e=findAny(id); if(!e)return;
-  var l=e.log||{}, isT=!!e.test, b=bestBrew(isT?TLOG:LOG,e.recipe||'black');
-  RV={id:e.id,test:isT};
-  $('rv-title').textContent=isT?'Dry run — how did it look':'How was it';
-  var lines=(fresh?'':'Brewed '+fmtWhen(e.at)+'. ')+(isT?'Scaled as if real. ':'')+'Contact time <b>'+mmss(e.contact||0)+'</b>, total <b>'+mmss(e.total||0)+'</b>.';
-  if(b&&b.contact&&String(b.id)!==String(e.id))lines+=' Your best-rated '+(isT?'dry run':'brew')+' ran '+mmss(b.contact)+' — '+signed((e.contact||0)-b.contact)+'.';
+  var l=e.log||{}, isT=!!e.test, cup=!!e.ref, b=bestBrew(isT?TLOG:LOG,e.recipe||'black');
+  RV={id:e.id,test:isT,cup:cup};
+  $('rv-title').textContent=isT?'Dry run — how did it look':(cup?'How was your cup':'How was it');
+  var lines;
+  if(cup)lines='Brewed by <b>'+esc(nameOf(e.ref.who))+'</b> on '+esc(fmtWhen(e.at))+' · '+esc(rname(e))+(e.calc?', '+e.calc.dose+' g':'')+'. Contact time <b>'+mmss(e.contact||0)+'</b>.';
+  else{
+    lines=(fresh?'':'Brewed '+fmtWhen(e.at)+'. ')+(isT?'Scaled as if real. ':'')+'Contact time <b>'+mmss(e.contact||0)+'</b>, total <b>'+mmss(e.total||0)+'</b>.';
+    if(b&&b.contact&&String(b.id)!==String(e.id))lines+=' Your best-rated '+(isT?'dry run':'brew')+' ran '+mmss(b.contact)+' — '+signed((e.contact||0)-b.contact)+'.';
+  }
   if(!isT&&e.pending)lines+='<br>Already saved to your log. Score it now, or tap Score later and come back to it.';
   $('rv-summary').innerHTML=lines;
   $('rv-pack').classList.toggle('hide',!notice); $('rv-pack').textContent=notice||'';
   var iced=e.recipe==='iced';
+  /* how the brew was made belongs to whoever made it: a cup only records your own side */
+  $('rv-wt-wrap').classList.toggle('hide',cup); $('rv-dec-wrap').classList.toggle('hide',cup); $('rv-steps').classList.toggle('hide',cup);
+  rvWith={}; (e.with||[]).forEach(function(pid){rvWith[pid]=1}); rvShareAuto=false;
+  $('rv-with-wrap').classList.toggle('hide',cup||isT||!othersList().length);
   $('rv-dec').value=l.decant||(e.calc?e.calc.decant:'');
   $('rv-temp').value=(l.temp!==null&&l.temp!==undefined)?l.temp:'';
-  $('rv-jug').value=(l.jug!==null&&l.jug!==undefined)?l.jug:''; $('rv-jug-wrap').classList.toggle('hide',!iced);
+  $('rv-jug').value=(l.jug!==null&&l.jug!==undefined)?l.jug:''; $('rv-jug-wrap').classList.toggle('hide',!iced||cup);
   var lastT=null; LOG.forEach(function(x){if(lastT===null&&String(x.id)!==String(e.id)&&(x.recipe||'black')===(e.recipe||'black')&&x.log&&x.log.temp)lastT=x.log.temp});
   $('rv-temp').setAttribute('data-def',String(iced?6:(lastT||58)));
   $('rv-note').value=l.note||'';
   $('rv-wt').value=(e.params&&e.params.temp!==undefined)?e.params.temp:S.temp;
   rvScore=l.score||0; rvFaults={}; rvTastes={}; rvShare=(l.share!==undefined&&l.share!==null)?l.share:1;
   (l.faults||[]).forEach(function(f){rvFaults[f]=1}); (l.tastes||[]).forEach(function(t){rvTastes[t]=1});
-  var sk=$('skip'); sk.removeAttribute('data-armed'); sk.innerHTML='Discard';
-  $('rv-steps').open=false; $('rv-steps-body').innerHTML=stepEditHTML(e,'rs');
+  var sk=$('skip'); sk.removeAttribute('data-armed'); sk.innerHTML=skipLabel();
+  $('rv-steps').open=false; $('rv-steps-body').innerHTML=cup?'':stepEditHTML(e,'rs');
   var dr=readDraft(e.id);
   if(dr&&(dr.at||0)>(e.rev||0)){
     ['wt','jug','temp','dec'].forEach(function(k){if(dr[k]!==undefined)$('rv-'+k).value=dr[k]});
     if(dr.note!==undefined)$('rv-note').value=dr.note;
     if(dr.share!==undefined)rvShare=dr.share; if(dr.score)rvScore=dr.score;
     if(dr.tastes)rvTastes=dr.tastes; if(dr.faults)rvFaults=dr.faults;
+    if(dr.with&&!cup)rvWith=dr.with;
   }
   paintReview(); show('sc-review');
 }
 function deleteEntry(id,isTest){
   var did=String(id);
-  if(isTest){TLOG=TLOG.filter(function(x){return String(x.id)!==did});saveT()}
-  else{LOG=LOG.filter(function(x){return String(x.id)!==did});saveL();DEL.push(did);saveDel();pushPending()}
+  if(isTest){TLOG=TLOG.filter(function(x){return String(x.id)!==did});saveT();return}
+  /* a cup of someone else's brew is kept as "didn't have any", so it is not offered again */
+  var cup=null;LOG.forEach(function(x){if(String(x.id)===did&&x.ref)cup=x});
+  if(cup){cup.skipped=true;delete cup.pending;cup.log=cup.log||{};cup.log.share=0;cup.rev=Date.now();cup.synced=false;saveL();pushPending();return}
+  LOG=LOG.filter(function(x){return String(x.id)!==did});saveL();DEL.push(did);saveDel();pushPending();
 }
-var rvScore=0, rvFaults={}, rvTastes={}, rvShare=1;
+var rvScore=0, rvFaults={}, rvTastes={}, rvShare=1, rvWith={}, rvShareAuto=false;
+function rname(e){var r=RECIPES[(e&&e.recipe)||'black'];return r?r.name:'Black'}
+function skipLabel(){return RV&&RV.cup?'Didn’t have any':'Discard'}
 /* grams of finished drink the brew made: the whole glass for Vietnamese, the cup for everything else */
 function drinkTotal(e){var c=(e&&e.calc)||{};if(e.recipe==='viet')return Math.round((c.pour||0)+(c.cm||0)+(c.ice||0));return Math.round(c.pour||c.jug||0)}
 function shareNote(l){if(l.share===undefined||l.share===null||l.share>=1)return '';return l.drank!==undefined&&l.drank!==null?' (you drank '+l.drank+' g)':' (your share of the brew)'}
@@ -670,13 +755,27 @@ function paintReview(){
   });
   syncChips($('rv-faults'),FAULTS,'f',String,function(f){return rvFaults[f]});
   syncChips($('rv-tastes'),TASTES,'t',String,function(f){return rvTastes[f]});
+  if(!$('rv-with-wrap').classList.contains('hide')){
+    var ol=othersList();
+    syncChips($('rv-with'),ol.map(function(p){return p.id}),'wp',nameOf,function(pid){return rvWith[pid]});
+    var sel=ol.filter(function(p){return rvWith[p.id]}).map(function(p){return p.name});
+    $('rv-with-note').textContent=sel.length?sel.join(' and ')+(sel.length>1?' each score their own cup':' scores their own cup')+', on their phone or here after switching to them. Set how much you drank below.':'';
+  }
   saveDraftSoon();
 }
 $('rv-drank').addEventListener('input',function(){
   var e=RV&&findAny(RV.id), t=e?drinkTotal(e):0, g=parseFloat(this.value);
-  if(t>0&&g>=0){rvShare=Math.min(1,g/t);paintReview()}
+  if(t>0&&g>=0){rvShare=Math.min(1,g/t);rvShareAuto=false;paintReview()}
 });
-$('rv-share').addEventListener('click',function(e){var b=e.target.closest('[data-sh]');if(!b)return;rvShare=parseFloat(b.dataset.sh);paintReview()});
+$('rv-share').addEventListener('click',function(e){var b=e.target.closest('[data-sh]');if(!b)return;rvShare=parseFloat(b.dataset.sh);rvShareAuto=false;paintReview()});
+/* sharing the carafe: your own share defaults to an even split, until you set it yourself */
+$('rv-with').addEventListener('click',function(e){
+  var b=e.target.closest('[data-wp]'); if(!b)return;
+  var pid=b.dataset.wp; if(rvWith[pid])delete rvWith[pid]; else rvWith[pid]=1;
+  var n=Object.keys(rvWith).length;
+  if(rvShare===1||rvShareAuto){rvShare=n?Math.round(1000/(n+1))/1000:1;rvShareAuto=n>0}
+  paintReview();
+});
 $('rv-dec').addEventListener('input',function(){if(RV)paintReview()});
 $('rv-tastes').addEventListener('click',function(e){
   var b=e.target.closest('button'); if(!b)return;
@@ -693,14 +792,14 @@ $('rv-faults').addEventListener('click',function(e){
   var f=b.dataset.f; if(rvFaults[f])delete rvFaults[f]; else rvFaults[f]=1;
   paintReview();
 });
-function readDraft(id){try{return JSON.parse(localStorage.getItem('fp.rvdraft.'+id)||'null')}catch(e){return null}}
-function clearDraft(id){try{localStorage.removeItem('fp.rvdraft.'+id)}catch(e){}}
+function readDraft(id){try{return JSON.parse(localStorage.getItem('fp.rvdraft'+WHO.suffix+'.'+id)||'null')}catch(e){return null}}
+function clearDraft(id){try{localStorage.removeItem('fp.rvdraft'+WHO.suffix+'.'+id)}catch(e){}}
 var draftT=null;
 function saveDraftSoon(){
   if(!RV)return; var id=RV.id; clearTimeout(draftT);
   draftT=setTimeout(function(){if(!RV||String(RV.id)!==String(id))return;
-    try{localStorage.setItem('fp.rvdraft.'+id,JSON.stringify({at:Date.now(),wt:$('rv-wt').value,jug:$('rv-jug').value,temp:$('rv-temp').value,dec:$('rv-dec').value,
-      note:$('rv-note').value,share:rvShare,score:rvScore,tastes:rvTastes,faults:rvFaults}))}catch(e){}},250);
+    try{localStorage.setItem('fp.rvdraft'+WHO.suffix+'.'+id,JSON.stringify({at:Date.now(),wt:$('rv-wt').value,jug:$('rv-jug').value,temp:$('rv-temp').value,dec:$('rv-dec').value,
+      note:$('rv-note').value,share:rvShare,score:rvScore,tastes:rvTastes,faults:rvFaults,with:rvWith}))}catch(e){}},250);
 }
 $('sc-review').addEventListener('input',saveDraftSoon);
 function saveReview(){
@@ -712,6 +811,10 @@ function saveReview(){
   e.log={temp:Number($('rv-temp').value)||null, decant:Number($('rv-dec').value)||null,
          jug:(e.recipe==='iced'&&!isNaN(jv))?jv:undefined,
          score:rvScore||null, tastes:tl, faults:fl, note:$('rv-note').value.trim(), share:Math.round(rvShare*1000)/1000, drank:drinkTotal(e)?Math.round(rvShare*drinkTotal(e)):undefined};
+  if(!e.test&&!e.ref){
+    var w=Object.keys(rvWith).filter(function(pid){return othersList().some(function(p){return p.id===pid})});
+    if(w.length)e.with=w; else delete e.with;
+  }
   applyStepEdits(e,'rs');
   delete e.pending;
   if(e.test)saveT(); else{e.rev=Date.now();e.synced=false;saveL();pushPending()}
@@ -727,11 +830,18 @@ function paintBanners(){
     h+='<div class="banner"><p>'+(r.testMode?'A dry run':'A brew')+' from '+esc(fmtWhen(new Date(r.brewT0).toISOString()))+' was interrupted at step '+(r.idx+1)+' of '+r.steps.length+', <b>'+esc(st.t||'')+'</b>. The timer kept counting while it was closed.</p>'
       +'<div class="bacts"><button class="go" data-run="resume">Resume</button><button class="ghost del" data-run="drop">Discard</button></div></div>';
   }
-  var pend=LOG.filter(function(e){return e.pending});
+  var pend=LOG.filter(function(e){return e.pending&&!e.skipped});
   if(pend.length){
     var n=pend[0];
-    h+='<div class="banner"><p>'+(pend.length>1?pend.length+' brews are waiting for a score.':'Your brew from '+esc(fmtWhen(n.at))+' is waiting for a score.')+'</p>'
+    h+='<div class="banner"><p>'+(pend.length>1?pend.length+' brews are waiting for a score.':(n.ref?'Your cup of '+esc(nameOf(n.ref.who))+'’s brew from '+esc(fmtWhen(n.at)):'Your brew from '+esc(fmtWhen(n.at)))+' is waiting for a score.')+'</p>'
       +'<div class="bacts"><button class="go" data-pend="'+esc(n.id)+'">'+(pend.length>1?'Score the latest':'Score it')+'</button></div></div>';
+  }
+  /* carafes someone else made and shared with you */
+  var sp=sharedPending();
+  if(sp.length){
+    var x=sp[0], key=esc(x.pid)+'|'+esc(String(x.b.id));
+    h+='<div class="banner"><p>'+(sp.length>1?sp.length+' shared brews are waiting for your score.':esc(nameOf(x.pid))+'’s brew from '+esc(fmtWhen(x.b.at))+' was shared with you. How was your cup?')+'</p>'
+      +'<div class="bacts"><button class="go" data-cup="'+key+'">Score your cup</button><button class="ghost" data-cupskip="'+key+'">Didn’t have any</button></div></div>';
   }
   var lead=(S.lead>=0)?S.lead:3;
   openPacks().forEach(function(p){
@@ -761,7 +871,7 @@ function cafOf(c,dec,share){
 }
 function cafEvents(){
   var ev=[];
-  LOG.forEach(function(e){if(e.test)return;var c=cafOf(e.calc,e.log&&e.log.decant,e.log&&e.log.share);if(c&&c.mid>0)ev.push({t:new Date(e.at).getTime(),mg:c.mid})});
+  LOG.forEach(function(e){if(e.test||e.skipped)return;var c=cafOf(e.calc,e.log&&e.log.decant,e.log&&e.log.share);if(c&&c.mid>0)ev.push({t:new Date(e.at).getTime(),mg:c.mid})});
   (PK.extras||[]).forEach(function(x){ev.push({t:new Date(x.at).getTime(),mg:x.mg})});
   return ev;
 }
@@ -830,10 +940,16 @@ function paintLoc(){
 function ensureProfiles(){
   if(PK.profiles&&PK.profiles.length){paintLoc();return}
   var b={panloss:isNaN(S.panloss)?30:S.panloss,ved:isNaN(S.ved)?20:S.ved,ceil:S.ceil||450};
-  PK.profiles=[{id:'delhi',name:'Delhi',temp:98,panloss:b.panloss,ved:b.ved,ceil:b.ceil},
-               {id:'bangalore',name:'Bangalore',temp:96,panloss:b.panloss,ved:b.ved,ceil:b.ceil}];
-  PK.loc=Number(S.temp)<=96?'bangalore':'delhi';
-  var cl=curLoc(); if(cl&&!isNaN(S.temp))cl.temp=S.temp;
+  if(WHO.dir){
+    /* someone added later starts with one place of their own, to rename or replace */
+    PK.profiles=[{id:'home',name:'Home',temp:98,panloss:b.panloss,ved:b.ved,ceil:b.ceil}];
+    PK.loc='home';
+  }else{
+    PK.profiles=[{id:'delhi',name:'Delhi',temp:98,panloss:b.panloss,ved:b.ved,ceil:b.ceil},
+                 {id:'bangalore',name:'Bangalore',temp:96,panloss:b.panloss,ved:b.ved,ceil:b.ceil}];
+    PK.loc=Number(S.temp)<=96?'bangalore':'delhi';
+    var cl=curLoc(); if(cl&&!isNaN(S.temp))cl.temp=S.temp;
+  }
   PK.rev=Date.now(); savePK(); pushPacks(); paintLoc(); render();
 }
 
@@ -932,13 +1048,38 @@ function entryDetail(e,editing){
   if(l.tastes&&l.tastes.length)h+='<p class="note tasted" style="margin:8px 0 0">Tasted '+esc(l.tastes.join(', ').toLowerCase())+'</p>';
   if(l.faults&&l.faults.length)h+='<p class="note" style="margin:8px 0 0;color:var(--stop)">'+esc(l.faults.join(', '))+'</p>';
   if(l.note)h+='<p class="note" style="margin:8px 0 0;color:var(--steel)">'+esc(l.note)+'</p>';
-  var cf=e.test?null:cafOf(e.calc,l.decant,l.share);
+  var mine=!e._by||e._by===WHO.id;
+  var cf=(e.test||!mine)?null:cafOf(e.calc,l.decant,l.share);
   if(cf)h+='<p class="note" style="margin:8px 0 0">Caffeine ≈ '+r5(cf.mid)+' mg for you'+shareNote(l)+'</p>';
+  h+=sharedHTML(e);
   if(e.edited)h+='<p class="edited">Edited '+fmtWhen(e.edited)+'</p>';
   if(editing)h+=editForm(e);
+  else if(logView==='all')h+='<div class="eacts"><button class="ghost" data-copy="'+e.id+'">Copy this brew</button></div>';
   else h+='<div class="eacts">'+(e.pending?'<button class="ghost" data-score="'+e.id+'">Score it</button>':'')+'<button class="ghost" data-copy="'+e.id+'">Copy this brew</button>'
     +'<button class="ghost" data-edit="'+e.id+'">Edit</button>'
-    +'<button class="ghost del" data-del="'+e.id+'">Delete</button></div>';
+    +'<button class="ghost del" data-del="'+e.id+'">'+(e.ref?'Remove':'Delete')+'</button></div>';
+  return h;
+}
+/* who else drank a shared carafe, and what they thought */
+function sharedHTML(e){
+  var owner=e._by||WHO.id, h='', P='<p class="note shared">';
+  if(e.ref){
+    var rb=refBrew(e), rl=(rb&&rb.log)||{};
+    h+=P+'Brewed by <b>'+esc(nameOf(e.ref.who))+'</b>'+(rl.score?', who scored it '+fmtScore(rl.score)+'/5':'')+'.</p>';
+  }
+  (e.with||[]).forEach(function(pid){
+    var c=cupOf(pid,owner,e.id), you=pid===WHO.id, nm=you?'You':nameOf(pid);
+    if(!c)h+=P+esc(nm)+(you?' haven’t':' hasn’t')+' scored '+(you?'your':'their')+' cup yet.</p>';
+    else if(c.skipped)h+=P+esc(nm)+' didn’t have any.</p>';
+    else{
+      var cl=c.log||{}, bits=[];
+      bits.push(cl.score?fmtScore(cl.score)+'/5':'not scored yet');
+      if(cl.tastes&&cl.tastes.length)bits.push(cl.tastes.join(', ').toLowerCase());
+      if(cl.faults&&cl.faults.length)bits.push(cl.faults.join(', '));
+      if(cl.drank)bits.push(cl.drank+' g');
+      h+=P+'<b>'+esc(nm)+'</b>: '+esc(bits.join(' · '))+(cl.note?'<br>“'+esc(cl.note)+'”':'')+'</p>';
+    }
+  });
   return h;
 }
 function esc(v){return String(v===null||v===undefined?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
@@ -948,25 +1089,27 @@ function expand(id){var w=$('dt-'+id),en=findEntry(id);if(!w||!en)return;w.inner
 
 var ED=null;
 function editForm(e){
-  var l=e.log||{};
-  ED={id:e.id,score:l.score||0,faults:{},tastes:{},share:(l.share!==undefined&&l.share!==null)?l.share:1,total:drinkTotal(e)};
+  var l=e.log||{}, cup=!!e.ref;
+  ED={id:e.id,score:l.score||0,faults:{},tastes:{},share:(l.share!==undefined&&l.share!==null)?l.share:1,total:drinkTotal(e),with:{}};
   (l.faults||[]).forEach(function(f){ED.faults[f]=1});
   (l.tastes||[]).forEach(function(f){ED.tastes[f]=1});
+  (e.with||[]).forEach(function(pid){ED.with[pid]=1});
   return '<div class="edit">'
-    +'<label class="lab" for="ed-wt">Water &deg;C</label>'+stpH('ed-wt',e.params&&e.params.temp,0.5,60,100,'','water temperature',S.temp)
+    +(cup?'':'<label class="lab" for="ed-wt">Water &deg;C</label>'+stpH('ed-wt',e.params&&e.params.temp,0.5,60,100,'','water temperature',S.temp))
     +'<label class="lab" for="ed-ct">Cup &deg;C at first sip</label>'+stpH('ed-ct',l.temp,1,0,95,'not taken','cup temperature',e.recipe==='iced'?6:58)
-    +((e.recipe==='iced')?'<label class="lab" for="ed-jg">Jug &deg;C after stirring</label>'+stpH('ed-jg',l.jug,0.5,0,40,'not taken','jug temperature',8):'')
-    +'<label class="lab" for="ed-dc">Grams actually decanted</label>'+stpH('ed-dc',l.decant,1,0,900,'','grams decanted',e.calc&&e.calc.decant)
+    +((e.recipe==='iced'&&!cup)?'<label class="lab" for="ed-jg">Jug &deg;C after stirring</label>'+stpH('ed-jg',l.jug,0.5,0,40,'not taken','jug temperature',8):'')
+    +(cup?'':'<label class="lab" for="ed-dc">Grams actually decanted</label>'+stpH('ed-dc',l.decant,1,0,900,'','grams decanted',e.calc&&e.calc.decant))
     +'<label class="lab" for="ed-fine">Overall <span class="sval" id="ed-val"></span></label><div class="scale" id="ed-sc" role="group" aria-label="Score">'
     +[1,2,3,4,5].map(function(v){return '<button data-esc="'+v+'" aria-pressed="false">'+v+'</button>'}).join('')+'</div>'
     +'<div class="fine"><input type="range" id="ed-fine" min="1" max="5" step="0.1" value="3"><span class="fh">slide to fine-tune</span></div>'
+    +((e.test||cup||!othersList().length)?'':'<label class="lab">Shared this carafe with</label><div class="chips" id="ed-with"></div>')
     +(e.test?'':'<label class="lab">How much of this brew did you drink</label><div class="chips" id="ed-sh"></div>'
       +'<label class="sr" for="ed-drank">Grams you drank</label>'+stpH('ed-drank',null,5,0,drinkTotal(e)||null,'grams','grams you drank',null)
       +'<p class="stp-sub">grams you drank, of the '+drinkTotal(e)+' g brew</p>')
     +'<label class="lab">What you tasted</label><div class="chips" id="ed-ts"></div>'
     +'<label class="lab">Anything off</label><div class="chips" id="ed-fl"></div>'
     +'<label class="lab" for="ed-nt">Notes</label><textarea id="ed-nt" class="tin" rows="4">'+esc(l.note)+'</textarea>'
-    +'<details class="stepedit"><summary>Fix a step time</summary>'+stepEditHTML(e,'es')+'</details>'
+    +(cup?'':'<details class="stepedit"><summary>Fix a step time</summary>'+stepEditHTML(e,'es')+'</details>')
     +'<div class="edacts"><button class="flat" data-ecancel="'+e.id+'">Cancel</button><button class="go" data-esave="'+e.id+'">Save changes</button></div>'
     +'</div>';
 }
@@ -989,6 +1132,8 @@ function edPaint(){
     var all=FAULTS.slice(); for(var f in ED.faults)if(all.indexOf(f)<0)all.push(f);
     syncChips(fl,all,'ef',String,function(f){return ED.faults[f]});
   }
+  var ew=$('ed-with');
+  if(ew)syncChips(ew,othersList().map(function(p){return p.id}),'ewp',nameOf,function(pid){return ED.with[pid]});
 }
 function openEdit(id){
   if(ED&&String(ED.id)!==String(id)){
@@ -1001,10 +1146,12 @@ function openEdit(id){
 function saveEdit(id){
   var e=findEntry(id); if(!e||!ED)return;
   if(!e.log)e.log={}; if(!e.params)e.params={};
-  var wt=parseFloat($('ed-wt').value), ct=parseFloat($('ed-ct').value), dc=parseFloat($('ed-dc').value);
+  var wtEl=$('ed-wt'), dcEl=$('ed-dc');
+  var wt=wtEl?parseFloat(wtEl.value):NaN, ct=parseFloat($('ed-ct').value), dc=dcEl?parseFloat(dcEl.value):NaN;
   if(!isNaN(wt))e.params.temp=wt;
   e.log.temp=isNaN(ct)?null:ct;
-  e.log.decant=isNaN(dc)?null:Math.round(dc);
+  if(dcEl)e.log.decant=isNaN(dc)?null:Math.round(dc);
+  if($('ed-with')){var w=Object.keys(ED.with).filter(function(pid){return othersList().some(function(p){return p.id===pid})});if(w.length)e.with=w;else delete e.with}
   if($('ed-jg')){var jg=parseFloat($('ed-jg').value);e.log.jug=isNaN(jg)?null:jg}
   e.log.score=ED.score||null;
   var fl=[]; FAULTS.forEach(function(f){if(ED.faults[f])fl.push(f)});
@@ -1076,7 +1223,7 @@ function copyText(t,btn,idle){
 }
 function insights(){
   var box=$('log-insights');
-  if(logView==='test'){box.innerHTML='';return}
+  if(logView!=='real'){box.innerHTML='';return}
   var rn=RECIPES[S.recipe].name;
   var scored=baseArr().filter(sameRecipe).filter(function(e){return e.log&&e.log.score});
   if(scored.length<3){
@@ -1146,12 +1293,17 @@ function signed2(v){v=Math.round(v);return (v>0?'+':v<0?'\u2212':'')+Math.abs(v)
 
 function openLog(v){
   if(v)logView=v;
+  if(logView==='all'&&!multi())logView='real';
   ED=null;
   $('log-err').classList.toggle('hide',!saveFail);
   paintBeans(); paintSync();
-  var arr=baseArr(), isT=logView==='test';
-  $('lv-real').setAttribute('aria-pressed',String(!isT));
+  var arr=baseArr(), isT=logView==='test', isA=logView==='all';
+  $('lv-real').setAttribute('aria-pressed',String(logView==='real'));
   $('lv-test').setAttribute('aria-pressed',String(isT));
+  $('lv-all').setAttribute('aria-pressed',String(isA));
+  $('lv-real').textContent=multi()?'Mine':'Brews';
+  $('lv-all').classList.toggle('hide',!multi());
+  $('log-seg').classList.toggle('three',multi());
   $('log-clear').classList.toggle('hide',!(isT&&TLOG.length));
   var list=$('log-list'), stats=$('log-stats');
   if(!arr.length){
@@ -1159,6 +1311,7 @@ function openLog(v){
     insights();
     list.innerHTML=isT
       ?'<p class="empty">No dry runs yet. Use the dry run button on the recipe screen to walk the whole flow in about a minute \u2014 timers sped up (set the speed under Calibration), and nothing lands in your real log.</p>'
+      :isA?'<p class="empty">No brews from anyone yet.</p>'
       :'<p class="empty">No brews logged yet. Run a brew and the timings record themselves \u2014 then add the cup temperature and how it tasted at the end.</p>';
     $('log-copy').classList.add('hide');
     show('sc-log'); return;
@@ -1166,7 +1319,7 @@ function openLog(v){
   insights();
   var b=bestBrew(arr), scored=arr.filter(function(e){return e.log&&e.log.score});
   var avg=scored.length?scored.reduce(function(a,e){return a+e.log.score},0)/scored.length:0;
-  var h='<div class="hl"><b>'+arr.length+'</b> '+(isT?'dry run':'brew')+(arr.length>1?'s':'')+' logged';
+  var h='<div class="hl"><b>'+arr.length+'</b> '+(isT?'dry run':'brew')+(arr.length>1?'s':'')+(isA?' by everyone':' logged');
   if(scored.length)h+=' \u00B7 average score <b>'+avg.toFixed(1)+'</b>';
   if(b&&b.contact)h+='<br>Best scored <b>'+fmtScore(b.log.score)+'</b> with a contact time of <b>'+mmss(b.contact)+'</b>';
   h+='</div>';
@@ -1174,12 +1327,13 @@ function openLog(v){
   list.innerHTML=arr.map(function(e){
     var d=new Date(e.at), l=e.log||{};
     var ds=d.toLocaleDateString(undefined,{day:'numeric',month:'short'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+    var by=isA?' \u00B7 '+esc(nameOf(e._by)):e.ref?' \u00B7 '+esc(nameOf(e.ref.who))+'\u2019s brew':(e.with&&e.with.length?' \u00B7 shared':'');
     return '<button class="entry" data-id="'+e.id+'">'
       +'<span class="l1"><span class="d">'+ds+'</span><span class="sc">'+(l.score?fmtScore(l.score)+'/5':(e.pending?'Not scored':''))+'</span></span>'
-      +'<span class="l2">'+(RECIPES[e.recipe||'black']?RECIPES[e.recipe||'black'].name:'Black')+(e.params&&e.params.vmode?' ('+e.params.vmode+')':'')+' \u00B7 '+e.calc.dose+' g \u00B7 contact '+mmss(e.contact||0)+(l.temp?' \u00B7 cup '+l.temp+'\u00B0C':'')+'</span></button>'
+      +'<span class="l2">'+rname(e)+(e.params&&e.params.vmode?' ('+e.params.vmode+')':'')+by+' \u00B7 '+e.calc.dose+' g \u00B7 contact '+mmss(e.contact||0)+(l.temp?' \u00B7 cup '+l.temp+'\u00B0C':'')+'</span></button>'
       +'<div class="detwrap hide" id="dt-'+e.id+'"></div>';
   }).join('');
-  $('log-copy').classList.remove('hide');
+  $('log-copy').classList.toggle('hide',isA);
   show('sc-log');
 }
 $('log-list').addEventListener('input',function(e){if(e.target.id==='ed-drank'&&ED){var g=parseFloat(e.target.value);if(ED.total>0&&g>=0){ED.share=Math.min(1,g/ED.total);edPaint()}return}if(e.target.id==='ed-fine'&&ED){ED.score=Math.round(parseFloat(e.target.value)*10)/10;edPaint()}});
@@ -1192,6 +1346,7 @@ $('log-list').addEventListener('click',function(e){
   if((x=e.target.closest('[data-esc]'))){if(ED){ED.score=Number(x.dataset.esc);edPaint()}return}
   if((x=e.target.closest('[data-et]'))){if(ED){var et=x.dataset.et;if(ED.tastes[et])delete ED.tastes[et];else ED.tastes[et]=1;edPaint()}return}
   if((x=e.target.closest('[data-ef]'))){if(ED){var ef=x.dataset.ef;if(ED.faults[ef])delete ED.faults[ef];else ED.faults[ef]=1;edPaint()}return}
+  if((x=e.target.closest('[data-ewp]'))){if(ED){var wp=x.dataset.ewp;if(ED.with[wp])delete ED.with[wp];else ED.with[wp]=1;edPaint()}return}
   if((x=e.target.closest('[data-ecancel]'))){ED=null;expand(x.dataset.ecancel);return}
   if((x=e.target.closest('[data-esave]'))){saveEdit(x.dataset.esave);return}
   var del=e.target.closest('[data-del]');
@@ -1267,6 +1422,10 @@ $('start').addEventListener('click',function(){startBrew(false)});
 $('dry').addEventListener('click',function(){startBrew(true)});
 $('lv-real').addEventListener('click',function(){openLog('real')});
 $('lv-test').addEventListener('click',function(){openLog('test')});
+$('lv-all').addEventListener('click',function(){openLog('all')});
+$('who-sw').addEventListener('click',function(){whoOpen=!whoOpen;paintWho()});
+$('who-pick').addEventListener('click',function(e){var b=e.target.closest('[data-who]');if(b)switchTo(b.dataset.who)});
+window.addEventListener('brew:people',function(){subOthers();paintWho();paintBanners();relogIfVisible()});
 $('log-beans').addEventListener('click',function(e){
   var b=e.target.closest('button'); if(!b)return;
   beanFilter=b.dataset.bk==='*'?null:b.dataset.bk; openLog();
@@ -1282,7 +1441,7 @@ $('skip').addEventListener('click',function(){
     RV=null; lastAuto=null; refreshAll(); show('sc-recipe');
   }
   if(RV&&RV.test){drop();return}
-  twoTap(this,'Tap again to discard','Discard',drop);
+  twoTap(this,RV&&RV.cup?'Tap again to confirm':'Tap again to discard',skipLabel(),drop);
 });
 $('later').addEventListener('click',function(){RV=null;lastAuto=null;refreshAll();show('sc-recipe')});
 $('rv-save').addEventListener('click',saveReview);
@@ -1301,7 +1460,7 @@ $('theme').addEventListener('click',function(){
   var dark=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches;
   var next=cur?(cur==='dark'?'light':''):(dark?'light':'dark');
   if(next)document.documentElement.setAttribute('data-theme',next); else document.documentElement.removeAttribute('data-theme');
-  S.theme=next; saveS();
+  S.theme=next; saveS(); try{localStorage.setItem('fp.theme.v1',next)}catch(e){}
 });
 $('pack-edit').addEventListener('click',function(){openPackForm('edit')});
 $('pack-new').addEventListener('click',function(){openPackForm('new')});
@@ -1327,6 +1486,8 @@ $('banners').addEventListener('click',function(e){
   if(b.dataset.run==='resume'){var r=readRun();if(r)resumeRun(r);else paintBanners();return}
   if(b.dataset.run==='drop'){twoTap(b,'Tap again to discard','Discard',function(){clearRun();paintBanners()});return}
   if(b.dataset.pend){openReview(b.dataset.pend,'',false);return}
+  if(b.dataset.cup){var cp=b.dataset.cup.split('|'),ce=makeCup(cp[0],cp[1],false);if(ce){refreshAll();openReview(ce.id,'',false)}return}
+  if(b.dataset.cupskip){var cs=b.dataset.cupskip.split('|');twoTap(b,'Tap again to confirm','Didn’t have any',function(){makeCup(cs[0],cs[1],true);refreshAll()});return}
   if(b.dataset.nudge){try{localStorage.setItem('fp.nudge.'+b.dataset.nudge,todayStr())}catch(err){}paintBanners();return}
 });
 ['pratio','ved','ceil','temp','panloss','dspeed','lead'].forEach(function(id){
@@ -1470,7 +1631,7 @@ function whenIdle(key,fn){
 /* ---------- to try: a shopping list of coffees, synced inside the packs document ---------- */
 var SEEDV=1, TRY_SEED=[{"id": "sb-pearl-omni", "g": "now", "n": "Project Pearl, Ratnagiri — Naturals + Anaerobic Honey", "b": "Project Pearl Omni", "r": "Subko", "p": "₹995 · 250 g", "ro": "Medium (Omni)", "notes": "Raw mango, blossom honey, hazelnut", "w": "Online. No Subko café in Delhi; the Bangalore one is in Indiranagar.", "tag": "Start here", "url": "https://www.subko.coffee/products/project-pearl-ratnagiri-estate-karnataka-naturals-anaerobic-honey-omni-roast"}, {"id": "bt-kalledevarapura", "g": "now", "n": "Kalledevarapura, Pulp Sun Dried", "b": "Kalledevarapura", "r": "Blue Tokai", "p": "₹800 · 250 g", "ro": "", "notes": "Brown sugar, roasted almond, raisin — the closest to Selection", "w": "A Blue Tokai café if they have it, ground on the spot. Check the roast date.", "url": "https://bluetokaicoffee.com/collections/roasted-and-ground-coffee-beans"}, {"id": "bt-amaltas", "g": "now", "n": "Amaltas Blend", "b": "Amaltas", "r": "Blue Tokai", "p": "₹700 · 250 g", "ro": "", "notes": "Blueberry, milk chocolate", "w": "Café or online.", "url": "https://bluetokaicoffee.com/collections/roasted-and-ground-coffee-beans"}, {"id": "bt-ms-estate", "g": "now", "n": "M.S. Estate", "b": "M.S. Estate", "r": "Blue Tokai", "p": "₹800 · 250 g", "ro": "Roast not listed", "notes": "Orange marmalade, dried date, Earl Grey — tests whether floral works when fruit leads", "w": "Café or online.", "url": "https://bluetokaicoffee.com/collections/roasted-and-ground-coffee-beans"}, {"id": "gs-raspberry-loop", "g": "now", "n": "Raspberry in Loop", "b": "Raspberry in Loop", "r": "Grey Soul", "p": "", "ro": "Medium · anaerobic", "notes": "Raspberry, pineapple, prune, milk chocolate; heavy body", "w": "Grey Soul’s own shop. It is on Blinkit too, but quick-commerce stock can be weeks old."}, {"id": "gs-jampui", "g": "now", "n": "Jampui, Tripura", "b": "Jampui", "r": "Grey Soul", "p": "", "ro": "Medium-light · natural", "notes": "Brown sugar, honey, pomegranate, apple, melon", "w": "Grey Soul’s own shop."}, {"id": "gs-strawberry-loop", "g": "now", "n": "Strawberry in Loop", "b": "Strawberry in Loop", "r": "Grey Soul", "p": "", "ro": "Medium", "notes": "Strawberry, raspberry, peach", "w": "Grey Soul’s own shop."}, {"id": "nv-peach", "g": "now", "n": "Ratnagiri Culture Naturals — Peach", "b": "Ratnagiri Peach", "r": "Naivo", "p": "", "ro": "Medium", "notes": "Peach candy, muskmelon, starfruit", "w": "Online; Bengaluru roaster."}, {"id": "nv-strawberry", "g": "now", "n": "Ratnagiri Culture Naturals — Strawberry", "b": "Ratnagiri Strawberry", "r": "Naivo", "p": "", "ro": "Medium", "notes": "Strawberry", "w": "Online; Bengaluru roaster."}, {"id": "nv-tropical", "g": "now", "n": "Tropical Splash — Baarbara pineapple ferment", "b": "Tropical Splash", "r": "Naivo", "p": "", "ro": "Medium", "notes": "Pineapple, mosambi", "w": "Online; Bengaluru roaster."}, {"id": "qbf-orchardale", "g": "now", "n": "Orchardale Estate Naturals", "b": "Orchardale", "r": "Quick Brown Fox", "p": "", "ro": "Medium-light", "notes": "Black cherry, plum, black grape", "w": "Delhi roaster — Chhattarpur roastery-café. Call ahead about beans and grinding: +91 99992 66545."}, {"id": "qbf-bison", "g": "now", "n": "Bison Valley Estate Naturals", "b": "Bison Valley", "r": "Quick Brown Fox", "p": "", "ro": "Medium-light", "notes": "Goji berry, prune, peach", "w": "Delhi roaster — buy at the Chhattarpur café."}, {"id": "rc-thermal", "g": "now", "n": "Ratnagiri Thermal Shock (yeast)", "b": "Ratnagiri Thermal Shock", "r": "Roast Coffee", "p": "₹900 · 250 g", "ro": "Medium-light", "notes": "Muskmelon, papaya, blackcurrant", "w": "Online. Found only on a listing site — check the roaster’s shop first.", "url": "https://coffeebeansindia.com/coffee/roastcoffee/ratnagiri-yeast-thermal-shock/"}, {"id": "tf-annanas", "g": "now", "n": "Annanas — pineapple fermented", "b": "Annanas", "r": "Toffee Coffee Roasters", "p": "from ₹960", "ro": "Roast not listed", "notes": "Fermented with pineapple pulp. A fun, flavour-forward novelty rather than a microlot", "w": "Online.", "url": "https://toffeecoffeeroasters.com/collections/all"}, {"id": "sb-pearl-filter", "g": "later", "n": "Project Pearl, Ratnagiri — Culture + Anaerobic Naturals", "b": "Project Pearl Filter", "r": "Subko", "p": "₹1,095 · 250 g", "ro": "Light (filter)", "notes": "Marigold, dragon fruit, peach tea", "w": "Online. Can’t wait? It is the one light roast worth trying now, in the iced recipe.", "tag": "Your Subko cup", "url": "https://subko.coffee/products/project-pearl-ratnagiri-estate-karnataka-sca-86-culture-naturals-anaerobic-naturals-filter-roast"}, {"id": "sb-kerehaklu-cw3", "g": "later", "n": "Kerehaklu Lot CW3 — cultured washed", "b": "Kerehaklu CW3", "r": "Subko", "p": "₹1,095 · 250 g", "ro": "Light (filter)", "notes": "Orange creamsicle, green grape, caramel", "w": "Online.", "url": "https://www.subko.coffee/products/project-yung-gun-kerehaklu-cw3-aerobic-washed-light"}, {"id": "bt-dark-room", "g": "later", "n": "Ratnagiri Dark Room Natural", "b": "Ratnagiri Dark Room", "r": "Blue Tokai", "p": "₹600 · 100 g", "ro": "Light", "notes": "Passionfruit, pineapple, strawberry, black-tea finish", "w": "Online; limited release. Rest 8 days.", "url": "https://bluetokaicoffee.com/collections/roasted-and-ground-coffee-beans/products/ratnagiri-estate-dark-room-natural"}, {"id": "gs-kodaikanal", "g": "later", "n": "Summer in Kodaikanal", "b": "Summer in Kodaikanal", "r": "Grey Soul", "p": "", "ro": "Light · natural", "notes": "Strawberry, mandarin, plum, pineapple, cacao", "w": "Grey Soul’s own shop."}, {"id": "gs-pink-lemonade", "g": "later", "n": "Pink Lemonade, Nagaland", "b": "Pink Lemonade", "r": "Grey Soul", "p": "", "ro": "Ultra-light · anaerobic natural", "notes": "Pineapple, orange, blueberry, apple", "w": "Grey Soul’s own shop. Ultra-light really needs your own grinder."}, {"id": "eth-natural", "g": "later", "n": "A natural Ethiopian, Guji or Sidama", "b": "Ethiopia natural", "r": "Any roaster", "p": "", "ro": "", "notes": "Blueberry, strawberry jam. Pick a natural, not a washed Yirgacheffe, which leans jasmine and bergamot", "w": "Whenever you see one."}, {"id": "nv-jasmine", "g": "later", "n": "Ratnagiri Culture Naturals — Jasmine", "b": "Ratnagiri Jasmine", "r": "Naivo", "p": "", "ro": "Light", "notes": "Jasmine, tuberose — the most floral coffee here; try it last", "w": "Online; Bengaluru roaster."}, {"id": "bt-fruit-punch", "g": "notify", "n": "Riverdale Fruit Punch", "b": "Riverdale Fruit Punch", "r": "Blue Tokai", "p": "₹875 · 200 g", "ro": "Light", "notes": "Peach, strawberry, red grape, tangerine, mango finish", "w": "Rest 18 days.", "url": "https://bluetokaicoffee.com/products/riverdale-estate-fruit-punch"}, {"id": "bt-sicc", "g": "notify", "n": "SICC Mooleh Manay", "b": "SICC Mooleh Manay", "r": "Blue Tokai", "p": "₹850 · 250 g", "ro": "Light", "notes": "Plum, red cherry, winey, juicy", "w": "Rest 11 days.", "url": "https://bluetokaicoffee.com/products/sicc-mooleh-manay-estate"}, {"id": "bt-raxidi-pichia", "g": "notify", "n": "Raxidi Lobo Pichia", "b": "Raxidi Lobo Pichia", "r": "Blue Tokai", "p": "₹1,000 · 250 g", "ro": "", "notes": "Raspberry, plum tart, marigold, red cherry — closest to your Subko cup", "w": "", "url": "https://bluetokaicoffee.com/collections/roasted-and-ground-coffee-beans?page=2"}, {"id": "bt-blossom", "g": "notify", "n": "Kerehaklu Blossom Culture", "b": "Kerehaklu Blossom", "r": "Blue Tokai", "p": "₹1,000 · 250 g", "ro": "", "notes": "Strawberry, orange blossom, pomegranate, sun melon", "w": "", "url": "https://bluetokaicoffee.com/collections/roasted-and-ground-coffee-beans?page=2"}, {"id": "bt-mosto", "g": "notify", "n": "Riverdale Mosto", "b": "Riverdale Mosto", "r": "Blue Tokai", "p": "₹1,000 · 250 g", "ro": "", "notes": "Pink pomelo, chamomile, tart cherry — try late", "w": "", "url": "https://bluetokaicoffee.com/collections/roasted-and-ground-coffee-beans?page=2"}, {"id": "bt-terroir", "g": "notify", "n": "Ratnagiri Terroir Culture", "b": "Ratnagiri Terroir Culture", "r": "Blue Tokai", "p": "₹1,000 · 250 g", "ro": "", "notes": "Rose, lychee, custard apple, forest honey — the most perfumed, try last", "w": "", "url": "https://bluetokaicoffee.com/collections/roasted-and-ground-coffee-beans?page=3"}, {"id": "c7-gungegiri", "g": "notify", "n": "Gungegiri Estate", "b": "Gungegiri", "r": "Corridor Seven", "p": "₹800", "ro": "Light (filter)", "notes": "Gooseberry, peach, white tea", "w": "Nagpur roaster; everything was sold out when checked.", "url": "https://corridorseven.coffee"}, {"id": "c7-salawara", "g": "notify", "n": "Salawara Mosto Honey, sun dried", "b": "Salawara Mosto Honey", "r": "Corridor Seven", "p": "₹940", "ro": "Light (filter)", "notes": "Muscat grape, soft pear", "w": "Nagpur roaster.", "url": "https://corridorseven.coffee"}];
 var TRYG=[['now','Try now','Medium roasts that hold up pre-ground. In a shop, have it ground the day you buy it.'],
-  ['later','After the K7','Light roasts. Rest the whole beans as the roaster says, then grind for each brew.'],
+  ['later','After the grinder','Light roasts. Rest the whole beans as the roaster says, then grind for each brew.'],
   ['notify','Sold out \u2014 notify me','Out of stock when added. Turn on notify me on the shop page.']];
 var TRYGRP='now';
 var CHECK='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -1479,6 +1640,8 @@ function tryById(id){var r=null;tries().forEach(function(t){if(t.id===id)r=t});r
 function isSeedTry(id){return TRY_SEED.some(function(x){return x.id===id})}
 function seedTries(){
   if((PK.trySeed||0)>=SEEDV)return;
+  /* the built-in list was picked for the first person; everyone else starts with an empty list of their own */
+  if(WHO.dir){PK.trySeed=SEEDV;tries();PK.rev=Date.now();savePK();pushPacks();return}
   var have={},gone={}; tries().forEach(function(t){have[t.id]=1}); (PK.tryGone||[]).forEach(function(id){gone[id]=1});
   TRY_SEED.forEach(function(x){if(!have[x.id]&&!gone[x.id]){var o=JSON.parse(JSON.stringify(x));o.st='todo';o.added=todayStr();PK.tries.push(o)}});
   PK.trySeed=SEEDV; PK.rev=Date.now(); savePK(); pushPacks(); paintTryIfOpen();
@@ -1581,7 +1744,7 @@ function pushPacks(){
   SY.pdoc.set(body).then(function(){SY.pbusy=false;if(SY.pagain||(PK.rev||0)!==(body.rev||0))pushPacks()},function(){SY.pbusy=false;SY.pagain=false});
 }
 /* set when this phone connects to a repository for the first time: that repository's packs, places and To try list are the ones to keep */
-var JOINK='fp.gh.join.v1';
+var JOINK='fp.gh.join.v1'+WHO.suffix;
 function joining(){try{return !!localStorage.getItem(JOINK)}catch(e){return false}}
 function joined(){try{localStorage.removeItem(JOINK)}catch(e){}}
 function clonePK(d){var o=JSON.parse(JSON.stringify(d||{}));if(!o.packs)o.packs=[];return o}
@@ -1622,7 +1785,11 @@ function onPacks(snap){
   SY.packsReady=true; joined();
   ensureProfiles(); seedTries();
   if(PK.packs.length)pushPacks();
-  else if(SY.ready)tryMigrate(); else SY.needMigrate=true;
+  else{
+    /* nothing in the repository yet: share this phone's places and list (a save cut short by switching person is resent here) */
+    if((PK.profiles||[]).length||(PK.tries||[]).length||(PK.extras||[]).length)pushPacks();
+    if(SY.ready)tryMigrate(); else SY.needMigrate=true;
+  }
 }
 function goLocal(){SY.state='local';SY.local=true;paintSync();tryMigrate();ensureProfiles();seedTries()}
 function cleanForDb(e){var o=JSON.parse(JSON.stringify(e));delete o.synced;return o}
@@ -1721,13 +1888,17 @@ function syncResume(){
       subscribe();
       SY.pdoc=db.doc('data/users/'+uid+'/coffee');
       SY.pdoc.onSnapshot(onPacks,function(){});
+      subOthers();
     });
   }).catch(goLocal);
 })();
 /* a small window into the app for the Settings screen */
+paintWho();
 window.__brewApp={
   show:show,
+  switchTo:switchTo,
+  busy:function(){return steps.length>0},
   syncState:function(){return SY.state},
-  exportAll:function(){return {app:'brew',version:1,exportedAt:new Date().toISOString(),brews:LOG.map(cleanForDb),dryRuns:TLOG,packs:PK,settings:S}}
+  exportAll:function(){return {app:'brew',version:1,person:WHO.name||undefined,exportedAt:new Date().toISOString(),brews:LOG.map(cleanForDb),dryRuns:TLOG,packs:PK,settings:S}}
 };
 })();

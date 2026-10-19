@@ -12,6 +12,10 @@ Roughly in the order they would help.
   would replace typing grams.
 - **Home screen shortcuts.** Long-press the icon for *Start a brew* and *Score last brew* (manifest shortcuts).
 
+## Done
+
+- People: separate packs, places, To try lists and logs; shared carafes scored by each person (Oct 2026).
+
 ## Brewing
 
 - More methods with their own timers: Hario Switch, V60, AeroPress, moka pot.
@@ -27,6 +31,7 @@ Roughly in the order they would help.
 
 ## Insight
 
+- Shared carafes: both scores side by side, and where your tastes differ.
 - Score against ratio, water temperature, contact time and days off roast, per bean.
 - "What changed" between your best and worst cup of the same bean.
 - Weekly caffeine and timing summary against the sleep target.
