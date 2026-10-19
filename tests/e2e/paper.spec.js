@@ -13,11 +13,11 @@ test('paper filter: numbers, steps, the log tag and the score comparison', async
   await page.click('#f-paper');
   await expect(page.locator('#f-paper')).toHaveAttribute('aria-pressed', 'true');
   await expect(row(page, 'Paper rinse')).toHaveText('100 g plain RO');
-  await expect(page.locator('#numbers')).toContainText('Pour through the paper');
-  await expect(page.locator('#numbers')).toContainText('Kept by the paper');
+  await expect(page.locator('#numbers')).toContainText('Left in decanter and paper');
+  await expect(page.locator('#numbers')).not.toContainText('Jug total');
   await expect(page.locator('#numbers')).not.toContainText('Left in jug');
   const boilPaper = await grams(row(page, 'Boil').first());
-  expect(boilPaper).toBeLessThanOrEqual(boilMesh);   /* the rinse is separate plain RO, and there is no jug leftover to brew for */
+  expect(Math.abs(boilPaper - boilMesh)).toBeLessThanOrEqual(15);   /* the rinse is separate plain RO, not part of the boil */
   await expect(page.locator('#blurb')).toContainText('Paper filter');
 
   /* remembered per recipe */
@@ -36,7 +36,7 @@ test('paper filter: numbers, steps, the log tag and the score comparison', async
     await page.click('#next');
   }
   expect(titles).toEqual(['Dose the carafe', 'Weigh the water', 'Boil and pour', 'Steep', 'Break the crust', 'Settle', 'Plunge',
-    'Pour through the paper', 'Let it drain', 'Swirl and pour']);
+    'Decant', 'Pour through the paper', 'Let it drain']);
 
   await page.click('#rv-score [data-v="4"]');
   await page.click('#rv-save');
@@ -44,7 +44,7 @@ test('paper filter: numbers, steps, the log tag and the score comparison', async
   await expect(page.locator('#log-stats')).toContainText('Through paper 4.0 over 1');
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('fp.log.v1'))[0]);
   expect(saved.params.paper).toBe(true);
-  expect(saved.steps.map(s => s.k)).toContain('drain');
+  expect(saved.steps.map(s => s.k)).toEqual(expect.arrayContaining(['decant', 'filter', 'drain']));
 });
 
 test('mesh-only brews keep the decanter settle', async ({ page }) => {
