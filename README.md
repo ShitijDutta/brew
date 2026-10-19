@@ -32,7 +32,7 @@ Without a connection the app still works and keeps everything on the phone.
 
 Each recipe has a **Mesh only / Paper filter** switch on the recipe screen. With paper, 100 g of plain RO is heated in the
 emptied decanter during the steep and rinses the paper during the settle (no Vedica: it never reaches the cup). The press
-is tipped once, into the decanter, and the coffee then goes from the decanter through a size 02 paper in the funnel into
+is tipped once, into the decanter, and the coffee then goes from the decanter through a size 02 paper in the dripper into
 the glass, with a timed drain. No jug settle. Brews are tagged, and the Log shows average scores through paper against mesh only.
 
 ## People
