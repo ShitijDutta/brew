@@ -359,7 +359,7 @@ var RECIPES={
    hint:'A thick concentrate stirred into condensed milk. Hot is the drink as it is; iced pours it over a glass of ice. Pick which below.'}
 };
 /* grams of brew a rinsed paper and the sludge on it keep back, and the plain RO heated separately to rinse the paper */
-var PAPER_LOSS=8, PAPER_RINSE=100;
+var PAPER_LOSS=20, PAPER_RINSE=100;
 function rkey(){return S.recipe==='viet'?(S.vmode==='hot'?'vietHot':'vietIced'):S.recipe}
 function rs(){var k=rkey(),d=DEF[k];if(!S.r)S.r={};if(!S.r[k])S.r[k]={tgt:d.tgt,ratio:d.ratio};return S.r[k]}
 
@@ -483,8 +483,8 @@ function buildSteps(){
   /* paper filter: rinse during the wait, pour through the paper, let it drain */
   function rinse(onto){return P?'<br><b>Meanwhile, the paper:</b> open one into the funnel with the side seam folded flat and the perforated disc taken out. Pour the hot RO from the decanter through it into the sink, slip a skewer between the paper and the steel so air can get past, then set the funnel on '+onto+'.':''}
   var heat=P?'<br><b>Meanwhile:</b> <b>'+o.rinse+' g</b> of plain RO into the empty decanter and bring it to the boil. That is the paper rinse \u2014 no Vedica needed, it never reaches the cup, and it leaves the decanter hot for the coffee.':'';
-  function through(into,grams,after){return {k:'decant',t:'Pour through the paper',d:'Pour slowly against the side of the paper, into '+into+', in two goes, keeping the level a centimetre below the paper\u2019s edge \u2014 anything that spills over skips the filter. Stop at <b>'+grams+' g</b> (scale under '+into+', tared with the funnel on) and leave the sludge in the press.'+(after||'')}}
-  var drain={k:'drain',t:'Let it drain',d:'Hands off: no stirring, no squeezing or tapping the paper. Lift the funnel away once it is down to slow drips. If it crawls, less sludge went into the press pour next time.',s:150};
+  function through(into,grams,after){return {k:'decant',t:'Pour through the paper',d:'Pour slowly against the side of the paper, into '+into+', in three pours of about 100 g onto the part of the paper resting on the steel, keeping the level a centimetre below its edge \u2014 anything that spills over skips the filter. Stop at <b>'+grams+' g</b> (scale under '+into+', tared with the funnel on) and leave the sludge in the press.'+(after||'')}}
+  var drain={k:'drain',t:'Let it drain',d:'Hands off: no stirring, no squeezing or tapping the paper. Lift the funnel away once it is down to slow drips \u2014 the last few grams are not worth the heat. If it crawls, stop the press pour earlier next time or settle longer: the fines are what clog the paper.',s:240};
   var skim=P?' With paper, skim the foam and anything floating \u2014 that is what clogs a filter first.':'';
   var common={
     prep:{k:'prep',t:'Dose the carafe',d:'Screen clean and unwarped. <b>'+o.D+' g</b> of coffee into the room-temperature carafe, shaken level.'},
