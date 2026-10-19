@@ -15,6 +15,8 @@ Roughly in the order they would help.
 ## Done
 
 - People: separate packs, places, To try lists and logs; shared carafes scored by each person (Oct 2026).
+- Paper filter option per recipe: rinse during the settle, pour through the paper, drain, no jug settle; brews tagged and
+  compared against mesh only (Oct 2026).
 
 ## Brewing
 

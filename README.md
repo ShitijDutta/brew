@@ -28,6 +28,12 @@ The app syncs through a GitHub token that only works for `brew-data` and is stor
 Each saved brew becomes a commit in `brew-data`, so there is full history and nothing is ever silently overwritten.
 Without a connection the app still works and keeps everything on the phone.
 
+## Paper filter
+
+Each recipe has a **Mesh only / Paper filter** switch on the recipe screen. With paper, the boil includes 150 g extra to
+rinse the paper during the settle, the press pour goes through a size 02 paper in the funnel, there's a timed drain, and
+the jug settle is gone. Brews are tagged, and the Log shows average scores through paper against mesh only.
+
 ## People
 
 Each person who brews gets their own packs, places, To try list, log and caffeine count, all in the same data repository.
