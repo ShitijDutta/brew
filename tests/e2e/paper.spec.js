@@ -12,12 +12,12 @@ test('paper filter: numbers, steps, the log tag and the score comparison', async
 
   await page.click('#f-paper');
   await expect(page.locator('#f-paper')).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('#numbers')).toContainText('of which paper rinse');
+  await expect(row(page, 'Paper rinse')).toHaveText('100 g plain RO');
   await expect(page.locator('#numbers')).toContainText('Pour through the paper');
   await expect(page.locator('#numbers')).toContainText('Kept by the paper');
   await expect(page.locator('#numbers')).not.toContainText('Left in jug');
   const boilPaper = await grams(row(page, 'Boil').first());
-  expect(boilPaper - boilMesh).toBeGreaterThanOrEqual(150 - 40);   /* rinse water added; no jug leftover to brew for */
+  expect(boilPaper).toBeLessThanOrEqual(boilMesh);   /* the rinse is separate plain RO, and there is no jug leftover to brew for */
   await expect(page.locator('#blurb')).toContainText('Paper filter');
 
   /* remembered per recipe */
@@ -31,6 +31,7 @@ test('paper filter: numbers, steps, the log tag and the score comparison', async
   const titles = [];
   for (let i = 0; i < 25 && !(await page.isVisible('#sc-review')); i++) {
     titles.push(await page.innerText('#stage'));
+    if (titles[titles.length - 1] === 'Steep') await expect(page.locator('#detail')).toContainText('100 g of plain RO');
     if (titles[titles.length - 1] === 'Settle') await expect(page.locator('#detail')).toContainText('Meanwhile, the paper');
     await page.click('#next');
   }

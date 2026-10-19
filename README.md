@@ -30,9 +30,9 @@ Without a connection the app still works and keeps everything on the phone.
 
 ## Paper filter
 
-Each recipe has a **Mesh only / Paper filter** switch on the recipe screen. With paper, the boil includes 150 g extra to
-rinse the paper during the settle, the press pour goes through a size 02 paper in the funnel, there's a timed drain, and
-the jug settle is gone. Brews are tagged, and the Log shows average scores through paper against mesh only.
+Each recipe has a **Mesh only / Paper filter** switch on the recipe screen. With paper, 100 g of plain RO is heated in the
+emptied decanter during the steep and rinses the paper during the settle (no Vedica: it never reaches the cup), the press
+pour goes through a size 02 paper in the funnel, there's a timed drain, and the jug settle is gone. Brews are tagged, and the Log shows average scores through paper against mesh only.
 
 ## People
 

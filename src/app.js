@@ -358,8 +358,8 @@ var RECIPES={
  viet:{name:'Vietnamese',label:'Finished drink',unit:'grams in the glass',modes:false,
    hint:'A thick concentrate stirred into condensed milk. Hot is the drink as it is; iced pours it over a glass of ice. Pick which below.'}
 };
-/* grams of brew a rinsed paper and the sludge on it keep back, and the extra boiled water used to rinse the paper */
-var PAPER_LOSS=8, PAPER_RINSE=150;
+/* grams of brew a rinsed paper and the sludge on it keep back, and the plain RO heated separately to rinse the paper */
+var PAPER_LOSS=8, PAPER_RINSE=100;
 function rkey(){return S.recipe==='viet'?(S.vmode==='hot'?'vietHot':'vietIced'):S.recipe}
 function rs(){var k=rkey(),d=DEF[k];if(!S.r)S.r={};if(!S.r[k])S.r[k]={tgt:d.tgt,ratio:d.ratio};return S.r[k]}
 
@@ -367,7 +367,7 @@ function compute(){
   var st=rs(), T=st.tgt>0?st.tgt:DEF[rkey()].tgt, R=st.ratio>0?st.ratio:DEF[rkey()].ratio;
   var RP=S.pratio>0?S.pratio:14.6, vp=isNaN(S.ved)?20:S.ved, pl=isNaN(S.panloss)?30:S.panloss;
   var o={T:T,R:R,temp:Math.round(S.temp)||94,recipe:S.recipe};
-  /* paper filter: the brew goes through a rinsed paper; the paper keeps a few grams, and the boil carries extra water to rinse it */
+  /* paper filter: the brew goes through a rinsed paper and the paper keeps a few grams; the rinse is plain RO heated on its own, so it never dilutes the brew water's Vedica */
   var L=st.paper?PAPER_LOSS:0; o.paper=!!st.paper; o.loss=L; o.rinse=st.paper?PAPER_RINSE:0;
 
   if(S.recipe==='black'){
@@ -405,7 +405,7 @@ function compute(){
     o.decant=o.conc+L; o.bypass=0; o.j=0; o.Y=o.conc;
     o.extra=0;
   }
-  o.boil=o.press+Math.max(o.bypass,0)+pl+o.rinse;
+  o.boil=o.press+Math.max(o.bypass,0)+pl;
   o.ved=Math.round(o.boil*vp/100);
   o.ro=o.boil-o.ved;
   o.iceVed=o.ice?Math.round(o.ice*vp/100):0;
@@ -424,8 +424,8 @@ function render(){
   $('modeseg').classList.toggle('hide',!R.modes);
   var lc=curLoc(); if(lc)rows.push(['Location',esc(lc.name),'']);
   rows.push(['Boil',o.boil+' g','lead']);
-  if(o.paper)rows.push(['\u2003 of which paper rinse',o.rinse+' g','']);
   rows.push(['Vedica / RO',o.ved+' / '+o.ro+' g','']);
+  if(o.paper)rows.push(['Paper rinse',o.rinse+' g plain RO','']);
   rows.push(['Coffee',o.D+' g','lead']);
   rows.push(['Water into press',o.press+' g','']);
   rows.push([o.paper?'Pour through the paper':(S.recipe==='hoff'?'Pour into the cup':(S.recipe==='viet'?'Concentrate to decant':'Decant to')),Math.round(o.decant)+' g',S.recipe==='hoff'?'lead':'']);
@@ -481,15 +481,16 @@ function render(){
 function buildSteps(){
   var o=compute(), s=[], P=o.paper;
   /* paper filter: rinse during the wait, pour through the paper, let it drain */
-  function rinse(onto){return P?'<br><b>Meanwhile, the paper:</b> open one into the funnel with the side seam folded flat and the perforated disc taken out. Pour the hot water left in the decanter through it into the sink, slip a skewer between the paper and the steel so air can get past, then set the funnel on '+onto+'.':''}
+  function rinse(onto){return P?'<br><b>Meanwhile, the paper:</b> open one into the funnel with the side seam folded flat and the perforated disc taken out. Pour the hot RO from the decanter through it into the sink, slip a skewer between the paper and the steel so air can get past, then set the funnel on '+onto+'.':''}
+  var heat=P?'<br><b>Meanwhile:</b> <b>'+o.rinse+' g</b> of plain RO into the empty decanter and bring it to the boil. That is the paper rinse \u2014 no Vedica needed, it never reaches the cup, and it leaves the decanter hot for the coffee.':'';
   function through(into,grams,after){return {k:'decant',t:'Pour through the paper',d:'Pour slowly against the side of the paper, into '+into+', in two goes, keeping the level a centimetre below the paper\u2019s edge \u2014 anything that spills over skips the filter. Stop at <b>'+grams+' g</b> (scale under '+into+', tared with the funnel on) and leave the sludge in the press.'+(after||'')}}
   var drain={k:'drain',t:'Let it drain',d:'Hands off: no stirring, no squeezing or tapping the paper. Lift the funnel away once it is down to slow drips. If it crawls, less sludge went into the press pour next time.',s:150};
   var skim=P?' With paper, skim the foam and anything floating \u2014 that is what clogs a filter first.':'';
   var common={
     prep:{k:'prep',t:'Dose the carafe',d:'Screen clean and unwarped. <b>'+o.D+' g</b> of coffee into the room-temperature carafe, shaken level.'},
-    dose:{k:'dose',t:'Weigh the water',d:'<b>'+o.ved+' g</b> Vedica with <b>'+o.ro+' g</b> RO \u2014 <b>'+o.boil+' g</b> total'+(P?', '+o.rinse+' g of it for rinsing the paper':'')+' \u2014 weighed straight into the decanter. Carafe on the scale, tared and ready.'},
-    pour:{k:'pour',t:'Boil and pour',d:'Straight off the boil, about <b>'+o.temp+'\u00B0C</b> by the time it reaches the coffee. Pour it all in fast, in one go, and stop at <b>'+o.press+' g</b>. Then two or three gentle swirls, and check through the glass for dry patches on the bottom or a dry raft on top. '+(P?'Leave the rest in the decanter: it keeps it hot and rinses the paper later.':(S.recipe==='iced'?'Leftover water goes down the sink, not near the ice or the glass.':'Tip the last few grams into your glass so the decanter goes back empty.'))+' No spoon.',s:30},
-    steep:{k:'steep',t:'Steep',d:'Lid on, plunger all the way up. Do not touch anything.',s:240},
+    dose:{k:'dose',t:'Weigh the water',d:'<b>'+o.ved+' g</b> Vedica with <b>'+o.ro+' g</b> RO \u2014 <b>'+o.boil+' g</b> total \u2014 weighed straight into the decanter. Carafe on the scale, tared and ready.'},
+    pour:{k:'pour',t:'Boil and pour',d:'Straight off the boil, about <b>'+o.temp+'\u00B0C</b> by the time it reaches the coffee. Pour it all in fast, in one go, and stop at <b>'+o.press+' g</b>. Then two or three gentle swirls, and check through the glass for dry patches on the bottom or a dry raft on top. '+(S.recipe==='iced'?'Leftover water goes down the sink, not near the ice or the glass.':'Tip the last few grams into your glass so the decanter goes back empty.')+' No spoon.',s:30},
+    steep:{k:'steep',t:'Steep',d:'Lid on, plunger all the way up. Do not touch anything.'+heat,s:240},
     plunge:{k:'plunge',t:'Plunge',d:'Slowly, until the screen just touches the liquid. Stop there. Aim to be done by the beep \u2014 this counts as contact time.',s:15}
   };
   function heat(){return null}
@@ -514,7 +515,7 @@ function buildSteps(){
   }
   else if(S.recipe==='hoff'){
     s.push(common.prep); s.push(common.dose);
-    s.push({k:'pour',t:'Boil and pour',d:'Straight off the boil, about <b>'+o.temp+'\u00B0C</b>. Pour all <b>'+o.press+' g</b> in about ten seconds, as fast as you can control \u2014 the force of the stream does the wetting. No swirl, no spoon. '+(P?'Leave the rest in the decanter for rinsing the paper.':'Tip the last few grams into your cup.'),s:10});
+    s.push({k:'pour',t:'Boil and pour',d:'Straight off the boil, about <b>'+o.temp+'\u00B0C</b>. Pour all <b>'+o.press+' g</b> in about ten seconds, as fast as you can control \u2014 the force of the stream does the wetting. No swirl, no spoon. Tip the last few grams into your cup.',s:10});
     s.push(common.steep);
     s.push({k:'crust',t:'Break the crust',d:'Stir just the top layer gently with a spoon and most of the grounds sink. Then scoop off the foam and anything still floating, two spoons works well. Keep the stir to the surface \u2014 a deeper stir here is what gave you astringency before.',s:45});
     s.push({k:'settle',t:'Settle',d:'Lid on, plunger up, leave it. Hoffmann waits 5 to 8 minutes \u2014 longer is cleaner. Let the timer run, and tap Next whenever you are ready.'+rinse('your cup'),s:300});
@@ -525,7 +526,7 @@ function buildSteps(){
   else if(S.recipe==='iced'){
     s.push({k:'ice',t:'Weigh the ice first',d:'<b>'+o.ice+' g</b> of ice into a heatproof jug, ready before the coffee is. This is the dilution ice, half your finished drink, so it is part of the recipe. Freeze it from the same blend \u2014 <b>'+o.iceVed+' g</b> Vedica with <b>'+o.iceRo+' g</b> RO \u2014 in a covered container, and use it within a few days: open ice picks up freezer smell. Put your serving glass in the fridge now.'});
     s.push(common.prep); s.push(common.dose); s.push(common.pour);
-    s.push({k:'steep',t:'Steep',d:'Lid on, plunger all the way up. Do not touch anything.'+rinse('the jug of ice'),s:240});
+    s.push({k:'steep',t:'Steep',d:'Lid on, plunger all the way up. Do not touch anything.'+heat+rinse('the jug of ice'),s:240});
     s.push({k:'crust',t:'Break the crust',d:'Press the bed down and skim the foam. Run the spoon along the walls to knock stuck grounds back in. No stirring. Move faster than you would for black \u2014 the press ratio here is tight and there is no settling wait to absorb an overrun.',s:40});
     s.push({k:'plunge',t:'Plunge',d:'Slowly, down to just above the grounds, and done by the beep \u2014 this counts as contact time. Stop the moment you feel resistance: pressing into the bed squeezes fines and bitterness through the screen.',s:20});
     if(P){s.push(through('the jug of ice',Math.round(o.decant),' It drips onto the ice as it filters, which is exactly how Japanese iced pour-over works.'));s.push(drain)}
