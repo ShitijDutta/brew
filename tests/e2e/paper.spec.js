@@ -68,7 +68,7 @@ test('paper straight from the press: its own steps, for Black and Iced', async (
   await page.click('#start');
   const titles = [];
   for (let i = 0; i < 25 && !(await page.isVisible('#sc-review')); i++) { titles.push(await page.innerText('#stage')); await page.click('#next'); }
-  expect(titles.slice(-3)).toEqual(['Plunge', 'Pour through the paper', 'Let it drain']);
+  expect(titles.slice(-4)).toEqual(['Plunge', 'Pour through the paper', 'Let it drain', 'Swirl and pour']);
   await page.click('#rv-score [data-v="4"]');
   await page.click('#rv-save');
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('fp.log.v1'))[0]);

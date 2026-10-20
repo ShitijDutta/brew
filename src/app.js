@@ -510,14 +510,14 @@ function buildSteps(){
   if(S.recipe==='black'){
     s.push(common.prep); s.push(common.dose); s.push(common.pour); s.push(common.steep);
     s.push({k:'crust',t:'Break the crust',d:'Flat of the spoon, press the floating bed down about a centimetre. Three or four presses, then run the spoon along the walls to knock any stuck grounds back in. No stirring. '+(P?skim.slice(1):'Skim only if there is real foam.')+' Lid back on, plunger up.',s:55});
-    s.push({k:'settle',t:'Settle',d:'Plunger stays up. This is what drops the fines out.'+rinse('your glass',true),s:300});
+    s.push({k:'settle',t:'Settle',d:'Plunger stays up. This is what drops the fines out.'+(FP?rinse('the decanter',false):rinse('your glass',true)),s:300});
     s.push({k:'plunge',t:'Plunge',d:'Slowly, down to a couple of centimetres above the settled bed \u2014 never into it. The screen then holds the bed still when you tilt to decant. Aim to be done by the beep; this counts as contact time.',s:30});
     var byp={k:'byp',t:'Add hot water',d:'<b>'+Math.round(o.bypass)+' g</b> of the leftover hot water into the jug. Target <b>'+o.Y+' g</b> total.'};
     if(FP){
-      /* the dripper sits on the glass: everything ends up in one place, so there is nothing to swirl or pour on */
-      s.push(pressThrough('your glass',Math.round(o.decant),' About <b>'+Math.round(o.T)+' g</b> should end up in the glass.'));
+      s.push(pressThrough('the decanter',Math.round(o.decant)));
       s.push(drain);
       if(S.mode==='bypass')s.push(byp);
+      s.push({k:'off',t:'Swirl and pour',d:'Lid on and a gentle swirl to even out the strength, then pour all of it into the glass \u2014 about <b>'+Math.round(o.T)+' g</b>. Nothing to settle and nothing to leave behind.'});
     }else if(P){
       s.push(oneDecant(Math.round(o.decant),' It mixes evenly as it pours, so there is no need to swirl.'));
       if(S.mode==='bypass')s.push(byp);
