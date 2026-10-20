@@ -10,6 +10,8 @@
   `people/<id>/` and local keys ending `@<id>`. The app runs as one person at a time (`window.__who`); switching reloads.
   Other people's brews are read-only (`window.__others`). A shared carafe is the brewer's brew with `with: [ids]`, plus a
   "cup" in each drinker's own folder (`ref: {who, id}`, same id as the brew; `skipped: true` when they had none).
+- Brew steps (`buildSteps`): `d` is one line of what to do with the numbers; reasons and tips go in `more` (folded);
+  prep goes in `w` on the step whose timer it runs under, with `at` = seconds left when it is due. Shitij asked for no long text mid-brew.
 - Before deploying: `npm test && npm run test:e2e`. If port 4173 is busy, stop the old `vite preview` first.
 - Deploy with `npm run deploy` (pushes `dist/` to `gh-pages`; GitHub Pages serves it at https://shitijdutta.github.io/brew/).
   Installed copies pick up the new version the next time they open.

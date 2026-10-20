@@ -31,8 +31,8 @@ test('paper filter: numbers, steps, the log tag and the score comparison', async
   const titles = [];
   for (let i = 0; i < 25 && !(await page.isVisible('#sc-review')); i++) {
     titles.push(await page.innerText('#stage'));
-    if (titles[titles.length - 1] === 'Steep') await expect(page.locator('#detail')).toContainText('100 g of plain RO');
-    if (titles[titles.length - 1] === 'Settle') await expect(page.locator('#detail')).toContainText('Meanwhile, the paper');
+    if (titles[titles.length - 1] === 'Steep') await expect(page.locator('#wait')).toContainText('100 g plain RO');
+    if (titles[titles.length - 1] === 'Settle') await expect(page.locator('#wait')).toContainText('Rinse it with the hot RO');
     await page.click('#next');
   }
   expect(titles).toEqual(['Dose the carafe', 'Weigh the water', 'Boil and pour', 'Steep', 'Break the crust', 'Settle', 'Plunge',

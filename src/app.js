@@ -411,9 +411,50 @@ function compute(){
   o.ro=o.boil-o.ved;
   o.iceVed=o.ice?Math.round(o.ice*vp/100):0;
   o.iceRo=o.ice?o.ice-o.iceVed:0;
+  /* the dilution ice: frozen from the brew water blend, or whatever ice there was (logged, so a bad cup can be traced to it) */
+  o.iceKind=o.ice?(st.ice==='other'?'other':'blend'):null;
+  o.mode=S.mode;
   return o;
 }
 
+/* the numbers card: the recipe screen shows the plan, the brew panel the same rows for the run in progress */
+function numRows(o,mode,loc){
+  var rows=[], rk=o.recipe;
+  if(loc)rows.push(['Location',esc(loc),'']);
+  rows.push(['Boil',o.boil+' g','lead']);
+  rows.push(['Vedica / RO',o.ved+' / '+o.ro+' g','']);
+  if(o.paper)rows.push(['Paper rinse',o.rinse+' g plain RO','']);
+  rows.push(['Coffee',o.D+' g','lead']);
+  rows.push(['Water into press',o.press+' g','']);
+  rows.push([o.paper?'Decant to':(rk==='hoff'?'Pour into the cup':(rk==='viet'?'Concentrate to decant':'Decant to')),Math.round(o.decant)+' g',rk==='hoff'?'lead':'']);
+  if(rk==='black'){
+    if(mode==='bypass')rows.push(['Add hot water',Math.round(o.bypass)+' g','accent']);
+    if(!o.paper)rows.push(['Jug total',o.Y+' g','']);
+    rows.push([o.paper?'Into the glass':'Pour off',Math.round(o.T)+' g','lead']);
+    if(o.paper)rows.push(['Left in decanter and paper','\u2248 '+o.loss+' g','']);
+    else rows.push(['Left in jug',o.j+' g','']);
+  } else if(rk==='iced'){
+    rows.push(['Ice to brew onto',o.ice+' g','accent']);
+    rows.push(o.iceKind==='other'?['\u2003 which ice','Other ice','']:['\u2003 frozen from',o.iceVed+' / '+o.iceRo+' g Vedica / RO','']);
+    rows.push(['Finished drink',o.T+' g','lead']);
+    rows.push(['Ice in the glass','0\u201340 g','']);
+  } else if(rk==='hoff'){
+    rows.push(['Largest cup your press fits',o.maxCup+' g','']);
+  } else if(rk==='aulait'){
+    rows.push(['Milk at 65\u201370\u00B0C',o.milk+' g','accent']);
+    rows.push(['Finished drink',o.T+' g','lead']);
+  } else {
+    rows.push(['Condensed milk',o.cm+' g','accent']);
+    if(o.ice){rows.push(['Ice in the glass',o.ice+' g','accent']);rows.push(o.iceKind==='other'?['\u2003 which ice','Other ice','']:['\u2003 frozen from',o.iceVed+' / '+o.iceRo+' g Vedica / RO',''])}
+    rows.push(['Finished drink',o.T+' g','lead']);
+  }
+  return rows;
+}
+function rowsHTML(rows){
+  return rows.map(function(r){
+    return '<div class="row '+r[2]+'"><span class="k">'+r[0]+'</span><span class="v">'+r[1]+'</span></div>';
+  }).join('');
+}
 function render(){
   var o=compute(), rows=[], R=RECIPES[S.recipe];
   document.body.setAttribute('data-r',S.recipe);
@@ -423,37 +464,8 @@ function render(){
   $('v-hot').setAttribute('aria-pressed',String(S.vmode==='hot')); $('v-iced').setAttribute('aria-pressed',String(S.vmode!=='hot'));
   $('rhint').textContent=R.hint;
   $('modeseg').classList.toggle('hide',!R.modes);
-  var lc=curLoc(); if(lc)rows.push(['Location',esc(lc.name),'']);
-  rows.push(['Boil',o.boil+' g','lead']);
-  rows.push(['Vedica / RO',o.ved+' / '+o.ro+' g','']);
-  if(o.paper)rows.push(['Paper rinse',o.rinse+' g plain RO','']);
-  rows.push(['Coffee',o.D+' g','lead']);
-  rows.push(['Water into press',o.press+' g','']);
-  rows.push([o.paper?'Decant to':(S.recipe==='hoff'?'Pour into the cup':(S.recipe==='viet'?'Concentrate to decant':'Decant to')),Math.round(o.decant)+' g',S.recipe==='hoff'?'lead':'']);
-  if(S.recipe==='black'){
-    if(S.mode==='bypass')rows.push(['Add hot water',Math.round(o.bypass)+' g','accent']);
-    if(!o.paper)rows.push(['Jug total',o.Y+' g','']);
-    rows.push([o.paper?'Into the glass':'Pour off',Math.round(o.T)+' g','lead']);
-    if(o.paper)rows.push(['Left in decanter and paper','\u2248 '+o.loss+' g','']);
-    else rows.push(['Left in jug',o.j+' g','']);
-  } else if(S.recipe==='iced'){
-    rows.push(['Ice to brew onto',o.ice+' g','accent']);
-    rows.push(['\u2003 frozen from',o.iceVed+' / '+o.iceRo+' g Vedica / RO','']);
-    rows.push(['Finished drink',o.T+' g','lead']);
-    rows.push(['Ice in the glass','0\u201340 g','']);
-  } else if(S.recipe==='hoff'){
-    rows.push(['Largest cup your press fits',o.maxCup+' g','']);
-  } else if(S.recipe==='aulait'){
-    rows.push(['Milk at 65\u201370\u00B0C',o.milk+' g','accent']);
-    rows.push(['Finished drink',o.T+' g','lead']);
-  } else {
-    rows.push(['Condensed milk',o.cm+' g','accent']);
-    if(o.ice){rows.push(['Ice in the glass',o.ice+' g','accent']);rows.push(['\u2003 frozen from',o.iceVed+' / '+o.iceRo+' g Vedica / RO',''])}
-    rows.push(['Finished drink',o.T+' g','lead']);
-  }
-  $('numbers').innerHTML=rows.map(function(r){
-    return '<div class="row '+r[2]+'"><span class="k">'+r[0]+'</span><span class="v">'+r[1]+'</span></div>';
-  }).join('');
+  var lc=curLoc(); rows=numRows(o,S.mode,lc?lc.name:null);
+  $('numbers').innerHTML=rowsHTML(rows);
   if(S.recipe==='black'){
     $('blurb').textContent=S.mode==='direct'
       ?'All the water goes through the coffee. Simplest, and what the 200 g cup was dialled in on.'
@@ -470,6 +482,8 @@ function render(){
   $('f-mesh').setAttribute('aria-pressed',String(!o.paper)); $('f-paper').setAttribute('aria-pressed',String(o.paper));
   $('pwseg').classList.toggle('hide',!o.paper);
   $('pw-press').setAttribute('aria-pressed',String(o.pflow==='press')); $('pw-jug').setAttribute('aria-pressed',String(o.pflow==='jug'));
+  $('iceseg').classList.toggle('hide',!o.ice);
+  $('ice-blend').setAttribute('aria-pressed',String(o.iceKind!=='other')); $('ice-other').setAttribute('aria-pressed',String(o.iceKind==='other'));
   if(o.paper)$('blurb').textContent+=o.pflow==='press'
     ?' Paper filter, from the press: the paper is filled straight from the press, held at its tilt while the paper drains.'
     :' Paper filter, from the decanter: one pour from the press into the decanter, then through the paper. The press is only tipped once.';
@@ -483,96 +497,146 @@ function render(){
   paintPack(); paintCaf(); paintBest();
 }
 
+/* Each step: k, t (title), d (one line: what to do, with the numbers), s (timer, seconds),
+   more (the why and the tips, folded away), w (prep to do while this step's timer runs; at = seconds left when it is due) */
 function buildSteps(){
-  var o=compute(), s=[], P=o.paper;
+  var o=compute(), s=[], P=o.paper, R=S.recipe, bypass=R==='black'&&S.mode==='bypass';
   /* paper filter, filled one of two ways:
      from the decanter: the press is tipped once into the decanter, and the paper on the cup (or jug of ice) is filled from there;
      from the press: the paper is filled straight from the press, held at its tilt while the paper drains */
-  var FP=P&&o.pflow==='press';
-  function rinse(onto,warm){return P?'<br><b>Meanwhile, the paper:</b> open one into the dripper with the side seam folded flat, and set the dripper on '+onto+'. '+(warm?'Pour the hot RO from the decanter through the paper \u2014 it warms '+onto.replace(/^(the|your) /,'the ')+' too \u2014 then tip that water out.':'Lift it off to rinse: pour the hot RO from the decanter through the paper into the sink, then set it back.')+' The decanter goes back empty and hot.':''}
-  var heat=P?'<br><b>Meanwhile:</b> <b>'+o.rinse+' g</b> of plain RO into the empty decanter and bring it to the boil. That is the paper rinse \u2014 no Vedica needed, it never reaches the cup, and it leaves the decanter hot for the coffee.':'';
-  function oneDecant(grams,after){return {k:'decant',t:'Decant',d:'Into the decanter in one slow, continuous pour at a shallow tilt. Do not set the press down mid-pour \u2014 every tilt back stirs the bed up again. Stop at <b>'+grams+' g</b> and leave the sludge in the press.'+(after||'')}}
-  function pressThrough(into,grams,after){return {k:'decant',t:'Pour through the paper',d:'Straight from the press into the paper on '+into+', at a shallow tilt, down the side of the paper. When the paper is about two-thirds full, hold the press still at that angle instead of standing it up \u2014 standing it up and tipping again stirs the bed \u2014 and carry on as it drains. Keep the level a centimetre below the paper\u2019s edge. Stop at <b>'+grams+' g</b> and leave the sludge in the press.'+(after||'')}}
+  var FP=P&&o.pflow==='press', dec=Math.round(o.decant);
+  function B(v){return '<b>'+v+'</b>'}
+  function step(k,t,d,x){
+    var r={k:k,t:t,d:d}; x=x||{};
+    if(x.s)r.s=x.s;
+    if(x.more)r.more=x.more;
+    var w=(x.w||[]).filter(Boolean); if(w.length)r.w=w;
+    return r;
+  }
+  function W(t,at){var x={t:t};if(at!==undefined)x.at=at;return x}
+  var iceTxt=o.ice?B(o.ice+' g')+' '+(o.iceKind==='other'?'ice':'RO + Vedica ice'):'';
+  var iceMore=o.ice?(o.iceKind==='other'
+    ?'Logged as other ice, so a bad cup can be traced back to it.'
+    :'Frozen from '+o.iceVed+' g Vedica and '+o.iceRo+' g RO in a covered tray, used within a few days: open ice picks up freezer smells.'):'';
+  /* the paper rinse: plain RO heated during the steep, poured through the paper during the wait */
+  var heatW=P?W('Heat '+B(o.rinse+' g')+' plain RO for the paper rinse'):null;
+  function rinseW(into){return P?W('Paper in the dripper, seam folded flat. Rinse it with the hot RO '+(into?'into '+into+' to warm it, then tip that out':'over the sink')):null}
+  /* the vessel the coffee is weighed into next, tared before the plunge */
+  function tareW(dest,meshVessel,at){return W(FP?'Dripper on '+dest+', on the scale, tared':(P?'Decanter on the scale, tared':meshVessel+' on the scale, tared'),at===undefined?60:at)}
+  function pressThrough(into,grams,more){return step('decant','Pour through the paper','From the press into the dripper on '+into+', to '+B(grams+' g')+'.',
+    {more:'Pour fast while there is room, then slow down near the top and hold the press at its angle: standing it up and tipping again stirs the bed. Keep the level a centimetre below the paper’s edge.'+(more||'')})}
+  function oneDecant(grams){return step('decant','Decant','Into the decanter in one slow pour, to '+B(grams+' g')+'.',
+    {more:'Shallow tilt. Don’t set the press down mid-pour: every tilt back stirs the bed. It mixes as it pours, so there is no need to swirl.'})}
+  function through(into,more){return step('filter','Pour through the paper','From the decanter into the dripper on '+into+', in two or three goes.',
+    {more:'Set the decanter down in between; with the press out of the way there is nothing to stir up. Keep the level a centimetre below the paper’s edge, and leave the last spoonful in the decanter, where the heaviest silt sank.'+(more||'')})}
+  var drain=step('drain','Let it drain','Hands off. Lift the dripper off at the beep.',{s:240,more:R==='iced'
+    ?'No stirring, swirling or tapping the paper.'
+    :'No stirring, swirling or tapping the paper. The last drips are slow but they are the same coffee: if you are letting it cool anyway, catch them in your cup.'});
   /* the steps after the plunge, either way */
-  function paperSeq(dest,grams,afterFill){return FP?[pressThrough(dest,grams,afterFill),drain]:[oneDecant(grams),through(dest,afterFill),drain]}
-  function through(into,after){return {k:'filter',t:'Pour through the paper',d:'From the decanter into the paper on '+into+', in two or three goes, setting the decanter down in between \u2014 with the press out of the way there is nothing to stir up. Keep the level a centimetre below the paper\u2019s edge, and leave the last spoonful in the decanter, where the heaviest silt sank.'+(after||'')}}
-  var drain={k:'drain',t:'Let it drain',d:'Hands off: no stirring, no squeezing or tapping the paper. Lift the dripper away once it is down to slow drips \u2014 the last few grams are not worth the heat. If it crawls, stop the press pour earlier next time or settle longer: the fines are what clog the paper.',s:240};
-  var skim=P?' With paper, skim the foam and anything floating \u2014 that is what clogs a filter first.':'';
-  var common={
-    prep:{k:'prep',t:'Dose the carafe',d:'Screen clean and unwarped. <b>'+o.D+' g</b> of coffee into the room-temperature carafe, shaken level.'},
-    dose:{k:'dose',t:'Weigh the water',d:'<b>'+o.ved+' g</b> Vedica with <b>'+o.ro+' g</b> RO \u2014 <b>'+o.boil+' g</b> total \u2014 weighed straight into the decanter. Carafe on the scale, tared and ready.'},
-    pour:{k:'pour',t:'Boil and pour',d:'Straight off the boil, about <b>'+o.temp+'\u00B0C</b> by the time it reaches the coffee. Pour it all in fast, in one go, and stop at <b>'+o.press+' g</b>. Then two or three gentle swirls, and check through the glass for dry patches on the bottom or a dry raft on top. '+(S.recipe==='iced'?'Leftover water goes down the sink, not near the ice or the glass.':'Tip the last few grams into your glass so the decanter goes back empty.')+' No spoon.',s:30},
-    steep:{k:'steep',t:'Steep',d:'Lid on, plunger all the way up. Do not touch anything.'+heat,s:240},
-    plunge:{k:'plunge',t:'Plunge',d:'Slowly, until the screen just touches the liquid. Stop there. Aim to be done by the beep \u2014 this counts as contact time.',s:15}
-  };
-  function heat(){return null}
+  function paperSeq(dest,grams,more){return FP?[pressThrough(dest,grams,more),drain]:[oneDecant(grams),through(dest,more),drain]}
+  function push(a){a.forEach(function(x){s.push(x)})}
 
-  if(S.recipe==='black'){
-    s.push(common.prep); s.push(common.dose); s.push(common.pour); s.push(common.steep);
-    s.push({k:'crust',t:'Break the crust',d:'Flat of the spoon, press the floating bed down about a centimetre. Three or four presses, then run the spoon along the walls to knock any stuck grounds back in. No stirring. '+(P?skim.slice(1):'Skim only if there is real foam.')+' Lid back on, plunger up.',s:55});
-    s.push({k:'settle',t:'Settle',d:'Plunger stays up. This is what drops the fines out.'+(FP?rinse('the decanter',false):rinse('your glass',true)),s:300});
-    s.push({k:'plunge',t:'Plunge',d:'Slowly, down to a couple of centimetres above the settled bed \u2014 never into it. The screen then holds the bed still when you tilt to decant. Aim to be done by the beep; this counts as contact time.',s:30});
-    var byp={k:'byp',t:'Add hot water',d:'<b>'+Math.round(o.bypass)+' g</b> of the leftover hot water into the jug. Target <b>'+o.Y+' g</b> total.'};
+  var common={
+    prep:step('prep','Dose the carafe',B(o.D+' g')+' of coffee into the carafe, shaken level.',{more:'Screen clean and unwarped, carafe at room temperature.'}),
+    dose:step('dose','Weigh the water',B(o.ved+' g')+' Vedica + '+B(o.ro+' g')+' RO, '+B(o.boil+' g')+' in all. Carafe on the scale, tared.'),
+    pour:step('pour','Boil and pour','Off the boil, all of it fast, to '+B(o.press+' g')+'. Two or three gentle swirls.',
+      {s:30,more:'About '+o.temp+'°C when it reaches the coffee. Check through the glass for dry patches on the bottom or a dry raft on top. No spoon. '
+        +(R==='iced'?'Leftover water goes down the sink.':'Tip the last few grams into your glass so the decanter goes back empty.')}),
+    steep:step('steep','Steep','Lid on, plunger up. Don’t touch.',{s:240,w:[heatW]}),
+    plunge:step('plunge','Plunge','Slowly, until the screen touches the liquid. Done by the beep.',{s:15,more:'This counts as contact time.'})
+  };
+
+  if(R==='black'){
+    push([common.prep,common.dose,common.pour,common.steep]);
+    s.push(step('crust','Break the crust','Press the floating bed down a centimetre, three or four presses. No stirring.'+(P?' Skim the foam.':'')+' Lid back on.',
+      {s:55,more:'Run the spoon along the walls to knock stuck grounds back in. '+(P?'Foam and floating bits are what clog a paper first.':'Skim only if there is real foam.')}));
+    s.push(step('settle','Settle','Plunger stays up. Leave it.',{s:300,more:'This is what drops the fines out.',
+      w:[rinseW(FP?null:'your glass'),tareW('the decanter','Decanter')]}));
+    s.push(step('plunge','Plunge','Slowly, to a couple of centimetres above the bed. Never into it.',
+      {s:30,more:'The screen then holds the bed still when you tilt. Done by the beep; this counts as contact time.'}));
+    var byp=step('byp','Add hot water',B(Math.round(o.bypass)+' g')+' of the leftover hot water into the jug, to '+B(o.Y+' g')+'.');
     if(FP){
-      s.push(pressThrough('the decanter',Math.round(o.decant)));
-      s.push(drain);
-      if(S.mode==='bypass')s.push(byp);
-      s.push({k:'off',t:'Swirl and pour',d:'Lid on and a gentle swirl to even out the strength, then pour all of it into the glass \u2014 about <b>'+Math.round(o.T)+' g</b>. Nothing to settle and nothing to leave behind.'});
-    }else if(P){
-      s.push(oneDecant(Math.round(o.decant),' It mixes evenly as it pours, so there is no need to swirl.'));
-      if(S.mode==='bypass')s.push(byp);
-      s.push(through('your glass'));
-      s.push(drain);
-    }else{
-      s.push({k:'decant',t:'Decant',d:'Tilt slowly and hold a shallow angle \u2014 steep tilts make the bed avalanche onto the screen. Pour to <b>'+Math.round(o.decant)+' g</b>. If it stalls, do not press the plunger: top up with hot water instead.'});
-      if(S.mode==='bypass')s.push(byp);
-      s.push({k:'jug',t:'Settle in the decanter',d:'Cap on, leave it alone. The fine sediment drops and the neck holds most of what is left.',s:60});
-      s.push({k:'off',t:'Pour off',d:'Empty the glass, on the scale, tare. Pour <b>'+Math.round(o.T)+' g</b> slowly off the top and leave the last <b>'+o.j+' g</b> behind. It should land at 56\u201358\u00B0C. Every week or so let one cup fall to 40\u00B0C and taste it \u2014 sweetness still holding is your sign the extraction is clean.'});
+      s.push(pressThrough('the decanter',dec)); s.push(drain);
+      if(bypass)s.push(byp);
+      s.push(step('off','Swirl and pour','Gentle swirl, then all of it into the glass, about '+B(Math.round(o.T)+' g')+'.'));
+    } else if(P){
+      s.push(oneDecant(dec));
+      if(bypass)s.push(byp);
+      s.push(through('your glass')); s.push(drain);
+    } else {
+      s.push(step('decant','Decant','Shallow tilt, to '+B(dec+' g')+'.',
+        {more:'Steep tilts make the bed avalanche onto the screen. If it stalls, don’t press the plunger: top up with hot water instead.'}));
+      if(bypass)s.push(byp);
+      s.push(step('jug','Settle in the decanter','Cap on, leave it.',{s:60,more:'The fine sediment drops and the neck holds most of what is left.',
+        w:[W('Empty glass on the scale, tared')]}));
+      s.push(step('off','Pour off','Slowly, '+B(Math.round(o.T)+' g')+' off the top. Leave the last '+B(o.j+' g')+'.',
+        {more:'It should land at 56–58°C. Every week or so let one cup fall to 40°C and taste it: sweetness still holding means the extraction is clean.'}));
     }
   }
-  else if(S.recipe==='hoff'){
-    s.push(common.prep); s.push(common.dose);
-    s.push({k:'pour',t:'Boil and pour',d:'Straight off the boil, about <b>'+o.temp+'\u00B0C</b>. Pour all <b>'+o.press+' g</b> in about ten seconds, as fast as you can control \u2014 the force of the stream does the wetting. No swirl, no spoon. Tip the last few grams into your cup.',s:10});
+  else if(R==='hoff'){
+    push([common.prep,common.dose]);
+    s.push(step('pour','Boil and pour','Off the boil, all '+B(o.press+' g')+' in about ten seconds. No swirl, no spoon.',
+      {s:10,more:'About '+o.temp+'°C. The force of the stream does the wetting. Tip the last few grams into your cup.'}));
     s.push(common.steep);
-    s.push({k:'crust',t:'Break the crust',d:'Stir just the top layer gently with a spoon and most of the grounds sink. Then scoop off the foam and anything still floating, two spoons works well. Keep the stir to the surface \u2014 a deeper stir here is what gave you astringency before.',s:45});
-    s.push({k:'settle',t:'Settle',d:'Lid on, plunger up, leave it. Hoffmann waits 5 to 8 minutes \u2014 longer is cleaner. Let the timer run, and tap Next whenever you are ready.'+rinse('your cup',true),s:300});
-    s.push({k:'plunge',t:'Plunge',d:'Push down only until the screen sits at the surface of the coffee. No further \u2014 here the screen is a sieve, not a press.',s:15});
-    if(P)paperSeq('your cup',Math.round(o.decant)).forEach(function(x){s.push(x)});
-    else s.push({k:'decant',t:'Pour into the cup',d:'Pour slowly, straight into your cup, to <b>'+Math.round(o.decant)+' g</b>. Leave the last of it in the press, where the silt sits. Let it cool to a comfortable sip before you score it.'});
+    s.push(step('crust','Break the crust','Stir just the top layer gently; most of it sinks. Skim the foam.',
+      {s:45,more:'Two spoons works well. Keep the stir to the surface: a deeper stir is what gave you astringency before.'}));
+    s.push(step('settle','Settle','Lid on, plunger up. Tap Next whenever you are ready.',{s:300,more:'Hoffmann waits 5 to 8 minutes; longer is cleaner.',
+      w:[rinseW('your cup'),tareW('your cup','Cup')]}));
+    s.push(step('plunge','Plunge','Only until the screen sits at the surface. No further.',{s:15,more:'Here the screen is a sieve, not a press.'}));
+    if(P)push(paperSeq('your cup',dec));
+    else s.push(step('decant','Pour into the cup','Slowly, to '+B(dec+' g')+'. Leave the last of it in the press.',
+      {more:'That is where the silt sits. Let it cool to a comfortable sip before you score it.'}));
   }
-  else if(S.recipe==='iced'){
-    s.push({k:'ice',t:'Weigh the ice first',d:'<b>'+o.ice+' g</b> of ice into a heatproof jug, ready before the coffee is. This is the dilution ice, half your finished drink, so it is part of the recipe. Freeze it from the same blend \u2014 <b>'+o.iceVed+' g</b> Vedica with <b>'+o.iceRo+' g</b> RO \u2014 in a covered container, and use it within a few days: open ice picks up freezer smell. Put your serving glass in the fridge now.'});
-    s.push(common.prep); s.push(common.dose); s.push(common.pour);
-    s.push({k:'steep',t:'Steep',d:'Lid on, plunger all the way up. Do not touch anything.'+heat+rinse('the jug of ice',false),s:240});
-    s.push({k:'crust',t:'Break the crust',d:'Press the bed down and skim the foam. Run the spoon along the walls to knock stuck grounds back in. No stirring. Move faster than you would for black \u2014 the press ratio here is tight and there is no settling wait to absorb an overrun.',s:40});
-    s.push({k:'plunge',t:'Plunge',d:'Slowly, down to just above the grounds, and done by the beep \u2014 this counts as contact time. Stop the moment you feel resistance: pressing into the bed squeezes fines and bitterness through the screen.',s:20});
-    if(P)paperSeq('the jug of ice',Math.round(o.decant),' It drips onto the ice as it filters, which is how Japanese iced pour-over works. Do not hang about: the sooner it meets the ice, the more aroma it keeps.').forEach(function(x){s.push(x)});
-    else s.push({k:'decant',t:'Pour onto the ice',d:'Straight onto the ice, now, at a steady pace \u2014 the screen is holding the bed in place. Stop at <b>'+o.yield+' g</b> or when the flow slows, whichever comes first.'});
-    s.push({k:'chill',t:'Stir until cold',d:'Stir \u2014 never shake. Shaking puts the fines back into suspension. About thirty seconds, until the ice is mostly gone. Then take the temperature in the jug and remember it for the log. You should have about <b>'+o.T+' g</b>.',s:30});
-    s.push({k:'off',t:'Serve',d:'Into the chilled glass. At <b>10\u00B0C or below</b>, pour straight in with no ice. Above 10\u00B0C, add two or three cubes, <b>40 g</b> at most \u2014 more just waters it down as it melts. Any unmelted chunks from the jug go in too; they are part of the recipe. Pour slowly and leave the last spoonful in the jug, where the silt sits.'});
-    s.push({k:'rest',t:'Taste',d:'Taste now, and again in about ten minutes as it warms a little. Sweetness: cold hides it, so any is a good sign. Acidity: juicy is right, sharp and sour means under-extracted. Finish: clean, or drying. Aroma: hold a sip a moment so it warms. Sour or grassy \u2014 add a minute to the steep. Clean but thin \u2014 tighten the ratio. Drying \u2014 plunge slower and leave more behind.'});
+  else if(R==='iced'){
+    push([common.prep,common.dose,common.pour]);
+    /* the ice stays in the freezer until the last minute of the steep: ice that melts early dilutes without chilling */
+    s.push(step('steep','Steep','Lid on, plunger up. Don’t touch.',{s:240,
+      more:'The ice comes out only in the last minute: ice that melts early waters the drink down without chilling it. '+iceMore,
+      w:[W('Serving glass into the fridge'),heatW,rinseW(null),
+        W(iceTxt+' into the jug'+(FP?', dripper on top, on the scale, tared':(P?', dripper on top. Decanter on the scale, tared':', on the scale, tared')),60)]}));
+    s.push(step('crust','Break the crust','Press the bed down, skim the foam. No stirring.',
+      {s:40,more:'Knock stuck grounds off the walls. Move faster than for black: there is no settle to absorb an overrun.'}));
+    s.push(step('plunge','Plunge','Slowly, to just above the grounds. Stop at any resistance.',
+      {s:20,more:'Done by the beep; this counts as contact time. Pressing into the bed squeezes fines and bitterness through the screen.'}));
+    if(P)push(paperSeq('the jug of ice',dec,' It drips onto the ice as it filters, which is how Japanese iced pour-over works.'));
+    else s.push(step('decant','Pour onto the ice','Straight onto the ice, steady, to '+B(o.yield+' g')+'.',
+      {more:'Or stop sooner if the flow slows. The screen holds the bed in place.'}));
+    s.push(step('chill','Stir until cold','Stir, don’t shake, until the ice is mostly gone. Note the temperature.',
+      {s:30,more:'Shaking puts the fines back into suspension. You should have about '+o.T+' g.'}));
+    s.push(step('off','Serve','Into the cold glass. Above 10°C, add two or three cubes, '+B('40 g')+' at most.',
+      {more:'At 10°C or below, no ice. Unmelted chunks from the jug go in too; they are part of the recipe. Leave the last spoonful in the jug, where the silt sits.'}));
+    s.push(step('rest','Taste','Now, and again in ten minutes as it warms.',
+      {more:'Sweetness: cold hides it, so any is a good sign. Acidity: juicy is right; sharp and sour with fresh coffee means under-extracted, so add a minute to the steep. Clean but thin: tighten the ratio. Drying: plunge slower and leave more behind. Hold a sip a moment so it warms, for the aroma.'}));
   }
-  else if(S.recipe==='aulait'){
-    s.push(common.prep); s.push(common.dose); s.push(common.pour); s.push(common.steep);
-    s.push({k:'crust',t:'Break the crust',d:'Flat of the spoon, press the bed down a centimetre. Three or four presses. Skim real foam only.',s:55});
-    s.push({k:'settle',t:'Settle',d:'Plunger stays up.'+rinse('your mug',true),s:300});
+  else if(R==='aulait'){
+    push([common.prep,common.dose,common.pour,common.steep]);
+    s.push(step('crust','Break the crust','Press the bed down a centimetre, three or four presses. Skim real foam only.',{s:55}));
+    s.push(step('settle','Settle','Plunger stays up.',{s:300,
+      w:[rinseW('your mug'),W(B(o.milk+' g')+' full-cream milk into the pan'),tareW('your mug','Decanter')]}));
     s.push(common.plunge);
-    if(P)paperSeq('your mug',Math.round(o.decant),' If you want sugar, stir it in once it has drained, before the milk.').forEach(function(x){s.push(x)});
-    else s.push({k:'decant',t:'Decant',d:'Pour to <b>'+o.yield+' g</b>. Shallow tilt. If you want sugar, stir it into the hot coffee now, before the milk.'});
-    s.push({k:'milk',t:'Heat the milk',d:'<b>'+o.milk+' g</b> full-cream milk to <b>65\u201370\u00B0C</b>. Steaming with fine bubbles at the edge of the pan \u2014 pull it the moment before it moves. Past 75\u00B0C the proteins denature and it tastes cooked.',s:120});
-    s.push({k:'off',t:'Combine',d:'Coffee into a warmed mug first, then the milk in one steady stream. Roughly 1:1. Do not froth it \u2014 flat hot milk is the point.'});
+    if(P)push(paperSeq('your mug',dec,' Sugar? Stir it in once it has drained, before the milk.'));
+    else s.push(step('decant','Decant','Shallow tilt, to '+B(o.yield+' g')+'.',{more:'Sugar? Stir it into the hot coffee now, before the milk.'}));
+    s.push(step('milk','Heat the milk','Heat the '+B(o.milk+' g')+' of milk to '+B('65–70°C')+'.',
+      {s:120,more:'Steaming, with fine bubbles at the edge: pull it just before it moves. Past 75°C the proteins denature and it tastes cooked.'}));
+    s.push(step('off','Combine',P?'Milk into the coffee in one steady stream.':'Coffee into a warmed mug, then the milk in one steady stream.',
+      {more:'Roughly 1:1. Don’t froth it: flat hot milk is the point.'}));
   }
   else {
-    s.push({k:'cm',t:'Condensed milk in the glass',d:'<b>'+o.cm+' g</b> of sweetened condensed milk into the bottom of '+(o.ice?'a tall glass':'your cup or a small glass')+'. Sweetened, not evaporated. Adjust sweetness here, not later. A pinch of salt with it cuts the sugar and deepens the coffee.'+(o.ice?' Have <b>'+o.ice+' g</b> of covered ice ready in a second glass.':'')});
-    s.push(common.prep); s.push(common.dose); s.push(common.pour); s.push(common.steep);
-    s.push({k:'crust',t:'Break the crust',d:'Press the bed down, skim real foam only. It will look almost syrupy.',s:55});
-    s.push({k:'settle',t:'Settle',d:'Plunger stays up.'+rinse('the glass with the condensed milk',false),s:300});
+    var cmg='the glass with the condensed milk';
+    push([common.prep,common.dose,common.pour]);
+    s.push(step('steep','Steep','Lid on, plunger up. Don’t touch.',{s:240,
+      more:'Sweetened, not evaporated. Adjust sweetness there, not later. A pinch of salt with it cuts the sugar and deepens the coffee.',
+      w:[W(B(o.cm+' g')+' sweetened condensed milk into '+(o.ice?'a tall glass':'your cup')),heatW]}));
+    s.push(step('crust','Break the crust','Press the bed down, skim real foam only.',{s:55,more:'It will look almost syrupy.'}));
+    s.push(step('settle','Settle','Plunger stays up.',{s:300,more:iceMore,
+      w:[rinseW(null),o.ice?W(iceTxt+' into a second glass',60):null,tareW(cmg,'Decanter')]}));
     s.push(common.plunge);
-    if(P)paperSeq('the glass with the condensed milk',Math.round(o.decant)).forEach(function(x){s.push(x)});
-    else s.push({k:'decant',t:'Decant the concentrate',d:'Pour out <b>'+o.conc+' g</b>, fully. Shallow tilt.'});
-    s.push({k:'off',t:'Stir hard',d:(P?'The coffee is on the condensed milk already: stir hard for a full twenty seconds,':'Pour the hot coffee over the condensed milk and stir hard for a full twenty seconds,')+' until the bottom layer has completely dissolved and the drink is uniformly caramel. This must happen while the coffee is hot \u2014 condensed milk will not dissolve into cold coffee.',s:20});
-    if(o.ice)s.push({k:'rest',t:'Pour over the ice',d:'Pour the stirred coffee over the <b>'+o.ice+' g</b> of ice and stir briefly. About <b>'+o.T+' g</b> in the glass.'});
-    else s.push({k:'rest',t:'Serve hot',d:'Drink it now, while it is hot. Give it one more stir if the condensed milk starts to settle. About <b>'+o.T+' g</b> in the cup.'});
+    if(P)push(paperSeq(cmg,dec));
+    else s.push(step('decant','Decant the concentrate','Pour out '+B(o.conc+' g')+', fully. Shallow tilt.'));
+    s.push(step('off','Stir hard',(P?'Stir hard for 20 seconds,':'Over the condensed milk, then stir hard for 20 seconds,')+' until it is all one caramel colour.',
+      {s:20,more:'It has to happen while the coffee is hot: condensed milk will not dissolve into cold coffee.'}));
+    if(o.ice)s.push(step('rest','Pour over the ice','Over the '+iceTxt+', stir briefly. About '+B(o.T+' g')+'.'));
+    else s.push(step('rest','Serve hot','Drink it now, while it is hot. About '+B(o.T+' g')+'.',{more:'Give it one more stir if the condensed milk starts to settle.'}));
   }
   return s;
 }
@@ -596,7 +660,7 @@ function readRun(){
 function resumeRun(r){
   steps=r.steps; idx=r.idx; actuals=r.actuals||[]; brewT0=r.brewT0; tStart=r.tStart; tBase=r.tBase;
   running=!!r.running; dur=r.dur||0; stepT0=r.stepT0; speed=r.speed||1; testMode=!!r.testMode; runCalc=r.runCalc; runMeta=r.meta;
-  left=Math.max(0,dur-tBase);
+  left=Math.max(0,dur-tBase); cueDone={}; cueQuiet=true; closeRunPanel();
   $('dryflag').classList.toggle('hide',!testMode);
   show('sc-brew'); ctx(); lock();
   if(!tid)tid=setInterval(loop,200);
@@ -635,6 +699,9 @@ function paint(){
   $('count').textContent=(idx+1)+' of '+steps.length;
   $('stage').textContent=st.t;
   $('detail').innerHTML=st.d;
+  paintWait();
+  var mo=$('more'); mo.open=false; mo.classList.toggle('hide',!st.more); $('more-b').innerHTML=st.more||'';
+  paintRunBar(); paintRunPanel();
   var timed=!!st.s;
   $('timed').classList.toggle('hide',!timed);
   $('manual').classList.toggle('hide',timed);
@@ -652,6 +719,7 @@ function tickPaint(){
   c.className='clock'+(left<=0?' done':(left<=10?' low':''));
   $('bar').style.width=dur?Math.min(100,((dur-left)/dur)*100)+'%':'0%';
   $('total').textContent='Total elapsed '+mmss(elapsed);
+  var rl=document.getElementById('rp-left'); if(rl)rl.textContent=mmss(left);
 }
 function loop(){
   /* everything derives from the wall clock, so time spent in another app still counts */
@@ -663,12 +731,90 @@ function loop(){
     if(running&&nl<=0){running=false;tBase=dur;left=0;$('pause').textContent='Restart';beep(3)}
     else left=nl;
   }
+  checkCues();
   tickPaint();
 }
+/* prep while a step's timer runs: cues with a time come due at that much time left, with a soft single tone
+   (the triple beep stays for the end of a step); the first check after a step starts or the app reopens is silent */
+var cueDone={}, cueQuiet=true;
+function cueList(st){return (st&&st.w)||[]}
+function cueHTML(c,i,cur){
+  return '<li'+(cur?' data-c="'+i+'"'+(cueDone[i]?' class="due"':''):'')+'>'+(c.at!==undefined?'<span class="when">'+mmss(c.at)+' left</span> ':'')+c.t+'</li>';
+}
+function paintWait(){
+  var st=steps[idx], w=cueList(st), el=$('wait');
+  el.classList.toggle('hide',!w.length);
+  el.innerHTML=w.length?'<li class="wh">'+(st.s?'While you wait':'Also')+'</li>'+w.map(function(c,i){return cueHTML(c,i,true)}).join(''):'';
+}
+function checkCues(){
+  var st=steps[idx]; if(!st||!st.s)return;
+  var quiet=cueQuiet; cueQuiet=false;
+  cueList(st).forEach(function(c,i){
+    if(c.at===undefined||cueDone[i]||left>c.at)return;
+    cueDone[i]=true; if(!quiet)chime();
+    ['#wait','#runpanel'].forEach(function(p){var li=document.querySelector(p+' li[data-c="'+i+'"]');if(li)li.classList.add('due')});
+  });
+}
+function chime(){
+  var c=ctx(); if(!c)return;
+  var o=c.createOscillator(),g=c.createGain(),at=c.currentTime;
+  o.connect(g);g.connect(c.destination);o.type='sine';o.frequency.value=587;
+  g.gain.setValueAtTime(0.0001,at);
+  g.gain.exponentialRampToValueAtTime(0.14,at+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001,at+0.5);
+  o.start(at);o.stop(at+0.52);
+}
+
+/* This brew: everything set before Start, kept for the run, one tap away without touching the timer */
+function runTitle(){
+  var o=runCalc||{}, m=runMeta||{}, p=m.params||{}, rk=o.recipe||m.recipe||'black';
+  var n=(RECIPES[rk]||{}).name||'Brew';
+  return rk==='viet'?n+' ('+(p.vmode||o.vmode||'iced')+')':n;
+}
+function paintRunBar(){
+  var p=(runMeta&&runMeta.params)||{}, bits=[runTitle()];
+  if(p.tgt)bits.push(p.tgt+' g'); if(p.ratio)bits.push('1:'+p.ratio);
+  $('runbar-l').textContent='This brew · '+bits.join(' · ');
+}
+function paintRunPanel(){
+  var el=$('runpanel'); if(el.classList.contains('hide'))return;
+  var o=runCalc, m=runMeta||{}, p=m.params||{}, how=[], sub=[];
+  if(m.recipe==='black')how.push(m.mode==='bypass'?'bypass':'direct');
+  if(o)how.push(o.paper?'paper, '+(o.pflow==='press'?'from the press':'from the decanter'):'mesh only');
+  if(o&&o.ice)how.push(o.iceKind==='other'?'other ice':'RO + Vedica ice');
+  if(p.tgt)sub.push(p.tgt+' g'); if(p.ratio)sub.push('1:'+p.ratio); if(p.temp)sub.push(p.temp+'°C'); if(p.loc)sub.push(esc(p.loc));
+  if(testMode)sub.push('dry run');
+  var h='<p class="rp-h">'+runTitle()+(how.length?' · '+how.join(' · '):'')+'</p><p class="rp-sub">'+sub.join(' · ')+'</p>';
+  if(o)h+='<div class="rp-nums">'+numRows(o,o.mode||m.mode,null).map(function(r){return '<div><span class="k">'+r[0].replace(/^\u2003 (.)/,function(x,c){return c.toUpperCase()})+'</span><span class="v">'+r[1]+'</span></div>'}).join('')+'</div>';
+  /* steps already done fold into one line, so the current one sits just under the numbers */
+  var done=steps.slice(0,idx).map(function(st,i){var a=actuals[i];return '<li><span class="ic">\u2713</span><span class="t">'+esc(st.t)+'</span><span class="tm">'+(st.s&&a?mmss(Math.round(a.actual)):'')+'</span></li>'}).join('');
+  h+='<ol class="rp-steps">';
+  if(idx)h+='<li class="done"><details class="rp-done"><summary><span class="ic">\u2713</span>'+idx+' of '+steps.length+' done</summary><ol class="rp-steps">'+done+'</ol></details></li>';
+  h+=steps.map(function(st,i){
+    if(i<idx)return '';
+    var cur=i===idx, tm=cur?(st.s?'<span id="rp-left">'+mmss(left)+'</span> left':''):(st.s?mmss(st.s):''), w=cueList(st);
+    return '<li class="'+(cur?'cur':'')+'"><span class="ic">'+(cur?'\u25CF':'\u25CB')+'</span><span class="t">'+esc(st.t)+'</span><span class="tm">'+tm+'</span>'
+      +'<div class="d">'+st.d+'</div>'+(w.length?'<ul class="w">'+w.map(function(c,j){return cueHTML(c,j,cur)}).join('')+'</ul>':'')+'</li>';
+  }).join('')+'</ol>';
+  el.innerHTML=h;
+}
+function openRunPanel(){
+  var el=$('runpanel');
+  el.classList.remove('hide'); $('runshade').classList.remove('hide'); $('runbar').setAttribute('aria-expanded','true');
+  paintRunPanel();
+  /* the numbers first; scrolled down only when the current step would be out of sight */
+  var cur=el.querySelector('li.cur'), hgt=el.clientHeight;
+  el.scrollTop=(cur&&cur.offsetTop+48>hgt*0.8)?Math.max(0,cur.offsetTop-hgt*0.3):0;
+}
+function closeRunPanel(){
+  $('runpanel').classList.add('hide'); $('runshade').classList.add('hide'); $('runbar').setAttribute('aria-expanded','false');
+}
+$('runbar').addEventListener('click',function(){if($('runpanel').classList.contains('hide'))openRunPanel();else closeRunPanel()});
+$('runshade').addEventListener('click',closeRunPanel);
 function go(i){
   idx=i; var st=steps[idx];
   dur=st.s?st.s:0; left=dur; running=!!st.s; tBase=0; tStart=Date.now();
-  stepT0=Date.now();
+  stepT0=Date.now(); cueDone={}; cueQuiet=true;
   $('pause').textContent='Pause';
   paint(); saveRun();
 }
@@ -679,7 +825,8 @@ function leaveStep(){
 function startBrew(isTest){
   testMode=!!isTest; speed=testMode?dryX():1;
   steps=buildSteps(); actuals=[]; elapsed=0; runCalc=compute(); brewT0=Date.now();
-  runMeta={recipe:S.recipe,mode:S.mode,params:{tgt:rs().tgt,ratio:rs().ratio,pratio:S.pratio,ved:S.ved,temp:S.temp,loc:(curLoc()||{}).name||undefined,vmode:S.recipe==='viet'?S.vmode:undefined,paper:rs().paper?true:undefined,pfrom:rs().paper?(rs().pflow==='press'?'press':'decanter'):undefined},bean:beanSnap()};
+  runMeta={recipe:S.recipe,mode:S.mode,params:{tgt:rs().tgt,ratio:rs().ratio,pratio:S.pratio,ved:S.ved,temp:S.temp,loc:(curLoc()||{}).name||undefined,vmode:S.recipe==='viet'?S.vmode:undefined,paper:rs().paper?true:undefined,pfrom:rs().paper?(rs().pflow==='press'?'press':'decanter'):undefined,ice:runCalc.iceKind||undefined},bean:beanSnap()};
+  closeRunPanel();
   $('dryflag').classList.toggle('hide',!testMode);
   show('sc-brew'); ctx(); lock();
   if(!tid)tid=setInterval(loop,200);
@@ -707,7 +854,7 @@ function findAny(id){var r=null;LOG.concat(TLOG).forEach(function(x){if(String(x
 function finishBrew(){
   endTimers();
   var o=runCalc||compute();
-  var m=runMeta||{recipe:S.recipe,mode:S.mode,params:{tgt:rs().tgt,ratio:rs().ratio,pratio:S.pratio,ved:S.ved,temp:S.temp,paper:rs().paper?true:undefined,pfrom:rs().paper?(rs().pflow==='press'?'press':'decanter'):undefined},bean:beanSnap()};
+  var m=runMeta||{recipe:S.recipe,mode:S.mode,params:{tgt:rs().tgt,ratio:rs().ratio,pratio:S.pratio,ved:S.ved,temp:S.temp,paper:rs().paper?true:undefined,pfrom:rs().paper?(rs().pflow==='press'?'press':'decanter'):undefined,ice:o.iceKind||undefined},bean:beanSnap()};
   var now=Date.now();
   var e={id:now, at:new Date(now).toISOString(), rev:now, pending:true,
     test:testMode||undefined, recipe:m.recipe, mode:m.mode, bean:m.bean, params:m.params,
@@ -1088,7 +1235,7 @@ function entryDetail(e,editing){
   }
   h+='<p class="note" style="margin:8px 0 0">'+(RECIPES[e.recipe||'black']?RECIPES[e.recipe||'black'].name:'Black')+' \u00B7 '+c.dose+' g into '+c.press+' g \u00B7 decant target '+c.decant+' g'
    +(l.decant?', reached '+l.decant+' g':'')
-   +' \u00B7 water '+e.params.temp+'\u00B0C'+(e.params.loc?' \u00B7 '+esc(e.params.loc):'')+(e.params.paper?' \u00B7 through a paper filter'+(e.params.pfrom==='press'?', straight from the press':e.params.pfrom==='decanter'?', from the decanter':''):'')
+   +' \u00B7 water '+e.params.temp+'\u00B0C'+(e.params.loc?' \u00B7 '+esc(e.params.loc):'')+(e.params.paper?' \u00B7 through a paper filter'+(e.params.pfrom==='press'?', straight from the press':e.params.pfrom==='decanter'?', from the decanter':''):'')+(e.params.ice?' \u00B7 '+(e.params.ice==='other'?'other ice':'RO + Vedica ice'):'')
    +(l.jug!==undefined&&l.jug!==null?' \u00B7 jug '+l.jug+'\u00B0C':'')
    +(l.temp?' \u00B7 cup '+l.temp+'\u00B0C':'')+'</p>';
   if(l.tastes&&l.tastes.length)h+='<p class="note tasted" style="margin:8px 0 0">Tasted '+esc(l.tastes.join(', ').toLowerCase())+'</p>';
@@ -1238,6 +1385,7 @@ function brewText(e){
   if(p.temp!==undefined)r.push('water '+p.temp+'\u00B0C');
   if(p.loc)r.push(p.loc);
   if(p.ved!==undefined)r.push(p.ved+'% Vedica');
+  if(p.ice)r.push(p.ice==='other'?'other ice':'RO + Vedica ice');
   r.push(p.paper?'filtered through paper'+(p.pfrom?' ('+(p.pfrom==='press'?'from the press':'from the decanter')+')':''):'mesh only');
   L.push('Recipe: '+r.join(' \u00B7 '));
   var res=['decanted '+(l.decant?l.decant+' g':'not logged')+' (target '+c.decant+' g)'];
@@ -1383,7 +1531,7 @@ function openLog(v){
     var by=isA?' \u00B7 '+esc(nameOf(e._by)):e.ref?' \u00B7 '+esc(nameOf(e.ref.who))+'\u2019s brew':(e.with&&e.with.length?' \u00B7 shared':'');
     return '<button class="entry" data-id="'+e.id+'">'
       +'<span class="l1"><span class="d">'+ds+'</span><span class="sc">'+(l.score?fmtScore(l.score)+'/5':(e.pending?'Not scored':''))+'</span></span>'
-      +'<span class="l2">'+rname(e)+(e.params&&e.params.vmode?' ('+e.params.vmode+')':'')+(e.params&&e.params.paper?' \u00B7 paper':'')+by+' \u00B7 '+e.calc.dose+' g \u00B7 contact '+mmss(e.contact||0)+(l.temp?' \u00B7 cup '+l.temp+'\u00B0C':'')+'</span></button>'
+      +'<span class="l2">'+rname(e)+(e.params&&e.params.vmode?' ('+e.params.vmode+')':'')+(e.params&&e.params.paper?' \u00B7 paper':'')+(e.params&&e.params.ice==='other'?' \u00B7 other ice':'')+by+' \u00B7 '+e.calc.dose+' g \u00B7 contact '+mmss(e.contact||0)+(l.temp?' \u00B7 cup '+l.temp+'\u00B0C':'')+'</span></button>'
       +'<div class="detwrap hide" id="dt-'+e.id+'"></div>';
   }).join('');
   $('log-copy').classList.toggle('hide',isA);
@@ -1449,7 +1597,7 @@ $('rs-go').addEventListener('click',function(){
 
 $('pause').addEventListener('click',function(){
   var now=Date.now();
-  if(left<=0){tBase=0;tStart=now;left=dur;running=true;this.textContent='Pause'}
+  if(left<=0){tBase=0;tStart=now;left=dur;running=true;this.textContent='Pause';cueDone={};cueQuiet=true;paintWait()}
   else if(running){tBase+=((now-tStart)/1000)*speed;running=false;this.textContent='Resume'}
   else{tStart=now;running=true;this.textContent='Pause'}
   ctx();loop();saveRun();
@@ -1622,6 +1770,10 @@ $('f-paper').addEventListener('click',function(){setPaper(true)});
 function setPflow(v){if(v==='press')rs().pflow='press';else delete rs().pflow;saveS();render()}
 $('pw-press').addEventListener('click',function(){setPflow('press')});
 $('pw-jug').addEventListener('click',function(){setPflow('jug')});
+/* the dilution ice, remembered per recipe: frozen from the brew water blend, or other ice */
+function setIce(v){if(v==='other')rs().ice='other';else delete rs().ice;saveS();render()}
+$('ice-blend').addEventListener('click',function(){setIce('blend')});
+$('ice-other').addEventListener('click',function(){setIce('other')});
 paintLoc();
 setMode(S.mode);
 paintBanners();

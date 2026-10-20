@@ -35,6 +35,17 @@ emptied decanter during the steep and rinses the paper during the settle (no Ved
 is tipped once, into the decanter, and the coffee then goes from the decanter through a size 02 paper in the dripper into
 the glass, with a timed drain. No jug settle. Brews are tagged, and the Log shows average scores through paper against mesh only.
 
+## While brewing
+
+- Each step is one line saying what to do, with the numbers. The reasons and tips sit under **More**, folded away.
+- Steps with a timer list the prep for what comes next under *While you wait*. Prep that has to happen at a set moment shows
+  the time left (for example the iced recipe's ice, which stays in the freezer until the last minute of the steep) and plays a
+  single soft tone when it is due. The triple beep still marks the end of a step.
+- **This brew**, the bar at the bottom, slides up a panel with everything set before Start: drink size, ratio, coffee, water,
+  ice, rinse, and every step, done, current and next. The timer keeps running; tap outside the panel to close it.
+- Iced and Vietnamese iced have an **RO + Vedica ice / Other ice** switch. Other ice is recorded with the brew and shown in the
+  log, so a bad iced cup can be traced to the ice rather than the method.
+
 ## People
 
 Each person who brews gets their own packs, places, To try list, log and caffeine count, all in the same data repository.

@@ -77,6 +77,10 @@
     <button id="pw-press" aria-pressed="false">From the press</button>
     <button id="pw-jug" aria-pressed="true">From the decanter</button>
   </div>
+  <div class="seg hide" id="iceseg" role="group" aria-label="Ice">
+    <button id="ice-blend" aria-pressed="true">RO + Vedica ice</button>
+    <button id="ice-other" aria-pressed="false">Other ice</button>
+  </div>
   <div id="flag" class="flag hide"></div>
   <div class="card" id="numbers"></div>
   <p class="note" id="blurb"></p>
@@ -114,6 +118,7 @@
   <p class="dryflag hide" id="dryflag">Dry run &middot; timers at 20&times;, recorded times scaled back up</p>
   <p class="stage" id="stage"></p>
   <p class="detail" id="detail"></p>
+  <ul class="wait hide" id="wait"></ul>
   <div id="timed">
     <p class="clock" id="clock">0:00</p>
     <div class="bar"><i id="bar"></i></div>
@@ -125,6 +130,12 @@
   </div>
   <p class="upnext" id="upnext"></p>
   <p class="total" id="total"></p>
+  <details class="more hide" id="more"><summary>More</summary><div class="more-b" id="more-b"></div></details>
+  <div class="runshade hide" id="runshade"></div>
+  <div class="runwrap">
+    <div class="runpanel hide" id="runpanel" role="region" aria-label="This brew"></div>
+    <button class="runbar" id="runbar" aria-expanded="false" aria-controls="runpanel"><span class="lbl" id="runbar-l">This brew</span><span class="chev" aria-hidden="true">&#9652;</span></button>
+  </div>
 </div>
 
 <div id="sc-review" class="hide">

@@ -14,6 +14,8 @@ Roughly in the order they would help.
 
 ## Done
 
+- Brew screen: one-line steps with tips under More, prep timed to when it is needed, a This brew panel with the run's
+  numbers and steps, and an RO + Vedica / other ice switch recorded with iced brews (Oct 2026).
 - People: separate packs, places, To try lists and logs; shared carafes scored by each person (Oct 2026).
 - Paper filter option per recipe: rinse during the settle, pour through the paper, drain, no jug settle; brews tagged and
   compared against mesh only (Oct 2026).
