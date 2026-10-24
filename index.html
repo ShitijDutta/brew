@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#F6F6F4" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141413" media="(prefers-color-scheme: dark)">
+<meta name="description" content="French press brew calculator, timer and log">
+<title>Brew</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <script type="module" crossorigin src="./assets/index-CtQdBEET.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-geI6rpJh.css">
+</head>
+<body>
+<div id="sc-recipe">
+  <div class="top">
+    <h1>French press</h1>
+    <div class="topb"><button class="ghost" id="open-try">To try</button><button class="ghost" id="open-log">Log</button><button class="ghost" id="open-settings">Settings</button></div>
+  </div>
+  <div class="whorow hide" id="who-row"><p>Brewing as <b id="who-name"></b></p><button class="ghost" id="who-sw">Switch</button></div>
+  <div class="chips hide" id="who-pick" role="group" aria-label="Brew as someone else"></div>
+  <div id="banners"></div>
+  <div class="rpick" id="rpick" role="group" aria-label="Recipe"></div>
+  <details class="newdrinks" id="newdrinks"><summary>Something new<span class="xnow" id="xnow"></span></summary><div id="xpick" role="group" aria-label="Something new"></div></details>
+
+  <details class="bean" id="packbox">
+    <summary id="pack-sum">No pack in use</summary>
+    <div class="pbody">
+      <div class="rpick hide" id="pack-pick" role="group" aria-label="Pack in use"></div>
+      <p class="pmeta" id="pack-meta"></p>
+      <div class="pacts" id="pack-acts">
+        <button class="ghost" id="pack-edit">Edit this pack</button>
+        <button class="ghost" id="pack-new">Add a pack</button>
+        <button class="ghost del" id="pack-done">Mark finished</button>
+      </div>
+      <div class="pform hide" id="pack-form">
+        <p class="ptitle" id="pf-title">New pack</p>
+        <div class="grid">
+          <div style="grid-column:1/-1"><label for="p-name">Bean</label><input type="text" id="p-name" class="tin" placeholder="Selection" autocomplete="off" enterkeyhint="done"></div>
+          <div style="grid-column:1/-1"><label for="p-roaster">Roaster</label><input type="text" id="p-roaster" class="tin" placeholder="Araku" autocomplete="off" enterkeyhint="done"></div>
+          <div style="grid-column:1/-1"><label class="chk"><input type="checkbox" id="p-pre"> Bought pre-ground</label></div>
+          <div><label for="p-roasted">Roasted on</label><input type="date" id="p-roasted"></div>
+          <div><label for="p-ground">Ground on</label><input type="date" id="p-ground"></div>
+          <div><label for="p-size">Pack size g</label><div class="stp sm"><button type="button" class="sb" data-st="p-size" data-d="-10" aria-label="Lower pack size">&minus;</button><input type="number" id="p-size" class="tin sv" inputmode="decimal" enterkeyhint="done" min="0" max="2000" step="10" placeholder="—" data-def="250"><button type="button" class="sb" data-st="p-size" data-d="10" aria-label="Raise pack size">+</button></div></div>
+          <div id="p-left-wrap"><label for="p-left">Grams left</label><div class="stp sm"><button type="button" class="sb" data-st="p-left" data-d="-1" aria-label="Lower grams left">&minus;</button><input type="number" id="p-left" class="tin sv" inputmode="decimal" enterkeyhint="done" min="0" max="2000" step="1" placeholder="full"><button type="button" class="sb" data-st="p-left" data-d="1" aria-label="Raise grams left">+</button></div></div>
+          <div style="grid-column:1/-1"><label for="p-bought">Bought on <span style="color:var(--faint)">(only used if there is no roast or grind date)</span></label><input type="date" id="p-bought"></div>
+          <div style="grid-column:1/-1"><label for="p-grind">Grind</label><input type="text" id="p-grind" class="tin" placeholder="French press coarse" autocomplete="off" enterkeyhint="done"></div>
+        </div>
+        <p class="note" id="pf-hint" style="margin:12px 0 14px"></p>
+        <p class="flag s hide" id="pf-err"></p>
+        <div class="edacts"><button class="flat" id="pf-cancel">Cancel</button><button class="go" id="pf-save">Save pack</button></div>
+      </div>
+      <details class="pold hide" id="pack-old"><summary>Finished packs</summary><div id="pack-old-list"></div></details>
+    </div>
+  </details>
+  <div class="best hide" id="best"></div>
+  <div class="caf" id="caf"></div>
+
+  <div class="field">
+    <label for="tgt" id="tgt-lab">Liquid in the cup</label>
+    <div class="stp big"><button type="button" class="sb" data-st="tgt" data-d="-10" aria-label="Lower target">&minus;</button><input type="number" id="tgt" class="big-in sv" inputmode="decimal" enterkeyhint="done" min="50" max="900" step="10" placeholder="" value="200"><button type="button" class="sb" data-st="tgt" data-d="10" aria-label="Raise target">+</button></div>
+    <p class="unit" id="tgt-unit">grams, after decanting</p>
+  </div>
+  <p class="rhint" id="rhint"></p>
+  <div class="seg hide" id="vseg" role="group" aria-label="Serve">
+    <button id="v-hot" aria-pressed="false">Hot</button>
+    <button id="v-iced" aria-pressed="true">Iced</button>
+  </div>
+  <div class="seg" id="modeseg" role="group" aria-label="Method">
+    <button id="m-direct" aria-pressed="true">Direct</button>
+    <button id="m-bypass" aria-pressed="false">Bypass</button>
+  </div>
+  <div class="seg" id="fltseg" role="group" aria-label="Filter">
+    <button id="f-mesh" aria-pressed="true">Mesh only</button>
+    <button id="f-paper" aria-pressed="false">Paper filter</button>
+  </div>
+  <div class="seg hide" id="pwseg" role="group" aria-label="Fill the paper">
+    <button id="pw-press" aria-pressed="false">From the press</button>
+    <button id="pw-jug" aria-pressed="true">From the decanter</button>
+  </div>
+  <div class="seg hide" id="iceseg" role="group" aria-label="Ice">
+    <button id="ice-blend" aria-pressed="true">RO + Vedica ice</button>
+    <button id="ice-other" aria-pressed="false">Other ice</button>
+  </div>
+  <div id="flag" class="flag hide"></div>
+  <div class="card" id="numbers"></div>
+  <p class="note" id="blurb"></p>
+  <button class="go" id="start">Start brew</button>
+  <button class="flat" id="dry">Dry run &mdash; 20&times; speed, kept out of the log</button>
+  <details id="adv">
+    <summary>Calibration</summary>
+    <p class="lab" style="margin:16px 0 8px">Location</p>
+    <div class="rpick" id="loc-pick" role="group" aria-label="Location"></div>
+    <div class="locadd hide" id="loc-add">
+      <label class="lab" for="loc-name">Location name</label>
+      <input type="text" id="loc-name" class="tin" placeholder="Name, like Hyderabad" autocomplete="off" enterkeyhint="done">
+      <div class="edacts"><button class="flat" id="loc-cancel">Cancel</button><button class="go" id="loc-save">Save location</button></div>
+    </div>
+    <p class="note" style="margin:0">Water °C, boil loss, Vedica % and press ceiling belong to the location you pick. Changing them below updates that location.</p>
+    <div class="grid">
+      <div><label for="ratio">Brew ratio 1:</label><div class="stp sm"><button type="button" class="sb" data-st="ratio" data-d="-0.1" aria-label="Lower brew ratio">&minus;</button><input type="number" id="ratio" class="tin sv" inputmode="decimal" enterkeyhint="done" min="5" max="20" step="0.1" placeholder=""><button type="button" class="sb" data-st="ratio" data-d="0.1" aria-label="Raise brew ratio">+</button></div></div>
+      <div><label for="pratio">Press ratio 1:</label><div class="stp sm"><button type="button" class="sb" data-st="pratio" data-d="-0.1" aria-label="Lower press ratio">&minus;</button><input type="number" id="pratio" class="tin sv" inputmode="decimal" enterkeyhint="done" min="10" max="18" step="0.1" placeholder=""><button type="button" class="sb" data-st="pratio" data-d="0.1" aria-label="Raise press ratio">+</button></div></div>
+      <div><label for="ved">Vedica %</label><div class="stp sm"><button type="button" class="sb" data-st="ved" data-d="-1" aria-label="Lower Vedica share">&minus;</button><input type="number" id="ved" class="tin sv" inputmode="decimal" enterkeyhint="done" min="0" max="60" step="1" placeholder=""><button type="button" class="sb" data-st="ved" data-d="1" aria-label="Raise Vedica share">+</button></div></div>
+      <div><label for="ceil">Press ceiling g</label><div class="stp sm"><button type="button" class="sb" data-st="ceil" data-d="-10" aria-label="Lower press ceiling">&minus;</button><input type="number" id="ceil" class="tin sv" inputmode="decimal" enterkeyhint="done" min="200" max="700" step="10" placeholder=""><button type="button" class="sb" data-st="ceil" data-d="10" aria-label="Raise press ceiling">+</button></div></div>
+      <div><label for="temp">Water &deg;C</label><div class="stp sm"><button type="button" class="sb" data-st="temp" data-d="-1" aria-label="Lower water temperature">&minus;</button><input type="number" id="temp" class="tin sv" inputmode="decimal" enterkeyhint="done" min="80" max="100" step="1" placeholder=""><button type="button" class="sb" data-st="temp" data-d="1" aria-label="Raise water temperature">+</button></div></div>
+      <div><label for="panloss">Boil loss g</label><div class="stp sm"><button type="button" class="sb" data-st="panloss" data-d="-5" aria-label="Lower boil loss">&minus;</button><input type="number" id="panloss" class="tin sv" inputmode="decimal" enterkeyhint="done" min="0" max="80" step="5" placeholder=""><button type="button" class="sb" data-st="panloss" data-d="5" aria-label="Raise boil loss">+</button></div></div>
+      <div><label for="dspeed">Dry run speed &times;</label><div class="stp sm"><button type="button" class="sb" data-st="dspeed" data-d="-1" aria-label="Lower dry run speed">&minus;</button><input type="number" id="dspeed" class="tin sv" inputmode="decimal" enterkeyhint="done" min="2" max="60" step="1" placeholder=""><button type="button" class="sb" data-st="dspeed" data-d="1" aria-label="Raise dry run speed">+</button></div></div>
+      <div><label for="lead">Delivery takes, days</label><div class="stp sm"><button type="button" class="sb" data-st="lead" data-d="-1" aria-label="Lower delivery days">&minus;</button><input type="number" id="lead" class="tin sv" inputmode="decimal" enterkeyhint="done" min="0" max="21" step="1" placeholder=""><button type="button" class="sb" data-st="lead" data-d="1" aria-label="Raise delivery days">+</button></div></div>
+    </div>
+    <p class="note" style="margin:18px 0 0">Press ceiling is the water that reaches the underside of the screen with the plunger fully up. Measure it once and set it here.</p>
+  </details>
+</div>
+
+<div id="sc-brew" class="hide">
+  <div class="step-head">
+    <button class="ghost" id="abandon">&larr; Stop</button>
+    <span class="count" id="count"></span>
+  </div>
+  <p class="dryflag hide" id="dryflag">Dry run &middot; timers at 20&times;, recorded times scaled back up</p>
+  <p class="stage" id="stage"></p>
+  <p class="detail" id="detail"></p>
+  <div class="gotrow hide" id="gotrow">
+    <button type="button" class="gotlink" id="gotlink">Poured a different amount?</button>
+    <div class="gotbox hide" id="gotbox">
+      <label class="gotlab" for="got">What came out of the press</label>
+      <div class="gotin"><input id="got" type="number" inputmode="decimal" enterkeyhint="done" min="1" max="3000" step="1"><span>g</span></div>
+      <p class="gotres" id="gotres"></p>
+    </div>
+  </div>
+  <ul class="wait hide" id="wait"></ul>
+  <div id="timed">
+    <p class="clock" id="clock">0:00</p>
+    <div class="bar"><i id="bar"></i></div>
+  </div>
+  <p class="manual hide" id="manual">No timer on this step</p>
+  <div class="acts" id="acts">
+    <button class="flat hide" id="pause">Pause</button>
+    <button class="go" id="next">Next</button>
+  </div>
+  <p class="upnext" id="upnext"></p>
+  <p class="total" id="total"></p>
+  <details class="more hide" id="more"><summary>More</summary><div class="more-b" id="more-b"></div></details>
+  <div class="runshade hide" id="runshade"></div>
+  <div class="runwrap">
+    <div class="runpanel hide" id="runpanel" role="region" aria-label="This brew"></div>
+    <button class="runbar" id="runbar" aria-expanded="false" aria-controls="runpanel"><span class="lbl" id="runbar-l">This brew</span><span class="chev" aria-hidden="true">&#9652;</span></button>
+  </div>
+</div>
+
+<div id="sc-review" class="hide">
+  <div class="top"><h1 id="rv-title">How was it</h1><div class="toprt"><button class="ghost" id="later">Score later</button><button class="ghost" id="skip">Discard</button></div></div>
+  <div class="hl" id="rv-summary"></div>
+  <div class="flag w hide" id="rv-pack"></div>
+  <div id="rv-wt-wrap">
+  <label class="lab" for="rv-wt">Water temperature when poured &deg;C</label>
+  <div class="stp"><button type="button" class="sb" data-st="rv-wt" data-d="-0.5" aria-label="Lower water temperature">&minus;</button><input type="number" id="rv-wt" class="tin sv" inputmode="decimal" enterkeyhint="done" min="60" max="100" step="0.5" placeholder=""><button type="button" class="sb" data-st="rv-wt" data-d="0.5" aria-label="Raise water temperature">+</button></div>
+  </div>
+  <div id="rv-jug-wrap" class="hide">
+    <label class="lab" for="rv-jug">Jug temperature after stirring &deg;C</label>
+    <div class="stp"><button type="button" class="sb" data-st="rv-jug" data-d="-0.5" aria-label="Lower jug temperature">&minus;</button><input type="number" id="rv-jug" class="tin sv" inputmode="decimal" enterkeyhint="done" min="0" max="40" step="0.5" placeholder="not taken" data-def="8"><button type="button" class="sb" data-st="rv-jug" data-d="0.5" aria-label="Raise jug temperature">+</button></div>
+  </div>
+  <label class="lab" for="rv-temp">Cup temperature at first sip &deg;C</label>
+  <div class="stp"><button type="button" class="sb" data-st="rv-temp" data-d="-1" aria-label="Lower cup temperature">&minus;</button><input type="number" id="rv-temp" class="tin sv" inputmode="decimal" enterkeyhint="done" min="0" max="95" step="1" placeholder="not taken"><button type="button" class="sb" data-st="rv-temp" data-d="1" aria-label="Raise cup temperature">+</button></div>
+  <div id="rv-dec-wrap">
+  <label class="lab" for="rv-dec">Grams actually decanted</label>
+  <div class="stp"><button type="button" class="sb" data-st="rv-dec" data-d="-1" aria-label="Lower grams decanted">&minus;</button><input type="number" id="rv-dec" class="tin sv" inputmode="decimal" enterkeyhint="done" min="0" max="900" step="1" placeholder=""><button type="button" class="sb" data-st="rv-dec" data-d="1" aria-label="Raise grams decanted">+</button></div>
+  </div>
+  <label class="lab" for="rv-fine">Overall <span class="sval" id="rv-val"></span></label>
+  <div class="scale" id="rv-score" role="group" aria-label="Score">
+    <button data-v="1" aria-pressed="false">1</button><button data-v="2" aria-pressed="false">2</button>
+    <button data-v="3" aria-pressed="false">3</button><button data-v="4" aria-pressed="false">4</button>
+    <button data-v="5" aria-pressed="false">5</button>
+  </div>
+  <div class="fine"><input type="range" id="rv-fine" min="1" max="5" step="0.1" value="3"><span class="fh">slide to fine-tune</span></div>
+  <div id="rv-with-wrap" class="hide">
+    <label class="lab">Shared this carafe with</label>
+    <div class="chips" id="rv-with" role="group" aria-label="Shared with"></div>
+    <p class="note" id="rv-with-note" style="margin:-10px 0 20px"></p>
+  </div>
+  <label class="lab">How much of this brew did you drink</label>
+  <div class="chips" id="rv-share"></div>
+  <label class="sr" for="rv-drank">Grams you drank</label>
+  <div class="stp"><button type="button" class="sb" data-st="rv-drank" data-d="-5" aria-label="Lower grams you drank">&minus;</button><input type="number" id="rv-drank" class="tin sv" inputmode="decimal" enterkeyhint="done" min="0" step="5" placeholder="grams"><button type="button" class="sb" data-st="rv-drank" data-d="5" aria-label="Raise grams you drank">+</button></div>
+  <p class="stp-sub" id="rv-of"></p>
+  <p class="note" id="rv-caf" style="margin:-8px 0 22px"></p>
+  <label class="lab">What you tasted</label>
+  <div class="chips" id="rv-tastes"></div>
+  <label class="lab">Anything off</label>
+  <div class="chips" id="rv-faults"></div>
+  <details class="stepedit" id="rv-steps"><summary>Fix a step time</summary><div id="rv-steps-body"></div></details>
+  <label class="lab" for="rv-note">Notes</label>
+  <textarea id="rv-note" class="tin" rows="3" placeholder="Beans, grind, what you changed"></textarea>
+  <button class="go" id="rv-save">Save brew</button>
+</div>
+
+<div id="sc-log" class="hide">
+  <div class="top"><h1>Brew log</h1><button class="ghost" id="log-back">&larr; Recipe</button></div>
+  <div class="flag s hide" id="log-err">This browser refused to save the log, so the latest change will be lost when the page closes. Tap Copy all as JSON now and keep the text somewhere safe.</div>
+  <div class="logseg" id="log-seg" role="group" aria-label="Which log">
+    <button id="lv-real" aria-pressed="true">Brews</button>
+    <button id="lv-all" class="hide" aria-pressed="false">Everyone</button>
+    <button id="lv-test" aria-pressed="false">Dry runs</button>
+  </div>
+  <p class="syncl" id="log-sync" role="status"></p>
+  <div class="rpick hide" id="log-beans" role="group" aria-label="Filter by bean"></div>
+  <div id="log-insights"></div>
+  <div id="log-stats"></div>
+  <div id="log-list"></div>
+  <button class="flat hide" id="log-copy">Copy all as JSON</button>
+  <button class="flat hide" id="log-clear" style="color:var(--stop)">Clear all dry runs</button>
+  <details id="restore">
+    <summary>Restore from a backup</summary>
+    <p class="note" style="margin:14px 0 12px">Paste the text from Copy all as JSON. Brews already in the log are skipped, so nothing gets doubled.</p>
+    <label class="sr" for="rs-text">Backup text</label>
+    <textarea id="rs-text" class="tin" rows="5" placeholder="Tap to paste the backup text"></textarea>
+    <p class="note hide" id="rs-msg" style="margin:-8px 0 14px;color:var(--steel)"></p>
+    <button class="flat" id="rs-go">Add to log</button>
+  </details>
+</div>
+
+<div id="sc-try" class="hide">
+  <div class="top"><h1>To try</h1><button class="ghost" id="try-back">&larr; Recipe</button></div>
+  <p class="tsum" id="try-sum"></p>
+  <div id="try-list"></div>
+  <details id="try-add">
+    <summary>Add a coffee</summary>
+    <div class="grid">
+      <div style="grid-column:1/-1"><label for="t-name">Coffee</label><input type="text" id="t-name" class="tin" placeholder="Ratnagiri Culture Naturals" autocomplete="off" enterkeyhint="done"></div>
+      <div style="grid-column:1/-1"><label for="t-roaster">Roaster</label><input type="text" id="t-roaster" class="tin" placeholder="Subko" autocomplete="off" enterkeyhint="done"></div>
+      <div style="grid-column:1/-1"><label for="t-notes">Notes</label><textarea id="t-notes" class="tin" rows="2" placeholder="Tasting notes, price, where to buy"></textarea></div>
+    </div>
+    <div class="rpick" id="t-grp" role="group" aria-label="When"></div>
+    <p class="flag s hide" id="t-err"></p>
+    <button class="go" id="t-save">Add to the list</button>
+  </details>
+  <p class="note" style="margin-top:18px">Ticks sync to your account, like the log. Mark ordered when you buy. When the bag arrives, Add as pack makes it your pack in use, so brews count against it, and the coffee ticks itself off after the first logged brew.</p>
+</div>
+
+<div id="sc-settings" class="hide">
+  <div class="top"><h1>Settings</h1><button class="ghost" id="set-back">&larr; Recipe</button></div>
+  <h2 class="sh2">Sync with GitHub</h2>
+  <p class="note" id="gh-state" style="margin-bottom:16px"></p>
+  <div id="gh-form">
+    <label class="lab" for="gh-owner">GitHub username</label>
+    <input type="text" id="gh-owner" class="tin" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="next" placeholder="your-username">
+    <label class="lab" for="gh-repo">Data repository</label>
+    <input type="text" id="gh-repo" class="tin" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="next" value="brew-data">
+    <label class="lab" for="gh-token">Access token</label>
+    <input type="password" id="gh-token" class="tin" autocomplete="off" spellcheck="false" enterkeyhint="go" placeholder="github_pat_&hellip;">
+    <p class="flag s hide" id="gh-err"></p>
+    <p class="flag w hide" id="gh-warn"></p>
+    <div id="gh-who" class="hide">
+      <p class="note" style="margin:0 0 10px">Who uses this phone? Tap your name to finish connecting.</p>
+      <div class="chips" id="gh-who-list"></div>
+    </div>
+    <button class="go" id="gh-connect">Connect</button>
+    <details class="howto">
+      <summary>How to make the access token</summary>
+      <ol class="steps">
+        <li>On GitHub, open <b>Settings &rarr; Developer settings &rarr; Personal access tokens &rarr; Fine-grained tokens</b> and tap <b>Generate new token</b>.</li>
+        <li>Name it <b>Brew app</b> and pick an expiry (a year is fine).</li>
+        <li>Under <b>Repository access</b>, choose <b>Only select repositories</b> and pick <b>brew-data</b>.</li>
+        <li>Under <b>Permissions &rarr; Repository permissions</b>, set <b>Contents</b> to <b>Read and write</b>. Leave everything else as it is.</li>
+        <li>Generate, copy the token, and paste it above. It stays on this phone and can only touch brew-data.</li>
+      </ol>
+    </details>
+  </div>
+  <div id="gh-on" class="hide">
+    <div class="edacts"><button class="flat" id="gh-off">Disconnect</button><button class="go" id="gh-sync">Sync now</button></div>
+  </div>
+  <div id="ppl" class="hide">
+    <h2 class="sh2">People</h2>
+    <p class="note" id="ppl-me" style="margin-bottom:8px"></p>
+    <div id="ppl-list"></div>
+    <p class="flag s hide" id="ppl-err"></p>
+    <details class="howto" id="ppl-add">
+      <summary>Add a person</summary>
+      <label class="lab" for="ppl-name">Name</label>
+      <input type="text" id="ppl-name" class="tin" autocomplete="off" enterkeyhint="done" placeholder="Their name">
+      <button class="go" id="ppl-save">Add person</button>
+      <p class="note">They get their own packs, places, To try list, log and caffeine count. To use the app on their own phone: install it there, connect with a token made for that phone (same steps as above, a second token), then pick their name. When you share a carafe, each of you scores your own cup.</p>
+    </details>
+  </div>
+  <h2 class="sh2">Appearance</h2>
+  <button class="flat" id="theme">Theme</button>
+  <h2 class="sh2">Your data</h2>
+  <button class="flat" id="dl-backup">Download a backup file</button>
+  <p class="note">Everything in one file: brews, dry runs, packs, locations and settings. Restoring brews from a backup is at the bottom of the Log.</p>
+  <h2 class="sh2">About</h2>
+  <p class="note" id="about"></p>
+</div>
+
+</body>
+</html>
