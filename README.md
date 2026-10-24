@@ -43,6 +43,10 @@ the glass, with a timed drain. No jug settle. Brews are tagged, and the Log show
   single soft tone when it is due. The triple beep still marks the end of a step.
 - **This brew**, the bar at the bottom, slides up a panel with everything set before Start: drink size, ratio, coffee, water,
   ice, rinse, and every step, done, current and next. The timer keeps running; tap outside the panel to close it.
+- Pouring out of the press, the grams are the most to pour: stop early if it turns muddy. If a different amount came out,
+  tap **Poured a different amount?** and enter it; the steps after adjust (the hot water added in bypass mode, or the milk
+  for café au lait, scale with it so the strength stays the same). Leave it alone when the pour went to plan.
+- A step's timer keeps counting past zero, as minus time, so a glance shows how far over it is.
 - Iced and Vietnamese iced have an **RO + Vedica ice / Other ice** switch. Other ice is recorded with the brew and shown in the
   log, so a bad iced cup can be traced to the ice rather than the method.
 

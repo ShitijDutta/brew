@@ -118,6 +118,14 @@
   <p class="dryflag hide" id="dryflag">Dry run &middot; timers at 20&times;, recorded times scaled back up</p>
   <p class="stage" id="stage"></p>
   <p class="detail" id="detail"></p>
+  <div class="gotrow hide" id="gotrow">
+    <button type="button" class="gotlink" id="gotlink">Poured a different amount?</button>
+    <div class="gotbox hide" id="gotbox">
+      <label class="gotlab" for="got">What came out of the press</label>
+      <div class="gotin"><input id="got" type="number" inputmode="decimal" enterkeyhint="done" min="1" max="3000" step="1"><span>g</span></div>
+      <p class="gotres" id="gotres"></p>
+    </div>
+  </div>
   <ul class="wait hide" id="wait"></ul>
   <div id="timed">
     <p class="clock" id="clock">0:00</p>

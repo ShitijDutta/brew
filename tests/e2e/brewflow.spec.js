@@ -127,3 +127,83 @@ test('ice: RO + Vedica or other ice, recorded with the brew', async ({ page }) =
   await page.click('#rpick [data-r="viet"]');
   await expect(page.locator('#ice-blend')).toHaveAttribute('aria-pressed', 'true');
 });
+
+test('less out of the press: enter it, and the hot water after keeps the strength', async ({ page }) => {
+  await page.goto('./');
+  await page.click('#rpick [data-r="black"]');
+  await page.click('#m-bypass');
+  await page.click('#f-paper');
+  await page.click('#pw-press');
+  await page.fill('#tgt', '600');
+  const planDec = Number((await numberRow(page, 'Decant to').innerText()).replace(/\D/g, ''));
+  const planByp = Number((await numberRow(page, 'Add hot water').innerText()).replace(/\D/g, ''));
+  await page.click('#start');
+  while ((await page.innerText('#stage')) !== 'Pour through the paper') await page.click('#next');
+  await expect(page.locator('#detail')).toContainText(`up to ${planDec} g. Stop early if it turns muddy.`);
+  /* optional, folded away until asked for */
+  await expect(page.locator('#gotlink')).toBeVisible();
+  await expect(page.locator('#got')).toBeHidden();
+  await page.click('#gotlink');
+  await expect(page.locator('#got')).toBeFocused();
+  await expect(page.locator('#gotres')).toBeHidden();
+
+  const got = planDec - 10;
+  const byp = Math.round(planByp * (got - 25) / (planDec - 25));
+  await page.fill('#got', String(got));
+  await expect(page.locator('#gotres')).toContainText(`Add ${byp} g of hot water next, for about ${got - 25 + byp} g`);
+  await page.click('#runbar');
+  await expect(page.locator('#runpanel .rp-sub')).toContainText(`adjusted for ${got} g poured`);
+  await expect(page.locator('#runpanel .rp-nums')).toContainText(`Add hot water${byp} g`);
+  await page.click('#runbar');
+
+  await page.click('#next');                       /* drain */
+  await expect(page.locator('#gotrow')).toBeHidden();
+  await page.click('#next');                       /* add hot water */
+  await expect(page.locator('#stage')).toHaveText('Add hot water');
+  await expect(page.locator('#detail')).toContainText(`${byp} g of the leftover hot water`);
+  await page.click('#next');
+  await expect(page.locator('#detail')).toContainText(`about ${got - 25 + byp} g`);
+  await page.click('#next');
+  await expect(page.locator('#rv-dec')).toHaveValue(String(got));
+});
+
+test('nothing entered means the planned amount came out', async ({ page }) => {
+  await page.goto('./');
+  await page.click('#rpick [data-r="black"]');
+  await page.click('#f-mesh');
+  await page.click('#m-direct');
+  const planDec = (await numberRow(page, 'Decant to').innerText()).replace(/\D/g, '');
+  await page.click('#start');
+  for (let i = 0; i < 25 && !(await page.isVisible('#sc-review')); i++) {
+    if ((await page.innerText('#stage')) === 'Decant') await expect(page.locator('#got')).toBeHidden();
+    await page.click('#next');
+  }
+  await expect(page.locator('#rv-dec')).toHaveValue(planDec);
+});
+
+test('a timer that runs out keeps counting, as minus time', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('fp.v1', JSON.stringify({ dspeed: 60 })));
+  await page.goto('./');
+  await page.click('#rpick [data-r="black"]');
+  await page.click('#dry');
+  while ((await page.innerText('#stage')) !== 'Steep') await page.click('#next');
+  await expect(page.locator('#clock')).toHaveClass(/over/, { timeout: 9000 });   /* 4:00 at 60x */
+  await expect(page.locator('#clock')).toHaveText(/^−\d+:\d\d$/);
+  await page.waitForTimeout(1500);
+  const over = await page.innerText('#clock');
+  expect(Number(over.split(':')[0].slice(1)) * 60 + Number(over.split(':')[1])).toBeGreaterThanOrEqual(60);
+  await expect(page.locator('#pause')).toHaveText('Restart');
+  await page.click('#runbar');
+  await expect(page.locator('#rp-left')).toContainText('over');
+  await page.click('#runbar');
+
+  /* still counting after the app is reopened */
+  await page.reload();
+  await page.click('[data-run="resume"]');
+  await expect(page.locator('#clock')).toHaveText(/^−/);
+
+  /* the next step starts clean */
+  await page.click('#next');
+  await expect(page.locator('#clock')).not.toHaveClass(/over/);
+  await expect(page.locator('#clock')).toHaveText(/^\d+:\d\d$/);
+});

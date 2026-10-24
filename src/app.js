@@ -499,8 +499,9 @@ function render(){
 
 /* Each step: k, t (title), d (one line: what to do, with the numbers), s (timer, seconds),
    more (the why and the tips, folded away), w (prep to do while this step's timer runs; at = seconds left when it is due) */
-function buildSteps(){
-  var o=compute(), s=[], P=o.paper, R=S.recipe, bypass=R==='black'&&S.mode==='bypass';
+function buildSteps(oIn){
+  /* oIn: a run's numbers (adjusted mid-brew when less came out of the press); otherwise the recipe as set */
+  var o=oIn||compute(), s=[], P=o.paper, R=o.recipe||S.recipe, bypass=R==='black'&&(o.mode||S.mode)==='bypass';
   /* paper filter, filled one of two ways:
      from the decanter: the press is tipped once into the decanter, and the paper on the cup (or jug of ice) is filled from there;
      from the press: the paper is filled straight from the press, held at its tilt while the paper drains */
@@ -523,10 +524,10 @@ function buildSteps(){
   function rinseW(into){return P?W('Paper in the dripper, seam folded flat. Rinse it with the hot RO '+(into?'into '+into+' to warm it, then tip that out':'over the sink')):null}
   /* the vessel the coffee is weighed into next, tared before the plunge */
   function tareW(dest,meshVessel,at){return W(FP?'Dripper on '+dest+', on the scale, tared':(P?'Decanter on the scale, tared':meshVessel+' on the scale, tared'),at===undefined?60:at)}
-  function pressThrough(into,grams,more){return step('decant','Pour through the paper','From the press into the dripper on '+into+', to '+B(grams+' g')+'.',
-    {more:'Pour fast while there is room, then slow down near the top and hold the press at its angle: standing it up and tipping again stirs the bed. Keep the level a centimetre below the paper’s edge.'+(more||'')})}
-  function oneDecant(grams){return step('decant','Decant','Into the decanter in one slow pour, to '+B(grams+' g')+'.',
-    {more:'Shallow tilt. Don’t set the press down mid-pour: every tilt back stirs the bed. It mixes as it pours, so there is no need to swirl.'})}
+  function pressThrough(into,grams,more){return step('decant','Pour through the paper','Into the dripper on '+into+', up to '+B(grams+' g')+'. Stop early if it turns muddy.',
+    {more:'Pour fast while there is room, then slow down near the top and hold the press at its angle: standing it up and tipping again stirs the bed. Keep the level a centimetre below the paper’s edge. The grams are the most to pour, not a target: sludge in the paper costs more than the last few grams. Got less? Enter what you poured and the next steps adjust.'+(more||'')})}
+  function oneDecant(grams){return step('decant','Decant','Into the decanter in one slow pour, up to '+B(grams+' g')+'. Stop early if it turns muddy.',
+    {more:'Shallow tilt. Don’t set the press down mid-pour: every tilt back stirs the bed. It mixes as it pours, so there is no need to swirl. The grams are the most to pour, not a target. Got less? Enter what you poured and the next steps adjust.'})}
   function through(into,more){return step('filter','Pour through the paper','From the decanter into the dripper on '+into+', in two or three goes.',
     {more:'Set the decanter down in between; with the press out of the way there is nothing to stir up. Keep the level a centimetre below the paper’s edge, and leave the last spoonful in the decanter, where the heaviest silt sank.'+(more||'')})}
   var drain=step('drain','Let it drain','Hands off. Lift the dripper off at the beep.',{s:240,more:R==='iced'
@@ -554,7 +555,8 @@ function buildSteps(){
       w:[rinseW(FP?null:'your glass'),tareW('the decanter','Decanter')]}));
     s.push(step('plunge','Plunge','Slowly, to a couple of centimetres above the bed. Never into it.',
       {s:30,more:'The screen then holds the bed still when you tilt. Done by the beep; this counts as contact time.'}));
-    var byp=step('byp','Add hot water',B(Math.round(o.bypass)+' g')+' of the leftover hot water into the jug, to '+B(o.Y+' g')+'.');
+    /* the jug holds the paper's share too when the hot water goes in before the paper */
+    var byp=step('byp','Add hot water',B(Math.round(o.bypass)+' g')+' of the leftover hot water into the jug, to '+B(Math.round(P&&!FP?o.Y+o.loss:o.Y)+' g')+'.');
     if(FP){
       s.push(pressThrough('the decanter',dec)); s.push(drain);
       if(bypass)s.push(byp);
@@ -644,10 +646,12 @@ function buildSteps(){
 var steps=[],idx=0,left=0,dur=0,running=false,tid=null,elapsed=0,wl=null,ac=null;
 var brewT0=0,tStart=0,tBase=0;
 var actuals=[],stepT0=0,runCalc=null,runMeta=null;
+/* when a step's timer ran out, so the clock can keep counting past zero (shown as minus time) */
+var tOver0=0, over=0;
 function saveRun(){
   if(!steps.length)return;
   try{localStorage.setItem(RKEY,JSON.stringify({steps:steps,idx:idx,actuals:actuals,brewT0:brewT0,tStart:tStart,tBase:tBase,
-    running:running,dur:dur,stepT0:stepT0,speed:speed,testMode:testMode,runCalc:runCalc,meta:runMeta,savedAt:Date.now()}))}catch(e){}
+    running:running,dur:dur,stepT0:stepT0,tOver0:tOver0,speed:speed,testMode:testMode,runCalc:runCalc,meta:runMeta,savedAt:Date.now()}))}catch(e){}
 }
 function clearRun(){try{localStorage.removeItem(RKEY)}catch(e){}}
 function readRun(){
@@ -659,7 +663,7 @@ function readRun(){
 }
 function resumeRun(r){
   steps=r.steps; idx=r.idx; actuals=r.actuals||[]; brewT0=r.brewT0; tStart=r.tStart; tBase=r.tBase;
-  running=!!r.running; dur=r.dur||0; stepT0=r.stepT0; speed=r.speed||1; testMode=!!r.testMode; runCalc=r.runCalc; runMeta=r.meta;
+  running=!!r.running; dur=r.dur||0; stepT0=r.stepT0; tOver0=r.tOver0||0; speed=r.speed||1; testMode=!!r.testMode; runCalc=r.runCalc; runMeta=r.meta;
   left=Math.max(0,dur-tBase); cueDone={}; cueQuiet=true; closeRunPanel();
   $('dryflag').classList.toggle('hide',!testMode);
   show('sc-brew'); ctx(); lock();
@@ -699,7 +703,7 @@ function paint(){
   $('count').textContent=(idx+1)+' of '+steps.length;
   $('stage').textContent=st.t;
   $('detail').innerHTML=st.d;
-  paintWait();
+  paintWait(); paintGot();
   var mo=$('more'); mo.open=false; mo.classList.toggle('hide',!st.more); $('more-b').innerHTML=st.more||'';
   paintRunBar(); paintRunPanel();
   var timed=!!st.s;
@@ -715,11 +719,11 @@ function paint(){
 }
 function tickPaint(){
   var c=$('clock');
-  c.textContent=mmss(left);
-  c.className='clock'+(left<=0?' done':(left<=10?' low':''));
+  c.textContent=over>0?'\u2212'+mmss(over):mmss(left);
+  c.className='clock'+(left<=0?' done':(left<=10?' low':''))+(over>0?' over':'');
   $('bar').style.width=dur?Math.min(100,((dur-left)/dur)*100)+'%':'0%';
   $('total').textContent='Total elapsed '+mmss(elapsed);
-  var rl=document.getElementById('rp-left'); if(rl)rl.textContent=mmss(left);
+  var rl=document.getElementById('rp-left'); if(rl)rl.textContent=leftText();
 }
 function loop(){
   /* everything derives from the wall clock, so time spent in another app still counts */
@@ -728,9 +732,10 @@ function loop(){
   if(dur){
     var spent=tBase+(running?((now-tStart)/1000)*speed:0);
     var nl=Math.max(0,dur-spent);
-    if(running&&nl<=0){running=false;tBase=dur;left=0;$('pause').textContent='Restart';beep(3)}
+    if(running&&nl<=0){running=false;tBase=dur;left=0;tOver0=now-((spent-dur)/speed)*1000;$('pause').textContent='Restart';beep(3);saveRun()}
     else left=nl;
   }
+  over=(dur&&!running&&tOver0&&tBase>=dur)?((now-tOver0)/1000)*speed:0;
   checkCues();
   tickPaint();
 }
@@ -778,12 +783,13 @@ function paintRunBar(){
 }
 function paintRunPanel(){
   var el=$('runpanel'); if(el.classList.contains('hide'))return;
-  var o=runCalc, m=runMeta||{}, p=m.params||{}, how=[], sub=[];
+  var o=runNums(), m=runMeta||{}, p=m.params||{}, how=[], sub=[];
   if(m.recipe==='black')how.push(m.mode==='bypass'?'bypass':'direct');
   if(o)how.push(o.paper?'paper, '+(o.pflow==='press'?'from the press':'from the decanter'):'mesh only');
   if(o&&o.ice)how.push(o.iceKind==='other'?'other ice':'RO + Vedica ice');
   if(p.tgt)sub.push(p.tgt+' g'); if(p.ratio)sub.push('1:'+p.ratio); if(p.temp)sub.push(p.temp+'°C'); if(p.loc)sub.push(esc(p.loc));
   if(testMode)sub.push('dry run');
+  if(o&&runCalc.got)sub.push('adjusted for '+runCalc.got+' g poured');
   var h='<p class="rp-h">'+runTitle()+(how.length?' · '+how.join(' · '):'')+'</p><p class="rp-sub">'+sub.join(' · ')+'</p>';
   if(o)h+='<div class="rp-nums">'+numRows(o,o.mode||m.mode,null).map(function(r){return '<div><span class="k">'+r[0].replace(/^\u2003 (.)/,function(x,c){return c.toUpperCase()})+'</span><span class="v">'+r[1]+'</span></div>'}).join('')+'</div>';
   /* steps already done fold into one line, so the current one sits just under the numbers */
@@ -792,7 +798,7 @@ function paintRunPanel(){
   if(idx)h+='<li class="done"><details class="rp-done"><summary><span class="ic">\u2713</span>'+idx+' of '+steps.length+' done</summary><ol class="rp-steps">'+done+'</ol></details></li>';
   h+=steps.map(function(st,i){
     if(i<idx)return '';
-    var cur=i===idx, tm=cur?(st.s?'<span id="rp-left">'+mmss(left)+'</span> left':''):(st.s?mmss(st.s):''), w=cueList(st);
+    var cur=i===idx, tm=cur?(st.s?'<span id="rp-left">'+leftText()+'</span>':''):(st.s?mmss(st.s):''), w=cueList(st);
     return '<li class="'+(cur?'cur':'')+'"><span class="ic">'+(cur?'\u25CF':'\u25CB')+'</span><span class="t">'+esc(st.t)+'</span><span class="tm">'+tm+'</span>'
       +'<div class="d">'+st.d+'</div>'+(w.length?'<ul class="w">'+w.map(function(c,j){return cueHTML(c,j,cur)}).join('')+'</ul>':'')+'</li>';
   }).join('')+'</ol>';
@@ -811,10 +817,63 @@ function closeRunPanel(){
 }
 $('runbar').addEventListener('click',function(){if($('runpanel').classList.contains('hide'))openRunPanel();else closeRunPanel()});
 $('runshade').addEventListener('click',closeRunPanel);
+function leftText(){return over>0?mmss(over)+' over':mmss(left)+' left'}
+
+/* Less (or more) out of the press than planned: the rest of the run is worked out again from what was poured,
+   keeping the strength: the hot water added after (bypass), or the milk, scale with the coffee that came through */
+function adjustCalc(o,got){
+  var x=JSON.parse(JSON.stringify(o)), L=o.loss||0, C=Math.max(1,o.decant-L), C2=Math.max(0,got-L), k=C2/C;
+  x.decant=got;
+  if(o.bypass>0)x.bypass=Math.round(o.bypass*k);
+  if(x.recipe==='black'){x.Y=Math.round(C2+(x.bypass||0));x.T=x.Y-(x.j||0)}
+  else if(x.recipe==='hoff'){x.T=x.Y=Math.round(C2)}
+  else if(x.recipe==='iced'){x.yield=Math.round(C2);x.T=x.yield+(x.ice||0)}
+  else if(x.recipe==='aulait'){x.yield=Math.round(C2);x.milk=Math.round(o.milk*k);x.T=x.yield+x.milk}
+  else {x.conc=Math.round(C2);x.T=x.conc+(x.cm||0)+(x.ice||0)}
+  return x;
+}
+function runNums(){return (runCalc&&runCalc.got)?adjustCalc(runCalc,runCalc.got):runCalc}
+function gotText(){
+  if(!runCalc||!runCalc.got)return '';
+  var x=runNums(), rk=x.recipe;
+  if(rk==='black')return x.bypass>0?'Add '+x.bypass+' g of hot water next, for about '+x.T+' g at the same strength.':'About '+x.T+' g '+(x.paper?'into the glass.':'to pour off.');
+  if(rk==='aulait')return 'Heat '+x.milk+' g of milk instead, for about '+x.T+' g.';
+  if(rk==='iced')return 'About '+x.T+' g once the ice melts.';
+  return 'About '+x.T+' g '+(rk==='hoff'?'in the cup.':'in the glass.');
+}
+function paintGot(){
+  var st=steps[idx], on=!!(st&&st.k==='decant'&&runCalc);
+  $('gotrow').classList.toggle('hide',!on);
+  if(!on)return;
+  /* optional: folded away unless a different amount was entered */
+  var open=!!runCalc.got; $('gotbox').classList.toggle('hide',!open); $('gotlink').classList.toggle('hide',open);
+  var g=$('got'); g.placeholder=String(Math.round(runCalc.decant));
+  if(document.activeElement!==g)g.value=runCalc.got||'';
+  $('gotres').textContent=gotText();
+}
+/* the steps still to come pick up the new numbers; the step in progress keeps its plan */
+function applyGot(){
+  var fresh=buildSteps(runNums());
+  for(var i=idx+1;i<steps.length;i++)if(fresh[i]&&fresh[i].k===steps[i].k){
+    steps[i].d=fresh[i].d;
+    if(fresh[i].more)steps[i].more=fresh[i].more; else delete steps[i].more;
+    if(fresh[i].w)steps[i].w=fresh[i].w; else delete steps[i].w;
+  }
+  $('gotres').textContent=gotText();
+  paintRunPanel(); saveRun();
+}
+$('gotlink').addEventListener('click',function(){$('gotbox').classList.remove('hide');this.classList.add('hide');$('got').focus()});
+$('got').addEventListener('input',function(){
+  if(!runCalc)return;
+  var v=parseFloat(this.value);
+  if(v>0&&v<3000)runCalc.got=Math.round(v); else delete runCalc.got;
+  applyGot();
+});
+
 function go(i){
   idx=i; var st=steps[idx];
   dur=st.s?st.s:0; left=dur; running=!!st.s; tBase=0; tStart=Date.now();
-  stepT0=Date.now(); cueDone={}; cueQuiet=true;
+  stepT0=Date.now(); cueDone={}; cueQuiet=true; tOver0=0; over=0;
   $('pause').textContent='Pause';
   paint(); saveRun();
 }
@@ -861,7 +920,7 @@ function finishBrew(){
     calc:{boil:o.boil,vedica:o.ved,ro:o.ro,dose:o.D,press:o.press,decant:Math.round(o.decant),jug:o.Y,pour:Math.round(o.recipe==='viet'?o.conc:o.T),ice:o.ice||0,milk:o.milk||0,cm:o.cm||0},
     steps:actuals.map(function(a){return {k:a.k,t:a.t,target:Math.round(a.target),actual:Math.round(a.actual)}}),
     total:Math.round(elapsed), contact:Math.round(contactOf(actuals)),
-    log:{temp:null,decant:null,score:null,tastes:[],faults:[],note:''}};
+    log:{temp:null,decant:(runCalc&&runCalc.got)||null,score:null,tastes:[],faults:[],note:''}};
   if(testMode){TLOG.unshift(e);saveT()}
   else{LOG.unshift(e);saveL();pushPending()}
   clearRun(); steps=[];
@@ -1597,7 +1656,7 @@ $('rs-go').addEventListener('click',function(){
 
 $('pause').addEventListener('click',function(){
   var now=Date.now();
-  if(left<=0){tBase=0;tStart=now;left=dur;running=true;this.textContent='Pause';cueDone={};cueQuiet=true;paintWait()}
+  if(left<=0){tBase=0;tStart=now;left=dur;running=true;this.textContent='Pause';cueDone={};cueQuiet=true;tOver0=0;over=0;paintWait()}
   else if(running){tBase+=((now-tStart)/1000)*speed;running=false;this.textContent='Resume'}
   else{tStart=now;running=true;this.textContent='Pause'}
   ctx();loop();saveRun();

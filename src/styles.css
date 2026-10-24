@@ -378,3 +378,14 @@ details.more{margin-top:22px}
 .rp-done .rp-steps{margin:2px 0 0}
 .rp-done .rp-steps>li{color:var(--faint);padding:6px 0}
 .rp-done .rp-steps .ic{color:var(--good)}
+/* what actually came out of the press, and the timer past zero */
+.gotrow{margin:-26px 0 28px}
+.gotlink{font-size:14px;color:var(--acc);padding:6px 0}
+.gotbox{margin-top:6px;padding:12px 14px;background:var(--panel);border-radius:10px}
+.gotlab{display:block;font-size:13.5px;color:var(--steel);margin-bottom:8px}
+.gotin{display:flex;align-items:center;gap:8px}
+.gotin input{width:110px;min-width:0;padding:10px 12px;font-size:17px;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
+.gotin span{color:var(--steel);font-size:15px}
+.gotres{font-size:14.5px;color:var(--ink);margin-top:8px;line-height:1.5}
+.gotres:empty{display:none}
+.clock.over{color:var(--warn)}
