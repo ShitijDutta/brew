@@ -389,3 +389,11 @@ details.more{margin-top:22px}
 .gotres{font-size:14.5px;color:var(--ink);margin-top:8px;line-height:1.5}
 .gotres:empty{display:none}
 .clock.over{color:var(--warn)}
+/* Something new: drinks kept apart from the daily recipes */
+details.newdrinks{border-top:none;padding-top:0;margin:-10px 0 22px}
+details.newdrinks>summary{font-size:14px;color:var(--steel)}
+.xnow{font-size:13px;color:var(--acc);margin-left:6px}
+.xgrp{font-size:12px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 8px}
+.xlist{display:flex;flex-wrap:wrap;gap:6px}
+.xlist button{border:1px dashed var(--line);background:var(--paper);border-radius:999px;padding:7px 13px;font-size:13.5px;color:var(--steel)}
+.xlist button[aria-pressed="true"]{background:var(--acc);border:1px solid var(--acc);color:var(--on-acc);font-weight:500}

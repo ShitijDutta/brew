@@ -55,6 +55,17 @@ the glass, with a timed drain. No jug settle. Brews are tagged, and the Log show
 - Iced and Vietnamese iced have an **RO + Vedica ice / Other ice** switch. Other ice is recorded with the brew and shown in the
   log, so a bad iced cup can be traced to the ice rather than the method.
 
+## Something new
+
+Under the daily recipes, a folded **Something new** section holds drinks to try now and then, kept apart from the everyday
+picker:
+
+- **Made now** (a strong hot concentrate, about 1:7 to 1:9 in the press): Latte, Iced latte, Kaapi-style, Shaken iced, Affogato.
+- **From a cold brew batch** (overnight, keeps 3–4 days): Cold brew + milk, Cold brew tonic, Coconut cold brew, Orange cold brew.
+
+Milk drinks use a handheld frother: heat first to 60–65 °C, then froth just under the surface and then deeper; cold foam uses
+the whisk attachment on cold milk. Press coffee is weaker than espresso, so milk stays close to 1:1 with the coffee.
+
 ## People
 
 Each person who brews gets their own packs, places, To try list, log and caffeine count, all in the same data repository.

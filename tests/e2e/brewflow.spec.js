@@ -252,3 +252,52 @@ test('cold brew: concentrate overnight, no timer, the run waits for you, diluted
   expect(saved.recipe).toBe('cold');
   expect(saved.params.temp).toBeUndefined();
 });
+
+test('Something new: drinks folded away from the daily recipes, each one brews through', async ({ page }) => {
+  await page.goto('./');
+  expect(await page.locator('#rpick button').allInnerTexts()).toEqual(['Black', 'Hoffmann', 'Iced', 'Cold brew', 'Café au lait', 'Vietnamese']);
+  await expect(page.locator('#xpick')).toBeHidden();
+  await page.click('#newdrinks summary');
+  const drinks = await page.locator('#xpick button').allInnerTexts();
+  expect(drinks).toEqual(['Latte', 'Iced latte', 'Kaapi-style', 'Shaken iced', 'Affogato', 'Cold brew + milk', 'Cold brew tonic', 'Coconut cold brew', 'Orange cold brew']);
+  const ends = {
+    'Latte': ['Froth the milk', 'Pour'], 'Iced latte': ['Add the milk'], 'Kaapi-style': ['Froth the milk', 'Pour back and forth'],
+    'Shaken iced': ['Shake', 'Pour off the ice'], 'Affogato': ['Over the ice cream'], 'Cold brew + milk': ['Over ice with milk'],
+    'Cold brew tonic': ['Build the tonic'], 'Coconut cold brew': ['Over ice'], 'Orange cold brew': ['Over ice']
+  };
+  for (const name of drinks) {
+    await page.locator('#xpick').getByRole('button', { name, exact: true }).click();
+    await expect(page.locator('#xnow')).toHaveText('Trying: ' + name);
+    await expect(page.locator('#rpick button[aria-pressed="true"]')).toHaveCount(0);
+    await expect(page.locator('#numbers')).toContainText('Concentrate to decant');
+    await page.click('#dry');
+    const titles = [];
+    for (let i = 0; i < 25 && !(await page.isVisible('#sc-review')); i++) {
+      titles.push(await page.innerText('#stage'));
+      const d = await page.innerText('#detail');
+      expect(d.length, `${name} ${titles[titles.length - 1]}: ${d}`).toBeLessThanOrEqual(120);
+      await page.click('#next');
+    }
+    expect(titles.slice(-ends[name].length), name).toEqual(ends[name]);
+    await page.click('#skip');
+    await expect(page.locator('#xpick')).toBeVisible();
+  }
+  await page.click('#rpick [data-r="black"]');
+  await expect(page.locator('#xnow')).toHaveText('');
+});
+
+test('latte through paper: the milk warms during the drain, then the frother', async ({ page }) => {
+  await page.goto('./');
+  await page.click('#newdrinks summary');
+  await page.locator('#xpick').getByRole('button', { name: 'Latte', exact: true }).click();
+  await page.click('#f-paper');
+  await page.click('#pw-press');
+  const milk = (await numberRow(page, 'Full-cream milk').innerText()).replace(/\D/g, '');
+  await page.click('#start');
+  while ((await page.innerText('#stage')) !== 'Let it drain') await page.click('#next');
+  await expect(page.locator('#wait')).toContainText(`Warm ${milk} g full-cream milk to 60–65 °C`);
+  await page.click('#next');
+  await expect(page.locator('#stage')).toHaveText('Froth the milk');
+  await page.click('#more summary');
+  await expect(page.locator('#more-b')).toContainText('Heat first, then froth');
+});

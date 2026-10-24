@@ -42,6 +42,8 @@ function applyStepEdits(e,px){
 }
 
 var DEF={black:{tgt:200,ratio:16.9},hoff:{tgt:300,ratio:16.7},iced:{tgt:280,ratio:16.9},aulait:{tgt:300,ratio:12.5},viet:{tgt:110,ratio:7.3},cold:{tgt:500,ratio:8},
+  x_latte:{tgt:300,ratio:9},x_icedlatte:{tgt:300,ratio:8},x_kaapi:{tgt:200,ratio:8},x_shaken:{tgt:150,ratio:9},x_affogato:{tgt:120,ratio:7},
+  x_cbmilk:{tgt:400,ratio:8},x_tonic:{tgt:480,ratio:8},x_coconut:{tgt:600,ratio:8},x_orange:{tgt:400,ratio:8},
   vietHot:{tgt:140,ratio:7.3},vietIced:{tgt:290,ratio:7.3}};
 var S={recipe:'black',mode:'direct',vmode:'iced',pratio:14.6,ved:20,ceil:450,temp:94,panloss:30,dspeed:10,lead:3,theme:'',
   r:{black:{tgt:200,ratio:16.9},iced:{tgt:280,ratio:16.9},aulait:{tgt:300,ratio:12.5},vietHot:{tgt:140,ratio:7.3},vietIced:{tgt:290,ratio:7.3}},
@@ -358,8 +360,41 @@ var RECIPES={
  aulait:{name:'Caf\u00E9 au lait',label:'Finished drink',unit:'grams, coffee plus milk',modes:false,
    hint:'Brewed tighter so it survives the milk. Flat hot milk at 65\u201370\u00B0C, never frothed.'},
  viet:{name:'Vietnamese',label:'Finished drink',unit:'grams in the glass',modes:false,
-   hint:'A thick concentrate stirred into condensed milk. Hot is the drink as it is; iced pours it over a glass of ice. Pick which below.'}
+   hint:'A thick concentrate stirred into condensed milk. Hot is the drink as it is; iced pours it over a glass of ice. Pick which below.'},
+ /* Something new: drinks to try now and then, kept apart from the daily recipes */
+ x_latte:{extra:'now',name:'Latte',label:'Finished latte',unit:'grams, coffee plus foamed milk',modes:false,
+   hint:'A strong press concentrate with foamed full-cream milk, about 1:1. Press coffee is weaker than espresso, so the milk is kept close to the coffee.'},
+ x_icedlatte:{extra:'now',name:'Iced latte',label:'Coffee plus milk',unit:'grams, plus a glass of ice',modes:false,
+   hint:'The concentrate drips straight onto a glass of ice, then cold milk about 1:1. Cold foam on top if you like.'},
+ x_kaapi:{extra:'now',name:'Kaapi-style',label:'Finished kaapi',unit:'grams, coffee plus milk',modes:false,
+   hint:'South Indian style: a strong concentrate, more hot milk than coffee, sugar, and poured back and forth between two cups for froth. Best with a darker coffee.'},
+ x_shaken:{extra:'now',name:'Shaken iced',label:'Concentrate to shake',unit:'grams of coffee',modes:false,
+   hint:'A strong concentrate shaken hard with ice and a little sugar syrup, then poured off the ice. A foamy cap with no machine.'},
+ x_affogato:{extra:'now',name:'Affogato',label:'Hot coffee',unit:'grams, about 60 g per scoop',modes:false,
+   hint:'A very strong hot concentrate poured over vanilla ice cream. Dessert.'},
+ x_cbmilk:{extra:'cold',name:'Cold brew + milk',label:'Finished drinks',unit:'grams, concentrate plus milk',modes:false,
+   hint:'Cold brew concentrate with cold milk about 1:1 over ice, with cold foam if you like. The concentrate keeps 3\u20134 days.'},
+ x_tonic:{extra:'cold',name:'Cold brew tonic',label:'Finished drinks',unit:'grams, about 240 g a glass',modes:false,
+   hint:'Cold brew concentrate floated on tonic water over ice, with orange peel. Bitter-sweet and fizzy; bright, fruity coffees suit it.'},
+ x_coconut:{extra:'cold',name:'Coconut cold brew',label:'Finished drinks',unit:'grams, about 300 g a glass',modes:false,
+   hint:'Cold brew concentrate with chilled tender coconut water, about 1 to 2, over ice. Sweet without sugar.'},
+ x_orange:{extra:'cold',name:'Orange cold brew',label:'Finished drinks',unit:'grams, about 200 g a glass',modes:false,
+   hint:'Cold brew concentrate with fresh orange juice, about 1:1, over ice. Fruity coffees with citrus notes suit it.'}
 };
+/* base: hot concentrate made now, or cold brew concentrate overnight; part: the share of the drink that is not coffee */
+var XDRINK={
+  x_latte:{base:'hot',part:0.5,with:'full-cream milk'},
+  x_icedlatte:{base:'hot',part:0.5,with:'cold milk',glassIce:0.5},
+  x_kaapi:{base:'hot',part:0.6,with:'full-cream milk'},
+  x_shaken:{base:'hot',part:0,shake:true},
+  x_affogato:{base:'hot',part:0,scoop:60},
+  x_cbmilk:{base:'cold',part:0.5,with:'cold milk',glass:200},
+  x_tonic:{base:'cold',part:2/3,with:'tonic water',glass:240},
+  x_coconut:{base:'cold',part:2/3,with:'tender coconut water',glass:300},
+  x_orange:{base:'cold',part:0.5,with:'fresh orange juice',glass:200}
+};
+function coldBase(k){return k==='cold'||!!(XDRINK[k]&&XDRINK[k].base==='cold')}
+function servedCold(k){return k==='iced'||k==='x_icedlatte'||k==='x_shaken'||coldBase(k)}
 /* grams of brew a rinsed paper and the sludge on it keep back, and the plain RO heated separately to rinse the paper */
 var PAPER_LOSS=25, PAPER_RINSE=100;
 function rkey(){return S.recipe==='viet'?(S.vmode==='hot'?'vietHot':'vietIced'):S.recipe}
@@ -396,6 +431,17 @@ function compute(){
     o.dil=Math.round(T/2);
     var Wc=r5((T-o.dil+L+20)/(1-2/R)); o.D=Math.round(Wc/R);
     o.press=Wc; o.decant=T-o.dil+L; o.bypass=0; o.j=0; o.Y=T; o.extra=0;
+  } else if(XDRINK[S.recipe]){
+    /* a concentrate (R = coffee to the water in the press) and what it is mixed with */
+    var X=XDRINK[S.recipe];
+    o.conc=Math.round(T*(1-X.part)); o.part=T-o.conc; o.partName=X.with||'';
+    if(X.glassIce)o.glassIce=Math.round(T*X.glassIce);
+    if(X.glass){o.glasses=Math.max(1,Math.round(T/X.glass));o.perConc=Math.round(o.conc/o.glasses);o.perPart=Math.round(o.part/o.glasses)}
+    if(X.shake){o.shakeIce=Math.round(T);o.syrup=Math.max(5,Math.round(T/15))}
+    if(X.scoop)o.scoops=Math.max(1,Math.round(T/X.scoop));
+    o.D=Math.round((o.conc+L+20)/(R-2));
+    o.press=r5(o.conc+L+2*o.D+20);
+    o.decant=o.conc+L; o.bypass=0; o.j=0; o.Y=T; o.extra=0;
   } else if(S.recipe==='aulait'){
     o.yield=Math.round(T/2); o.milk=T-o.yield;
     o.D=Math.round((o.yield+L+20)/(R-2));
@@ -413,7 +459,7 @@ function compute(){
     o.decant=o.conc+L; o.bypass=0; o.j=0; o.Y=o.conc;
     o.extra=0;
   }
-  o.boil=o.press+Math.max(o.bypass,0)+(S.recipe==='cold'?0:pl);   /* cold brew water is not boiled, so nothing is lost */
+  o.boil=o.press+Math.max(o.bypass,0)+(coldBase(S.recipe)?0:pl);   /* cold brew water is not boiled, so nothing is lost */
   o.ved=Math.round(o.boil*vp/100);
   o.ro=o.boil-o.ved;
   o.iceVed=o.ice?Math.round(o.ice*vp/100):0;
@@ -428,12 +474,12 @@ function compute(){
 function numRows(o,mode,loc){
   var rows=[], rk=o.recipe;
   if(loc)rows.push(['Location',esc(loc),'']);
-  rows.push([rk==='cold'?'Water, not boiled':'Boil',o.boil+' g','lead']);
+  rows.push([coldBase(rk)?'Water, not boiled':'Boil',o.boil+' g','lead']);
   rows.push(['Vedica / RO',o.ved+' / '+o.ro+' g','']);
   if(o.paper)rows.push(['Paper rinse',o.rinse+' g plain RO','']);
   rows.push(['Coffee',o.D+' g','lead']);
-  if(rk!=='cold')rows.push(['Water into press',o.press+' g','']);
-  rows.push([o.paper?'Decant to':(rk==='hoff'?'Pour into the cup':(rk==='viet'||rk==='cold'?'Concentrate to decant':'Decant to')),Math.round(o.decant)+' g',rk==='hoff'?'lead':'']);
+  if(!coldBase(rk))rows.push(['Water into press',o.press+' g','']);
+  rows.push([o.paper?'Decant to':(rk==='hoff'?'Pour into the cup':(rk==='viet'||rk==='cold'||XDRINK[rk]?'Concentrate to decant':'Decant to')),Math.round(o.decant)+' g',rk==='hoff'?'lead':'']);
   if(rk==='black'){
     if(mode==='bypass')rows.push(['Add hot water',Math.round(o.bypass)+' g','accent']);
     if(!o.paper)rows.push(['Jug total',o.Y+' g','']);
@@ -445,6 +491,14 @@ function numRows(o,mode,loc){
     rows.push(o.iceKind==='other'?['\u2003 which ice','Other ice','']:['\u2003 frozen from',o.iceVed+' / '+o.iceRo+' g Vedica / RO','']);
     rows.push(['Finished drink',o.T+' g','lead']);
     rows.push(['Ice in the glass','0\u201340 g','']);
+  } else if(XDRINK[rk]){
+    var XR=XDRINK[rk], cap=function(t){return t.charAt(0).toUpperCase()+t.slice(1)};
+    if(o.part)rows.push([cap(o.partName),o.part+' g','accent']);
+    if(o.glassIce)rows.push(['Ice in the glass','about '+o.glassIce+' g','']);
+    if(o.shakeIce){rows.push(['Ice to shake with',o.shakeIce+' g','accent']);rows.push(['Sugar syrup, 1:1',o.syrup+' g',''])}
+    if(o.scoops)rows.push(['Vanilla ice cream',o.scoops+' scoop'+(o.scoops>1?'s':''),'accent']);
+    if(o.glasses)rows.push(['Makes',o.glasses+' glass'+(o.glasses>1?'es':'')+' of '+o.perConc+' g + '+o.perPart+' g','']);
+    rows.push([XR.shake||XR.scoop?'Coffee':'Finished drink'+(o.glasses>1?'s':''),o.T+' g','lead']);
   } else if(rk==='cold'){
     rows.push(['Dilute with cold water',o.dil+' g','accent']);
     rows.push(['Finished drink',o.T+' g','lead']);
@@ -482,6 +536,10 @@ function render(){
       :'Brewed tighter with less water in the press, then diluted in the jug. Use it when the fill gets deep enough for the bed to reach the screen on the tilt.';
   } else if(S.recipe==='iced'){
     $('blurb').textContent='The press runs at about 1:'+(o.press/o.D).toFixed(1)+' and the ice brings it to your ratio. Glass ice depends on the jug: none at 10\u00B0C or below, up to 40 g above it.';
+  } else if(XDRINK[S.recipe]){
+    $('blurb').textContent=coldBase(S.recipe)
+      ?'Cold brew concentrate at about 1:'+R1(o.press/o.D)+', overnight in the fridge. It keeps 3\u20134 days, so one batch makes several drinks.'
+      :'Brewed as a strong concentrate, about 1:'+R1(o.press/o.D)+' in the press, so it holds its own against '+(o.part?o.partName:(o.scoops?'the ice cream':'the ice'))+'.';
   } else if(S.recipe==='cold'){
     $('blurb').textContent='The ratio is the concentrate: coffee to the water in the press, about 1:'+R1(o.press/o.D)+'. About 8 hours in the fridge is enough; it is then diluted about 1:1.';
   } else if(S.recipe==='hoff'){
@@ -503,6 +561,7 @@ function render(){
   if(S.recipe==='black'&&S.mode==='bypass'&&o.bypass<10){msg='Press ratio is too loose \u2014 bypass falls to '+Math.round(o.bypass)+' g. Lower it for real headroom.';cls='s'}
   else if(o.press>S.ceil){msg='Needs '+o.press+' g in the press, above your '+S.ceil+' g ceiling.'+(S.recipe==='black'&&S.mode==='direct'?' Try bypass.':' Brew this in two batches.');cls=(S.recipe==='black'&&S.mode==='direct')?'w':'s'}
   else if(S.recipe==='viet'&&o.press<200){msg='Only '+o.press+' g in the press \u2014 shallow for a 600 ml carafe. It works; press gently. Making two drinks at once gives the mesh more to work against.';cls='w'}
+  else if(XDRINK[S.recipe]&&o.press<200){msg='Only '+o.press+' g in the press \u2014 shallow for a 600 ml carafe. It works; plunge gently, or make a bigger batch.';cls='w'}
   else if(S.recipe==='iced'&&o.press<200){msg='Only '+o.press+' g in the press \u2014 a little shallow for a 600 ml carafe. It still works; plunge extra slowly.';cls='w'}
   if(!msg){var apk=activePack(),lk=apk?leftG(apk):null;if(lk!==null&&o.D>lk){msg='Only '+lk+' g left in '+apk.name+' \u2014 this brew needs '+o.D+' g.';cls='w'}}
   if(msg){f.className='flag '+cls;f.textContent=msg}else{f.className='flag hide'}
@@ -543,7 +602,7 @@ function buildSteps(oIn){
     {more:'Shallow tilt. Don’t set the press down mid-pour: every tilt back stirs the bed. It mixes as it pours, so there is no need to swirl. The grams are the most to pour, not a target. Got less? Enter what you poured and the next steps adjust.'})}
   function through(into,more){return step('filter','Pour through the paper','From the decanter into the dripper on '+into+', in two or three goes.',
     {more:'Set the decanter down in between; with the press out of the way there is nothing to stir up. Keep the level a centimetre below the paper’s edge, and leave the last spoonful in the decanter, where the heaviest silt sank.'+(more||'')})}
-  var drain=step('drain','Let it drain','Hands off. Lift the dripper off at the beep.',{s:240,more:R==='iced'||R==='cold'
+  var drain=step('drain','Let it drain','Hands off. Lift the dripper off at the beep.',{s:240,more:R==='iced'||coldBase(R)||XDRINK[R]
     ?'No stirring, swirling or tapping the paper.'
     :'No stirring, swirling or tapping the paper. The last drips are slow but they are the same coffee: if you are letting it cool anyway, catch them in your cup.'});
   /* the steps after the plunge, either way */
@@ -637,8 +696,8 @@ function buildSteps(oIn){
     s.push(step('off','Combine',P?'Milk into the coffee in one steady stream.':'Coffee into a warmed mug, then the milk in one steady stream.',
       {more:'Roughly 1:1. Don’t froth it: flat hot milk is the point.'}));
   }
-  else if(R==='cold'){
-    /* steeped overnight in the fridge; no timer: the step shows when it is ready, and the phone's own alarm wakes you */
+  /* a cold brew concentrate: overnight in the fridge; no timer: the step shows when it is ready, and the phone's own alarm wakes you */
+  function coldSteps(){
     s.push(common.prep);
     s.push(step('dose','Weigh the water',B(o.ved+' g')+' Vedica + '+B(o.ro+' g')+' RO, '+B(o.press+' g')+' in all, at room temperature. Not boiled.'));
     s.push(step('pour','Pour and stir','All of it over the coffee. Stir gently, about ten times, until there are no dry clumps.',
@@ -649,10 +708,64 @@ function buildSteps(oIn){
     s.push(step('plunge','Plunge','Slowly, to a couple of centimetres above the bed. Never into it.',{s:30}));
     if(P)push([pressThrough('the jug',dec),drain]);
     else s.push(step('decant','Pour off the concentrate','Shallow tilt, up to '+B(dec+' g')+'. Leave the sludge in the press.'));
+  }
+  var keep=' Keep the rest of the concentrate sealed in the fridge and finish it within 3–4 days.';
+  var FROTH_HOT='Use a tall, narrow jug, no more than a third full. Head just under the surface to add air until the milk grows about a third, then deeper to break the big bubbles into fine foam; keep it off the bottom. Tap the jug on the counter and swirl. Heat first, then froth: foam collapses if the milk is heated after.';
+  var FROTH_COLD='Cold foam: milk straight from the fridge, whisk attachment, 20–30 seconds until thick and about doubled. Spoon it on top; don’t stir it in. Toned milk makes a stiffer foam, full-cream a silkier one.';
+
+  if(XDRINK[R]){
+    var X=XDRINK[R];
+    if(X.base==='cold'){
+      coldSteps();
+      var per='Per glass: ';
+      if(R==='x_cbmilk')s.push(step('off','Over ice with milk',per+B(o.perConc+' g')+' concentrate over ice, then '+B(o.perPart+' g')+' cold milk.',{more:FROTH_COLD+' For the foam, whisk about 60 g of the milk and pour the rest in first.'+keep}));
+      else if(R==='x_tonic')s.push(step('off','Build the tonic',per+'ice, '+B(o.perPart+' g')+' tonic, then '+B(o.perConc+' g')+' concentrate poured slowly on top.',{more:'Pour the coffee last and gently so it floats in a layer, then twist a strip of orange peel over the glass.'+keep}));
+      else s.push(step('off','Over ice',per+'ice, '+B(o.perPart+' g')+' '+o.partName+', then '+B(o.perConc+' g')+' concentrate. Stir once.',{more:(R==='x_orange'?'Squeeze the juice fresh and strain it.':'Chill the coconut water first so the ice lasts.')+keep}));
+    } else {
+      /* a strong concentrate made now */
+      var dest=X.glassIce?'the glass of ice':(X.shake?'the jar of ice':(R==='x_latte'?'your cup':(R==='x_kaapi'?'a tumbler':'a jug')));
+      var milkW=(R==='x_latte'||R==='x_kaapi')?W('Warm '+B(o.part+' g')+' full-cream milk'+(R==='x_kaapi'?' with sugar to taste':'')+' to 60–65 °C, never boiling',120):null;
+      var prepW=[rinseW(null)];
+      if(milkW&&!P)prepW.push(milkW);
+      if(X.glassIce)prepW.push(W('A tall glass full of ice, about '+B(o.glassIce+' g')+', on the scale, tared',60));
+      else if(X.shake)prepW.push(W('A jar with a lid and '+B(o.shakeIce+' g')+' ice, on the scale, tared. A glass into the fridge',60));
+      else prepW.push(tareW(dest,R==='x_latte'?'Cup':(R==='x_kaapi'?'Tumbler':'Jug')));
+      if(X.scoop)prepW.push(W(B(o.scoops)+' scoop'+(o.scoops>1?'s':'')+' of vanilla ice cream into glasses, back in the freezer until the coffee is ready'));
+      push([common.prep,common.dose,common.pour,common.steep]);
+      s.push(step('crust','Break the crust','Press the floating bed down a centimetre, three or four presses. No stirring. Lid back on.',{s:55}));
+      s.push(step('settle','Settle','Plunger stays up. Leave it.',{s:300,more:'This drops the fines out, so the paper drains fast.',w:prepW}));
+      s.push(step('plunge','Plunge','Slowly, to a couple of centimetres above the bed. Never into it.',{s:30}));
+      if(P){
+        push(paperSeq(dest,dec));
+        /* with paper, the milk warms during the drain so it is hot when the coffee is through */
+        if(milkW){var dr=JSON.parse(JSON.stringify(s[s.length-1]));dr.w=[milkW];s[s.length-1]=dr}
+      }
+      else s.push(step('decant','Pour off the concentrate','Into '+dest+', up to '+B(dec+' g')+'. Leave the sludge in the press.'));
+      if(R==='x_latte'){
+        s.push(step('milk','Froth the milk','Frother just under the surface 10–15 s, then deeper 10–15 s. Tap and swirl.',{s:30,more:FROTH_HOT}));
+        s.push(step('off','Pour','Foamed milk into the coffee, about '+B(o.T+' g')+' in all. Spoon the last foam on top.',{more:'Drink it soon: the foam separates within a minute or two.'}));
+      } else if(R==='x_kaapi'){
+        s.push(step('milk','Froth the milk','Frother just under the surface 10–15 s, then deeper. Pour it over the coffee.',{s:30,more:FROTH_HOT}));
+        s.push(step('off','Pour back and forth','Between two cups, from a height, three or four times, for a frothy top. About '+B(o.T+' g')+'.',
+          {more:'The South Indian pour cools the kaapi to drinking temperature and froths it. The sugar goes into the milk, not the coffee.'}));
+      } else if(R==='x_icedlatte'){
+        s.push(step('off','Add the milk','Pour in '+B(o.part+' g')+' cold milk and stir. Cold foam on top if you like.',{more:FROTH_COLD+' For the foam, whisk about 60 g of the milk and pour the rest in first.'}));
+      } else if(R==='x_shaken'){
+        s.push(step('chill','Shake','Add '+B(o.syrup+' g')+' sugar syrup, lid on, shake hard for 15–20 seconds.',{s:20,
+          more:'Sugar syrup is sugar dissolved in the same weight of hot water. Shaking chills and dilutes the coffee and whips air into it for the foam.'}));
+        s.push(step('off','Pour off the ice','Strain into the cold glass, foam and all. Leave the ice behind.'));
+      } else if(R==='x_affogato'){
+        s.push(step('off','Over the ice cream','About '+B(Math.round(o.conc/o.scoops)+' g')+' of hot coffee over each scoop. Eat it straight away.',
+          {more:'The coffee should still be hot when it lands; that contrast is the dish.'}));
+      }
+    }
+  }
+  else if(R==='cold'){
+    coldSteps();
     s.push(step('off','Dilute and serve','Add '+B(o.dil+' g')+' of cold water, about '+B(o.T+' g')+' in all. Over a few cubes.',
       {more:'Less water for a stronger drink, or swap some of it for milk. Keep what you don’t drink sealed in the fridge and finish it within 3–4 days.'}));
   }
-  else {
+  else if(R==='viet'){
     var cmg='the glass with the condensed milk';
     push([common.prep,common.dose,common.pour]);
     s.push(step('steep','Steep','Lid on, plunger up. Don’t touch.',{s:240,
@@ -865,6 +978,9 @@ function adjustCalc(o,got){
   else if(x.recipe==='iced'){x.yield=Math.round(C2);x.T=x.yield+(x.ice||0)}
   else if(x.recipe==='aulait'){x.yield=Math.round(C2);x.milk=Math.round(o.milk*k);x.T=x.yield+x.milk}
   else if(x.recipe==='cold'){x.dil=Math.round(o.dil*k);x.T=Math.round(C2)+x.dil}
+  else if(XDRINK[x.recipe]){x.conc=Math.round(C2);x.part=Math.round((o.part||0)*k);x.T=x.conc+x.part;
+    if(o.glasses){x.perConc=Math.round(x.conc/o.glasses);x.perPart=Math.round(x.part/o.glasses)}
+    if(o.shakeIce){x.shakeIce=Math.round(o.shakeIce*k);x.syrup=Math.max(5,Math.round(o.syrup*k))}}
   else {x.conc=Math.round(C2);x.T=x.conc+(x.cm||0)+(x.ice||0)}
   return x;
 }
@@ -876,6 +992,7 @@ function gotText(){
   if(rk==='aulait')return 'Heat '+x.milk+' g of milk instead, for about '+x.T+' g.';
   if(rk==='iced')return 'About '+x.T+' g once the ice melts.';
   if(rk==='cold')return 'Dilute with '+x.dil+' g of cold water, for about '+x.T+' g at the same strength.';
+  if(XDRINK[rk])return x.part?'Use '+x.part+' g of '+x.partName+' instead, for about '+x.T+' g at the same strength.':'About '+x.T+' g of coffee.';
   return 'About '+x.T+' g '+(rk==='hoff'?'in the cup.':'in the glass.');
 }
 function paintGot(){
@@ -922,7 +1039,7 @@ function leaveStep(){
 function startBrew(isTest){
   testMode=!!isTest; speed=testMode?dryX():1;
   steps=buildSteps(); actuals=[]; elapsed=0; runCalc=compute(); brewT0=Date.now();
-  runMeta={recipe:S.recipe,mode:S.mode,params:{tgt:rs().tgt,ratio:rs().ratio,pratio:S.pratio,ved:S.ved,temp:S.recipe==='cold'?undefined:S.temp,loc:(curLoc()||{}).name||undefined,vmode:S.recipe==='viet'?S.vmode:undefined,paper:rs().paper?true:undefined,pfrom:rs().paper?(rs().pflow==='press'?'press':'decanter'):undefined,ice:runCalc.iceKind||undefined},bean:beanSnap()};
+  runMeta={recipe:S.recipe,mode:S.mode,params:{tgt:rs().tgt,ratio:rs().ratio,pratio:S.pratio,ved:S.ved,temp:coldBase(S.recipe)?undefined:S.temp,loc:(curLoc()||{}).name||undefined,vmode:S.recipe==='viet'?S.vmode:undefined,paper:rs().paper?true:undefined,pfrom:rs().paper?(rs().pflow==='press'?'press':'decanter'):undefined,ice:runCalc.iceKind||undefined},bean:beanSnap()};
   closeRunPanel();
   $('dryflag').classList.toggle('hide',!testMode);
   show('sc-brew'); ctx(); lock();
@@ -983,14 +1100,14 @@ function openReview(id,notice,fresh){
   $('rv-pack').classList.toggle('hide',!notice); $('rv-pack').textContent=notice||'';
   var iced=e.recipe==='iced';
   /* how the brew was made belongs to whoever made it: a cup only records your own side */
-  $('rv-wt-wrap').classList.toggle('hide',cup||e.recipe==='cold'); $('rv-dec-wrap').classList.toggle('hide',cup); $('rv-steps').classList.toggle('hide',cup);
+  $('rv-wt-wrap').classList.toggle('hide',cup||coldBase(e.recipe)); $('rv-dec-wrap').classList.toggle('hide',cup); $('rv-steps').classList.toggle('hide',cup);
   rvWith={}; (e.with||[]).forEach(function(pid){rvWith[pid]=1}); rvShareAuto=false;
   $('rv-with-wrap').classList.toggle('hide',cup||isT||!othersList().length);
   $('rv-dec').value=l.decant||(e.calc?e.calc.decant:'');
   $('rv-temp').value=(l.temp!==null&&l.temp!==undefined)?l.temp:'';
   $('rv-jug').value=(l.jug!==null&&l.jug!==undefined)?l.jug:''; $('rv-jug-wrap').classList.toggle('hide',!iced||cup);
   var lastT=null; LOG.forEach(function(x){if(lastT===null&&String(x.id)!==String(e.id)&&(x.recipe||'black')===(e.recipe||'black')&&x.log&&x.log.temp)lastT=x.log.temp});
-  $('rv-temp').setAttribute('data-def',String(iced||e.recipe==='cold'?6:(lastT||58)));
+  $('rv-temp').setAttribute('data-def',String(servedCold(e.recipe)?6:(lastT||58)));
   $('rv-note').value=l.note||'';
   $('rv-wt').value=(e.params&&e.params.temp!==undefined)?e.params.temp:S.temp;
   rvScore=l.score||0; rvFaults={}; rvTastes={}; rvShare=(l.share!==undefined&&l.share!==null)?l.share:1;
@@ -1095,7 +1212,7 @@ function saveReview(){
   if(!RV)return; var e=findAny(RV.id); if(!e)return;
   var fl=[]; FAULTS.forEach(function(f){if(rvFaults[f])fl.push(f)});
   var tl=[]; TASTES.forEach(function(f){if(rvTastes[f])tl.push(f)});
-  var wt=parseFloat($('rv-wt').value); if(!e.params)e.params={}; if(!isNaN(wt)&&e.recipe!=='cold')e.params.temp=wt;
+  var wt=parseFloat($('rv-wt').value); if(!e.params)e.params={}; if(!isNaN(wt)&&!coldBase(e.recipe))e.params.temp=wt;
   var jv=parseFloat($('rv-jug').value);
   e.log={temp:Number($('rv-temp').value)||null, decant:Number($('rv-dec').value)||null,
          jug:(e.recipe==='iced'&&!isNaN(jv))?jv:undefined,
@@ -1385,8 +1502,8 @@ function editForm(e){
   (l.tastes||[]).forEach(function(f){ED.tastes[f]=1});
   (e.with||[]).forEach(function(pid){ED.with[pid]=1});
   return '<div class="edit">'
-    +(cup||e.recipe==='cold'?'':'<label class="lab" for="ed-wt">Water &deg;C</label>'+stpH('ed-wt',e.params&&e.params.temp,0.5,60,100,'','water temperature',S.temp))
-    +'<label class="lab" for="ed-ct">Cup &deg;C at first sip</label>'+stpH('ed-ct',l.temp,1,0,95,'not taken','cup temperature',e.recipe==='iced'||e.recipe==='cold'?6:58)
+    +(cup||coldBase(e.recipe)?'':'<label class="lab" for="ed-wt">Water &deg;C</label>'+stpH('ed-wt',e.params&&e.params.temp,0.5,60,100,'','water temperature',S.temp))
+    +'<label class="lab" for="ed-ct">Cup &deg;C at first sip</label>'+stpH('ed-ct',l.temp,1,0,95,'not taken','cup temperature',servedCold(e.recipe)?6:58)
     +((e.recipe==='iced'&&!cup)?'<label class="lab" for="ed-jg">Jug &deg;C after stirring</label>'+stpH('ed-jg',l.jug,0.5,0,40,'not taken','jug temperature',8):'')
     +(cup?'':'<label class="lab" for="ed-dc">Grams actually decanted</label>'+stpH('ed-dc',l.decant,1,0,900,'','grams decanted',e.calc&&e.calc.decant))
     +'<label class="lab" for="ed-fine">Overall <span class="sval" id="ed-val"></span></label><div class="scale" id="ed-sc" role="group" aria-label="Score">'
@@ -1840,11 +1957,22 @@ $('tgt').addEventListener('input',function(){rs().tgt=parseFloat(this.value);sav
 $('ratio').addEventListener('input',function(){rs().ratio=parseFloat(this.value);saveS();render()});
 function syncRecipeInputs(){$('tgt').value=rs().tgt;$('ratio').value=rs().ratio}
 function paintPicker(){
-  $('rpick').innerHTML=Object.keys(RECIPES).map(function(k){
+  $('rpick').innerHTML=Object.keys(RECIPES).filter(function(k){return !RECIPES[k].extra}).map(function(k){
     return '<button data-r="'+k+'" aria-pressed="'+(k===S.recipe)+'">'+RECIPES[k].name+'</button>';
   }).join('');
+  var grp=function(g,title){return '<p class="xgrp">'+title+'</p><div class="xlist">'+Object.keys(RECIPES).filter(function(k){return RECIPES[k].extra===g}).map(function(k){
+    return '<button data-r="'+k+'" aria-pressed="'+(k===S.recipe)+'">'+RECIPES[k].name+'</button>';
+  }).join('')+'</div>'};
+  $('xpick').innerHTML=grp('now','Made now')+grp('cold','From a cold brew batch (overnight)');
+  var x=RECIPES[S.recipe]&&RECIPES[S.recipe].extra;
+  if(x)$('newdrinks').open=true;
+  $('xnow').textContent=x?'Trying: '+RECIPES[S.recipe].name:'';
 }
 $('rpick').addEventListener('click',function(e){
+  var b=e.target.closest('button'); if(!b)return;
+  S.recipe=b.dataset.r; saveS(); paintPicker(); syncRecipeInputs(); render();
+});
+$('xpick').addEventListener('click',function(e){
   var b=e.target.closest('button'); if(!b)return;
   S.recipe=b.dataset.r; saveS(); paintPicker(); syncRecipeInputs(); render();
 });

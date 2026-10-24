@@ -14,6 +14,9 @@ Roughly in the order they would help.
 
 ## Done
 
+- Something new: nine occasional drinks (milk with a frother, tonic, coconut, orange, shaken, affogato), apart from the daily
+  recipes (Oct 2026).
+
 - Cold brew recipe; Iced settles like Black; optional 'poured a different amount' that rescales the next steps; timers
   count past zero (Oct 2026).
 
