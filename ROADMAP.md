@@ -14,6 +14,9 @@ Roughly in the order they would help.
 
 ## Done
 
+- Cold brew recipe; Iced settles like Black; optional 'poured a different amount' that rescales the next steps; timers
+  count past zero (Oct 2026).
+
 - Brew screen: one-line steps with tips under More, prep timed to when it is needed, a This brew panel with the run's
   numbers and steps, and an RO + Vedica / other ice switch recorded with iced brews (Oct 2026).
 - People: separate packs, places, To try lists and logs; shared carafes scored by each person (Oct 2026).

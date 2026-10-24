@@ -1,6 +1,6 @@
 # Brew
 
-A personal French press companion: recipes for Black, Hoffmann, Iced and Vietnamese, a guided timer, scoring,
+A personal French press companion: recipes for Black, Hoffmann, Iced, Cold brew, café au lait and Vietnamese, a guided timer, scoring,
 pack tracking, caffeine, freshness charts and a To try list of coffees.
 
 It is an installable web app (a PWA). Once installed it runs full screen with no browser bar, works offline,
@@ -47,6 +47,11 @@ the glass, with a timed drain. No jug settle. Brews are tagged, and the Log show
   tap **Poured a different amount?** and enter it; the steps after adjust (the hot water added in bypass mode, or the milk
   for café au lait, scale with it so the strength stays the same). Leave it alone when the pour went to plan.
 - A step's timer keeps counting past zero, as minus time, so a glance shows how far over it is.
+- **Iced** (Japanese style) steeps 4:00, breaks the crust and settles 5:00 like Black, so the fines sink and the paper drains
+  the full amount onto the ice; the ice comes out in the settle's last minute.
+- **Cold brew** is a concentrate (1:8 by default, coffee to press water) steeped overnight in the fridge with room-temperature
+  water, filtered, then diluted about 1:1. The fridge step has no timer: set the phone's alarm for 8 hours; the step shows when
+  it is ready (8 h) and best by (12 h). The app lets the screen sleep during it and keeps the brew for up to two days.
 - Iced and Vietnamese iced have an **RO + Vedica ice / Other ice** switch. Other ice is recorded with the brew and shown in the
   log, so a bad iced cup can be traced to the ice rather than the method.
 

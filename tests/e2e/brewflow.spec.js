@@ -9,7 +9,7 @@ test('steps are short, with the tips folded under More', async ({ page }) => {
   const setups = [
     ['black', []], ['black', ['#f-paper']], ['black', ['#pw-press']], ['black', ['#f-mesh', '#m-bypass']],
     ['hoff', []], ['hoff', ['#f-paper']], ['iced', []], ['iced', ['#f-paper', '#pw-press']],
-    ['aulait', []], ['viet', ['#v-hot']], ['viet', ['#v-iced', '#f-paper']]
+    ['aulait', []], ['viet', ['#v-hot']], ['viet', ['#v-iced', '#f-paper']], ['cold', []], ['cold', ['#f-paper', '#pw-press']]
   ];
   for (const [r, clicks] of setups) {
     await page.click(`#rpick [data-r="${r}"]`);
@@ -26,7 +26,7 @@ test('steps are short, with the tips folded under More', async ({ page }) => {
   }
 });
 
-test('iced: the ice comes out in the last minute of the steep, with a cue', async ({ page }) => {
+test('iced: settles like Black, and the ice comes out in the last minute of the settle, with a cue', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('fp.v1', JSON.stringify({ dspeed: 60 })));
   await page.goto('./');
   await page.click('#rpick [data-r="iced"]');
@@ -35,14 +35,16 @@ test('iced: the ice comes out in the last minute of the steep, with a cue', asyn
   const ice = (await numberRow(page, 'Ice to brew onto').innerText()).trim();
   await page.click('#dry');
   const titles = [];
-  while ((await page.innerText('#stage')) !== 'Steep') { titles.push(await page.innerText('#stage')); await page.click('#next'); }
-  expect(titles).toEqual(['Dose the carafe', 'Weigh the water', 'Boil and pour']);
+  while ((await page.innerText('#stage')) !== 'Settle') { titles.push(await page.innerText('#stage')); await page.click('#next'); }
+  expect(titles).toEqual(['Dose the carafe', 'Weigh the water', 'Boil and pour', 'Steep', 'Break the crust']);
   const cue = page.locator('#wait li', { hasText: '1:00 left' });
   await expect(cue).toContainText(ice + ' RO + Vedica ice into the jug, dripper on top, on the scale, tared');
   await expect(cue).not.toHaveClass(/due/);
-  await expect(cue).toHaveClass(/due/, { timeout: 8000 });   /* 4:00 at 60x is 4 s; due at 1:00 left */
+  await expect(cue).toHaveClass(/due/, { timeout: 8000 });   /* 5:00 at 60x is 5 s; due at 1:00 left */
   await page.click('#more summary');
   await expect(page.locator('#more-b')).toContainText('ice that melts early');
+  await page.click('#next');
+  await expect(page.locator('#stage')).toHaveText('Plunge');
 });
 
 test('This brew panel: the run’s numbers and steps, without touching the timer', async ({ page }) => {
@@ -107,7 +109,7 @@ test('ice: RO + Vedica or other ice, recorded with the brew', async ({ page }) =
   await expect(page.locator('#runpanel .rp-h')).toContainText('other ice');
   await page.click('#runbar');
   for (let i = 0; i < 25 && !(await page.isVisible('#sc-review')); i++) {
-    if ((await page.innerText('#stage')) === 'Steep') {
+    if ((await page.innerText('#stage')) === 'Settle') {
       const cue = await page.innerText('#wait');
       expect(cue).toContain('g ice into the jug');
       expect(cue).not.toContain('Vedica ice');
@@ -206,4 +208,47 @@ test('a timer that runs out keeps counting, as minus time', async ({ page }) => 
   await page.click('#next');
   await expect(page.locator('#clock')).not.toHaveClass(/over/);
   await expect(page.locator('#clock')).toHaveText(/^\d+:\d\d$/);
+});
+
+test('cold brew: concentrate overnight, no timer, the run waits for you, diluted to the drink', async ({ page }) => {
+  await page.goto('./');
+  await page.click('#rpick [data-r="cold"]');
+  await expect(page.locator('#modeseg')).toBeHidden();
+  await expect(page.locator('#iceseg')).toBeHidden();
+  await expect(page.locator('#numbers')).toContainText('Water, not boiled');
+  await expect(page.locator('#numbers')).not.toContainText('Boil');
+  await page.click('#f-paper');
+  await page.click('#pw-press');
+  const dil = (await numberRow(page, 'Dilute with cold water').innerText()).replace(/\D/g, '');
+  const total = (await numberRow(page, 'Finished drink').innerText()).replace(/\D/g, '');
+  await page.click('#start');
+  const titles = [];
+  while ((await page.innerText('#stage')) !== 'Into the fridge') { titles.push(await page.innerText('#stage')); await page.click('#next'); }
+  expect(titles).toEqual(['Dose the carafe', 'Weigh the water', 'Pour and stir']);
+  await expect(page.locator('#detail')).toContainText('Set an alarm for 8 hours. Ready from');
+  await expect(page.locator('#manual')).toBeVisible();
+  await expect(page.locator('#wait')).toContainText('In the morning');
+
+  /* back the next morning, 20 hours later: the run is still there */
+  await page.evaluate(() => {
+    const k = Object.keys(localStorage).find(x => x.startsWith('fp.run'));
+    const r = JSON.parse(localStorage.getItem(k)); r.savedAt -= 20 * 3600000; localStorage.setItem(k, JSON.stringify(r));
+  });
+  await page.reload();
+  await page.click('[data-run="resume"]');
+  await expect(page.locator('#stage')).toHaveText('Into the fridge');
+  const rest = [];
+  for (let i = 0; i < 10 && !(await page.isVisible('#sc-review')); i++) {
+    rest.push(await page.innerText('#stage'));
+    if (rest[rest.length - 1] === 'Dilute and serve') await expect(page.locator('#detail')).toContainText(`Add ${dil} g of cold water, about ${total} g in all`);
+    await page.click('#next');
+  }
+  expect(rest).toEqual(['Into the fridge', 'Plunge', 'Pour through the paper', 'Let it drain', 'Dilute and serve']);
+  await expect(page.locator('#rv-wt-wrap')).toBeHidden();
+  await page.click('#rv-score [data-v="4"]');
+  await page.click('#rv-save');
+  await expect(page.locator('.entry').first()).toContainText('Cold brew');
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('fp.log.v1'))[0]);
+  expect(saved.recipe).toBe('cold');
+  expect(saved.params.temp).toBeUndefined();
 });

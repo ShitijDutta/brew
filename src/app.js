@@ -1,7 +1,7 @@
 (function(){
 function $(i){return document.getElementById(i)}
 function r5(x){return Math.round(x/5)*5}
-function mmss(s){s=Math.max(0,Math.round(s));return Math.floor(s/60)+':'+('0'+(s%60)).slice(-2)}
+function mmss(s){s=Math.max(0,Math.round(s));var h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=('0'+(s%60)).slice(-2);return h?h+':'+('0'+m).slice(-2)+':'+x:m+':'+x}
 function signed(s){s=Math.round(s);return (s>0?'+':s<0?'\u2212':'')+Math.abs(s)+'s'}
 
 /* who this phone brews as: each person keeps their own settings, log, packs and places (sync/install.js sets this up) */
@@ -41,7 +41,7 @@ function applyStepEdits(e,px){
   return changed;
 }
 
-var DEF={black:{tgt:200,ratio:16.9},hoff:{tgt:300,ratio:16.7},iced:{tgt:280,ratio:16.9},aulait:{tgt:300,ratio:12.5},viet:{tgt:110,ratio:7.3},
+var DEF={black:{tgt:200,ratio:16.9},hoff:{tgt:300,ratio:16.7},iced:{tgt:280,ratio:16.9},aulait:{tgt:300,ratio:12.5},viet:{tgt:110,ratio:7.3},cold:{tgt:500,ratio:8},
   vietHot:{tgt:140,ratio:7.3},vietIced:{tgt:290,ratio:7.3}};
 var S={recipe:'black',mode:'direct',vmode:'iced',pratio:14.6,ved:20,ceil:450,temp:94,panloss:30,dspeed:10,lead:3,theme:'',
   r:{black:{tgt:200,ratio:16.9},iced:{tgt:280,ratio:16.9},aulait:{tgt:300,ratio:12.5},vietHot:{tgt:140,ratio:7.3},vietIced:{tgt:290,ratio:7.3}},
@@ -352,7 +352,9 @@ var RECIPES={
  hoff:{name:'Hoffmann',label:'Liquid in the cup',unit:'grams, poured straight from the press',modes:false,
    hint:'James Hoffmann\u2019s Ultimate French Press as written: 1:16.7, straight off the boil, no agitation except the crust break, a 5\u20138 minute settle, plunge only to the surface, pour gently. No decanter. Your coarse pre-ground will extract a little less than his medium grind.'},
  iced:{name:'Iced',label:'Finished iced coffee',unit:'grams in the glass, after the ice melts',modes:false,
-   hint:'Japanese style. Half the liquid is brewed hot, half is ice that melts into it. No settling wait \u2014 the coffee goes onto the ice immediately, which is what traps the aromatics.'},
+   hint:'Japanese style. Half the liquid is brewed hot, half is ice that melts into it. It settles like Black so the paper drains fast, then goes straight onto the ice, which traps the aromatics.'},
+ cold:{name:'Cold brew',label:'Finished cold brew',unit:'grams in the glass, after diluting',modes:false,
+   hint:'Steeped overnight in the fridge as a concentrate, filtered, then diluted about 1:1 with cold water. Smoother and less bitter than coffee brewed hot and iced; suits heavier, chocolatey coffees.'},
  aulait:{name:'Caf\u00E9 au lait',label:'Finished drink',unit:'grams, coffee plus milk',modes:false,
    hint:'Brewed tighter so it survives the milk. Flat hot milk at 65\u201370\u00B0C, never frothed.'},
  viet:{name:'Vietnamese',label:'Finished drink',unit:'grams in the glass',modes:false,
@@ -389,6 +391,11 @@ function compute(){
     o.decant=o.yield+L; o.bypass=0; o.j=0; o.Y=T;
     o.serveIce=Math.round(T/2);
     o.extra=0;
+  } else if(S.recipe==='cold'){
+    /* a concentrate at the ratio set, diluted about 1:1; the ratio is coffee to the water in the press */
+    o.dil=Math.round(T/2);
+    var Wc=r5((T-o.dil+L+20)/(1-2/R)); o.D=Math.round(Wc/R);
+    o.press=Wc; o.decant=T-o.dil+L; o.bypass=0; o.j=0; o.Y=T; o.extra=0;
   } else if(S.recipe==='aulait'){
     o.yield=Math.round(T/2); o.milk=T-o.yield;
     o.D=Math.round((o.yield+L+20)/(R-2));
@@ -406,7 +413,7 @@ function compute(){
     o.decant=o.conc+L; o.bypass=0; o.j=0; o.Y=o.conc;
     o.extra=0;
   }
-  o.boil=o.press+Math.max(o.bypass,0)+pl;
+  o.boil=o.press+Math.max(o.bypass,0)+(S.recipe==='cold'?0:pl);   /* cold brew water is not boiled, so nothing is lost */
   o.ved=Math.round(o.boil*vp/100);
   o.ro=o.boil-o.ved;
   o.iceVed=o.ice?Math.round(o.ice*vp/100):0;
@@ -421,12 +428,12 @@ function compute(){
 function numRows(o,mode,loc){
   var rows=[], rk=o.recipe;
   if(loc)rows.push(['Location',esc(loc),'']);
-  rows.push(['Boil',o.boil+' g','lead']);
+  rows.push([rk==='cold'?'Water, not boiled':'Boil',o.boil+' g','lead']);
   rows.push(['Vedica / RO',o.ved+' / '+o.ro+' g','']);
   if(o.paper)rows.push(['Paper rinse',o.rinse+' g plain RO','']);
   rows.push(['Coffee',o.D+' g','lead']);
-  rows.push(['Water into press',o.press+' g','']);
-  rows.push([o.paper?'Decant to':(rk==='hoff'?'Pour into the cup':(rk==='viet'?'Concentrate to decant':'Decant to')),Math.round(o.decant)+' g',rk==='hoff'?'lead':'']);
+  if(rk!=='cold')rows.push(['Water into press',o.press+' g','']);
+  rows.push([o.paper?'Decant to':(rk==='hoff'?'Pour into the cup':(rk==='viet'||rk==='cold'?'Concentrate to decant':'Decant to')),Math.round(o.decant)+' g',rk==='hoff'?'lead':'']);
   if(rk==='black'){
     if(mode==='bypass')rows.push(['Add hot water',Math.round(o.bypass)+' g','accent']);
     if(!o.paper)rows.push(['Jug total',o.Y+' g','']);
@@ -438,6 +445,9 @@ function numRows(o,mode,loc){
     rows.push(o.iceKind==='other'?['\u2003 which ice','Other ice','']:['\u2003 frozen from',o.iceVed+' / '+o.iceRo+' g Vedica / RO','']);
     rows.push(['Finished drink',o.T+' g','lead']);
     rows.push(['Ice in the glass','0\u201340 g','']);
+  } else if(rk==='cold'){
+    rows.push(['Dilute with cold water',o.dil+' g','accent']);
+    rows.push(['Finished drink',o.T+' g','lead']);
   } else if(rk==='hoff'){
     rows.push(['Largest cup your press fits',o.maxCup+' g','']);
   } else if(rk==='aulait'){
@@ -471,7 +481,9 @@ function render(){
       ?'All the water goes through the coffee. Simplest, and what the 200 g cup was dialled in on.'
       :'Brewed tighter with less water in the press, then diluted in the jug. Use it when the fill gets deep enough for the bed to reach the screen on the tilt.';
   } else if(S.recipe==='iced'){
-    $('blurb').textContent='Press ratio here is about 1:'+(o.press/o.D).toFixed(1)+' \u2014 much tighter than black, so the 4:00 steep has no slack. Glass ice depends on the jug: none at 10\u00B0C or below, up to 40 g above it.';
+    $('blurb').textContent='The press runs at about 1:'+(o.press/o.D).toFixed(1)+' and the ice brings it to your ratio. Glass ice depends on the jug: none at 10\u00B0C or below, up to 40 g above it.';
+  } else if(S.recipe==='cold'){
+    $('blurb').textContent='The ratio is the concentrate: coffee to the water in the press, about 1:'+R1(o.press/o.D)+'. About 8 hours in the fridge is enough; it is then diluted about 1:1.';
   } else if(S.recipe==='hoff'){
     $('blurb').textContent='A reference brew to compare against your Black recipe. Use the same bean and change nothing else, so the method is the only difference.';
   } else if(S.recipe==='aulait'){
@@ -511,6 +523,7 @@ function buildSteps(oIn){
     var r={k:k,t:t,d:d}; x=x||{};
     if(x.s)r.s=x.s;
     if(x.more)r.more=x.more;
+    if(x.ready)r.ready=x.ready; if(x.long)r.long=true;
     var w=(x.w||[]).filter(Boolean); if(w.length)r.w=w;
     return r;
   }
@@ -530,7 +543,7 @@ function buildSteps(oIn){
     {more:'Shallow tilt. Don’t set the press down mid-pour: every tilt back stirs the bed. It mixes as it pours, so there is no need to swirl. The grams are the most to pour, not a target. Got less? Enter what you poured and the next steps adjust.'})}
   function through(into,more){return step('filter','Pour through the paper','From the decanter into the dripper on '+into+', in two or three goes.',
     {more:'Set the decanter down in between; with the press out of the way there is nothing to stir up. Keep the level a centimetre below the paper’s edge, and leave the last spoonful in the decanter, where the heaviest silt sank.'+(more||'')})}
-  var drain=step('drain','Let it drain','Hands off. Lift the dripper off at the beep.',{s:240,more:R==='iced'
+  var drain=step('drain','Let it drain','Hands off. Lift the dripper off at the beep.',{s:240,more:R==='iced'||R==='cold'
     ?'No stirring, swirling or tapping the paper.'
     :'No stirring, swirling or tapping the paper. The last drips are slow but they are the same coffee: if you are letting it cool anyway, catch them in your cup.'});
   /* the steps after the plunge, either way */
@@ -591,15 +604,16 @@ function buildSteps(oIn){
   }
   else if(R==='iced'){
     push([common.prep,common.dose,common.pour]);
-    /* the ice stays in the freezer until the last minute of the steep: ice that melts early dilutes without chilling */
-    s.push(step('steep','Steep','Lid on, plunger up. Don’t touch.',{s:240,
-      more:'The ice comes out only in the last minute: ice that melts early waters the drink down without chilling it. '+iceMore,
-      w:[W('Serving glass into the fridge'),heatW,rinseW(null),
-        W(iceTxt+' into the jug'+(FP?', dripper on top, on the scale, tared':(P?', dripper on top. Decanter on the scale, tared':', on the scale, tared')),60)]}));
-    s.push(step('crust','Break the crust','Press the bed down, skim the foam. No stirring.',
-      {s:40,more:'Knock stuck grounds off the walls. Move faster than for black: there is no settle to absorb an overrun.'}));
-    s.push(step('plunge','Plunge','Slowly, to just above the grounds. Stop at any resistance.',
-      {s:20,more:'Done by the beep; this counts as contact time. Pressing into the bed squeezes fines and bitterness through the screen.'}));
+    s.push(step('steep','Steep','Lid on, plunger up. Don’t touch.',{s:240,w:[W('Serving glass into the fridge'),heatW]}));
+    s.push(step('crust','Break the crust','Press the bed down, skim the foam. No stirring. Lid back on.',
+      {s:40,more:'Knock stuck grounds off the walls.'}));
+    /* the settle drops the fines, so the paper drains quickly and the full amount reaches the ice;
+       the ice stays in the freezer until its last minute: ice that melts early dilutes without chilling */
+    s.push(step('settle','Settle','Plunger stays up. Leave it.',{s:300,
+      more:'The fines sink, so the paper drains fast and the full amount reaches the ice. Extraction has levelled off by now, so the wait adds no bitterness. The ice comes out only in the last minute: ice that melts early waters the drink down without chilling it. '+iceMore,
+      w:[rinseW(null),W(iceTxt+' into the jug'+(FP?', dripper on top, on the scale, tared':(P?', dripper on top. Decanter on the scale, tared':', on the scale, tared')),60)]}));
+    s.push(step('plunge','Plunge','Slowly, to a couple of centimetres above the bed. Never into it.',
+      {s:30,more:'The screen then holds the bed still when you tilt. Done by the beep; this counts as contact time.'}));
     if(P)push(paperSeq('the jug of ice',dec,' It drips onto the ice as it filters, which is how Japanese iced pour-over works.'));
     else s.push(step('decant','Pour onto the ice','Straight onto the ice, steady, to '+B(o.yield+' g')+'.',
       {more:'Or stop sooner if the flow slows. The screen holds the bed in place.'}));
@@ -608,7 +622,7 @@ function buildSteps(oIn){
     s.push(step('off','Serve','Into the cold glass. Above 10°C, add two or three cubes, '+B('40 g')+' at most.',
       {more:'At 10°C or below, no ice. Unmelted chunks from the jug go in too; they are part of the recipe. Leave the last spoonful in the jug, where the silt sits.'}));
     s.push(step('rest','Taste','Now, and again in ten minutes as it warms.',
-      {more:'Sweetness: cold hides it, so any is a good sign. Acidity: juicy is right; sharp and sour with fresh coffee means under-extracted, so add a minute to the steep. Clean but thin: tighten the ratio. Drying: plunge slower and leave more behind. Hold a sip a moment so it warms, for the aroma.'}));
+      {more:'Juicy and sweet is right. Bitter up front: try 1:16 next time, since bitterness follows strength. Clean but thin: 1:14. Light, bright coffees suit this method best; heavier medium roasts do better as cold brew. Hold a sip a moment so it warms, for the aroma.'}));
   }
   else if(R==='aulait'){
     push([common.prep,common.dose,common.pour,common.steep]);
@@ -622,6 +636,21 @@ function buildSteps(oIn){
       {s:120,more:'Steaming, with fine bubbles at the edge: pull it just before it moves. Past 75°C the proteins denature and it tastes cooked.'}));
     s.push(step('off','Combine',P?'Milk into the coffee in one steady stream.':'Coffee into a warmed mug, then the milk in one steady stream.',
       {more:'Roughly 1:1. Don’t froth it: flat hot milk is the point.'}));
+  }
+  else if(R==='cold'){
+    /* steeped overnight in the fridge; no timer: the step shows when it is ready, and the phone's own alarm wakes you */
+    s.push(common.prep);
+    s.push(step('dose','Weigh the water',B(o.ved+' g')+' Vedica + '+B(o.ro+' g')+' RO, '+B(o.press+' g')+' in all, at room temperature. Not boiled.'));
+    s.push(step('pour','Pour and stir','All of it over the coffee. Stir gently, about ten times, until there are no dry clumps.',
+      {s:60,more:'Cold water wets the grounds slowly, so this stir matters more than in a hot brew.'}));
+    s.push(step('steep','Into the fridge','Lid on, plunger up. Set an alarm for 8 hours.',{ready:[8,12],long:true,
+      more:'Brew time matters least for cold brew: about 8 hours tastes much like 24 (UC Davis). Fridge or counter both work; the fridge is simply safer overnight. You can close the app: this brew waits for you.',
+      w:[W(P?'In the morning: rinse a paper with hot plain RO and set the dripper on a clean jug, on the scale, tared':'In the morning: a clean jug on the scale, tared')]}));
+    s.push(step('plunge','Plunge','Slowly, to a couple of centimetres above the bed. Never into it.',{s:30}));
+    if(P)push([pressThrough('the jug',dec),drain]);
+    else s.push(step('decant','Pour off the concentrate','Shallow tilt, up to '+B(dec+' g')+'. Leave the sludge in the press.'));
+    s.push(step('off','Dilute and serve','Add '+B(o.dil+' g')+' of cold water, about '+B(o.T+' g')+' in all. Over a few cubes.',
+      {more:'Less water for a stronger drink, or swap some of it for milk. Keep what you don’t drink sealed in the fridge and finish it within 3–4 days.'}));
   }
   else {
     var cmg='the glass with the condensed milk';
@@ -656,7 +685,8 @@ function saveRun(){
 function clearRun(){try{localStorage.removeItem(RKEY)}catch(e){}}
 function readRun(){
   try{var r=JSON.parse(localStorage.getItem(RKEY)||'null');
-    if(r&&r.steps&&r.steps.length&&Date.now()-r.savedAt<12*3600000)return r;
+    var lng=r&&r.steps&&r.steps[r.idx]&&r.steps[r.idx].long;
+    if(r&&r.steps&&r.steps.length&&Date.now()-r.savedAt<(lng?48:12)*3600000)return r;
     if(r)clearRun();
   }catch(e){}
   return null;
@@ -666,7 +696,7 @@ function resumeRun(r){
   running=!!r.running; dur=r.dur||0; stepT0=r.stepT0; tOver0=r.tOver0||0; speed=r.speed||1; testMode=!!r.testMode; runCalc=r.runCalc; runMeta=r.meta;
   left=Math.max(0,dur-tBase); cueDone={}; cueQuiet=true; closeRunPanel();
   $('dryflag').classList.toggle('hide',!testMode);
-  show('sc-brew'); ctx(); lock();
+  show('sc-brew'); ctx(); if(!(steps[idx]&&steps[idx].long))lock();
   if(!tid)tid=setInterval(loop,200);
   $('pause').textContent=running?'Pause':(dur&&tBase>=dur?'Restart':'Resume');
   paint(); loop();
@@ -702,7 +732,7 @@ function paint(){
   var st=steps[idx];
   $('count').textContent=(idx+1)+' of '+steps.length;
   $('stage').textContent=st.t;
-  $('detail').innerHTML=st.d;
+  $('detail').innerHTML=st.d+(st.ready?' '+readyText(st):'');
   paintWait(); paintGot();
   var mo=$('more'); mo.open=false; mo.classList.toggle('hide',!st.more); $('more-b').innerHTML=st.more||'';
   paintRunBar(); paintRunPanel();
@@ -817,6 +847,11 @@ function closeRunPanel(){
 }
 $('runbar').addEventListener('click',function(){if($('runpanel').classList.contains('hide'))openRunPanel();else closeRunPanel()});
 $('runshade').addEventListener('click',closeRunPanel);
+function R1(v){return Math.round(v*10)/10}
+function readyText(st){
+  var t0=stepT0||Date.now(), f=function(h){return '<b>'+new Date(t0+h*3600000).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'</b>'};
+  return 'Ready from '+f(st.ready[0])+', best by '+f(st.ready[1])+'.';
+}
 function leftText(){return over>0?mmss(over)+' over':mmss(left)+' left'}
 
 /* Less (or more) out of the press than planned: the rest of the run is worked out again from what was poured,
@@ -829,6 +864,7 @@ function adjustCalc(o,got){
   else if(x.recipe==='hoff'){x.T=x.Y=Math.round(C2)}
   else if(x.recipe==='iced'){x.yield=Math.round(C2);x.T=x.yield+(x.ice||0)}
   else if(x.recipe==='aulait'){x.yield=Math.round(C2);x.milk=Math.round(o.milk*k);x.T=x.yield+x.milk}
+  else if(x.recipe==='cold'){x.dil=Math.round(o.dil*k);x.T=Math.round(C2)+x.dil}
   else {x.conc=Math.round(C2);x.T=x.conc+(x.cm||0)+(x.ice||0)}
   return x;
 }
@@ -839,6 +875,7 @@ function gotText(){
   if(rk==='black')return x.bypass>0?'Add '+x.bypass+' g of hot water next, for about '+x.T+' g at the same strength.':'About '+x.T+' g '+(x.paper?'into the glass.':'to pour off.');
   if(rk==='aulait')return 'Heat '+x.milk+' g of milk instead, for about '+x.T+' g.';
   if(rk==='iced')return 'About '+x.T+' g once the ice melts.';
+  if(rk==='cold')return 'Dilute with '+x.dil+' g of cold water, for about '+x.T+' g at the same strength.';
   return 'About '+x.T+' g '+(rk==='hoff'?'in the cup.':'in the glass.');
 }
 function paintGot(){
@@ -874,6 +911,7 @@ function go(i){
   idx=i; var st=steps[idx];
   dur=st.s?st.s:0; left=dur; running=!!st.s; tBase=0; tStart=Date.now();
   stepT0=Date.now(); cueDone={}; cueQuiet=true; tOver0=0; over=0;
+  if(st.long)unlock(); else if(!wl)lock();
   $('pause').textContent='Pause';
   paint(); saveRun();
 }
@@ -884,7 +922,7 @@ function leaveStep(){
 function startBrew(isTest){
   testMode=!!isTest; speed=testMode?dryX():1;
   steps=buildSteps(); actuals=[]; elapsed=0; runCalc=compute(); brewT0=Date.now();
-  runMeta={recipe:S.recipe,mode:S.mode,params:{tgt:rs().tgt,ratio:rs().ratio,pratio:S.pratio,ved:S.ved,temp:S.temp,loc:(curLoc()||{}).name||undefined,vmode:S.recipe==='viet'?S.vmode:undefined,paper:rs().paper?true:undefined,pfrom:rs().paper?(rs().pflow==='press'?'press':'decanter'):undefined,ice:runCalc.iceKind||undefined},bean:beanSnap()};
+  runMeta={recipe:S.recipe,mode:S.mode,params:{tgt:rs().tgt,ratio:rs().ratio,pratio:S.pratio,ved:S.ved,temp:S.recipe==='cold'?undefined:S.temp,loc:(curLoc()||{}).name||undefined,vmode:S.recipe==='viet'?S.vmode:undefined,paper:rs().paper?true:undefined,pfrom:rs().paper?(rs().pflow==='press'?'press':'decanter'):undefined,ice:runCalc.iceKind||undefined},bean:beanSnap()};
   closeRunPanel();
   $('dryflag').classList.toggle('hide',!testMode);
   show('sc-brew'); ctx(); lock();
@@ -945,14 +983,14 @@ function openReview(id,notice,fresh){
   $('rv-pack').classList.toggle('hide',!notice); $('rv-pack').textContent=notice||'';
   var iced=e.recipe==='iced';
   /* how the brew was made belongs to whoever made it: a cup only records your own side */
-  $('rv-wt-wrap').classList.toggle('hide',cup); $('rv-dec-wrap').classList.toggle('hide',cup); $('rv-steps').classList.toggle('hide',cup);
+  $('rv-wt-wrap').classList.toggle('hide',cup||e.recipe==='cold'); $('rv-dec-wrap').classList.toggle('hide',cup); $('rv-steps').classList.toggle('hide',cup);
   rvWith={}; (e.with||[]).forEach(function(pid){rvWith[pid]=1}); rvShareAuto=false;
   $('rv-with-wrap').classList.toggle('hide',cup||isT||!othersList().length);
   $('rv-dec').value=l.decant||(e.calc?e.calc.decant:'');
   $('rv-temp').value=(l.temp!==null&&l.temp!==undefined)?l.temp:'';
   $('rv-jug').value=(l.jug!==null&&l.jug!==undefined)?l.jug:''; $('rv-jug-wrap').classList.toggle('hide',!iced||cup);
   var lastT=null; LOG.forEach(function(x){if(lastT===null&&String(x.id)!==String(e.id)&&(x.recipe||'black')===(e.recipe||'black')&&x.log&&x.log.temp)lastT=x.log.temp});
-  $('rv-temp').setAttribute('data-def',String(iced?6:(lastT||58)));
+  $('rv-temp').setAttribute('data-def',String(iced||e.recipe==='cold'?6:(lastT||58)));
   $('rv-note').value=l.note||'';
   $('rv-wt').value=(e.params&&e.params.temp!==undefined)?e.params.temp:S.temp;
   rvScore=l.score||0; rvFaults={}; rvTastes={}; rvShare=(l.share!==undefined&&l.share!==null)?l.share:1;
@@ -1057,7 +1095,7 @@ function saveReview(){
   if(!RV)return; var e=findAny(RV.id); if(!e)return;
   var fl=[]; FAULTS.forEach(function(f){if(rvFaults[f])fl.push(f)});
   var tl=[]; TASTES.forEach(function(f){if(rvTastes[f])tl.push(f)});
-  var wt=parseFloat($('rv-wt').value); if(!e.params)e.params={}; if(!isNaN(wt))e.params.temp=wt;
+  var wt=parseFloat($('rv-wt').value); if(!e.params)e.params={}; if(!isNaN(wt)&&e.recipe!=='cold')e.params.temp=wt;
   var jv=parseFloat($('rv-jug').value);
   e.log={temp:Number($('rv-temp').value)||null, decant:Number($('rv-dec').value)||null,
          jug:(e.recipe==='iced'&&!isNaN(jv))?jv:undefined,
@@ -1294,7 +1332,7 @@ function entryDetail(e,editing){
   }
   h+='<p class="note" style="margin:8px 0 0">'+(RECIPES[e.recipe||'black']?RECIPES[e.recipe||'black'].name:'Black')+' \u00B7 '+c.dose+' g into '+c.press+' g \u00B7 decant target '+c.decant+' g'
    +(l.decant?', reached '+l.decant+' g':'')
-   +' \u00B7 water '+e.params.temp+'\u00B0C'+(e.params.loc?' \u00B7 '+esc(e.params.loc):'')+(e.params.paper?' \u00B7 through a paper filter'+(e.params.pfrom==='press'?', straight from the press':e.params.pfrom==='decanter'?', from the decanter':''):'')+(e.params.ice?' \u00B7 '+(e.params.ice==='other'?'other ice':'RO + Vedica ice'):'')
+   +(e.params.temp!==undefined?' \u00B7 water '+e.params.temp+'\u00B0C':'')+(e.params.loc?' \u00B7 '+esc(e.params.loc):'')+(e.params.paper?' \u00B7 through a paper filter'+(e.params.pfrom==='press'?', straight from the press':e.params.pfrom==='decanter'?', from the decanter':''):'')+(e.params.ice?' \u00B7 '+(e.params.ice==='other'?'other ice':'RO + Vedica ice'):'')
    +(l.jug!==undefined&&l.jug!==null?' \u00B7 jug '+l.jug+'\u00B0C':'')
    +(l.temp?' \u00B7 cup '+l.temp+'\u00B0C':'')+'</p>';
   if(l.tastes&&l.tastes.length)h+='<p class="note tasted" style="margin:8px 0 0">Tasted '+esc(l.tastes.join(', ').toLowerCase())+'</p>';
@@ -1347,8 +1385,8 @@ function editForm(e){
   (l.tastes||[]).forEach(function(f){ED.tastes[f]=1});
   (e.with||[]).forEach(function(pid){ED.with[pid]=1});
   return '<div class="edit">'
-    +(cup?'':'<label class="lab" for="ed-wt">Water &deg;C</label>'+stpH('ed-wt',e.params&&e.params.temp,0.5,60,100,'','water temperature',S.temp))
-    +'<label class="lab" for="ed-ct">Cup &deg;C at first sip</label>'+stpH('ed-ct',l.temp,1,0,95,'not taken','cup temperature',e.recipe==='iced'?6:58)
+    +(cup||e.recipe==='cold'?'':'<label class="lab" for="ed-wt">Water &deg;C</label>'+stpH('ed-wt',e.params&&e.params.temp,0.5,60,100,'','water temperature',S.temp))
+    +'<label class="lab" for="ed-ct">Cup &deg;C at first sip</label>'+stpH('ed-ct',l.temp,1,0,95,'not taken','cup temperature',e.recipe==='iced'||e.recipe==='cold'?6:58)
     +((e.recipe==='iced'&&!cup)?'<label class="lab" for="ed-jg">Jug &deg;C after stirring</label>'+stpH('ed-jg',l.jug,0.5,0,40,'not taken','jug temperature',8):'')
     +(cup?'':'<label class="lab" for="ed-dc">Grams actually decanted</label>'+stpH('ed-dc',l.decant,1,0,900,'','grams decanted',e.calc&&e.calc.decant))
     +'<label class="lab" for="ed-fine">Overall <span class="sval" id="ed-val"></span></label><div class="scale" id="ed-sc" role="group" aria-label="Score">'
