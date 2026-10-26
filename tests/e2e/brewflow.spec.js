@@ -331,3 +331,18 @@ test('the final drink can be weighed on the score screen, and is optional', asyn
   expect(saved.log.fin).toBeUndefined();
   expect(saved.log.drank).toBe(Number(planned));
 });
+
+test('with paper, the details show what the paper and jug kept', async ({ page }) => {
+  await page.goto('./');
+  await page.click('#rpick [data-r="black"]');
+  await page.click('#f-paper');
+  await page.click('#pw-press');
+  await page.click('#start');
+  for (let i = 0; i < 25 && !(await page.isVisible('#sc-review')); i++) await page.click('#next');
+  await page.fill('#rv-dec', '226');
+  await page.fill('#rv-fin', '215');
+  await page.click('#rv-score [data-v="5"]');
+  await page.click('#rv-save');
+  await page.locator('.entry').first().click();
+  await expect(page.locator('.detwrap').first()).toContainText('215 g in the glass · paper and jug kept about 11 g');
+});

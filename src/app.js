@@ -1138,6 +1138,14 @@ var rvScore=0, rvFaults={}, rvTastes={}, rvShare=1, rvWith={}, rvShareAuto=false
 function rname(e){var r=RECIPES[(e&&e.recipe)||'black'];return r?r.name:'Black'}
 function skipLabel(){return RV&&RV.cup?'Didn’t have any':'Discard'}
 /* grams of finished drink the brew made: the whole glass for Vietnamese, the cup for everything else */
+/* what the paper (and the jug walls) kept: what went into the dripper, plus anything added after it, minus what reached the glass */
+function paperKept(e){
+  var l=(e&&e.log)||{}, c=(e&&e.calc)||{}, p=(e&&e.params)||{}, rk=(e&&e.recipe)||'black';
+  if(!p.paper||!l.decant||!l.fin||['black','hoff','iced','cold'].indexOf(rk)<0)return null;
+  var added=rk==='iced'?(c.ice||0):((rk==='cold'||(rk==='black'&&e.mode==='bypass'))?Math.max(0,(c.jug||0)-(c.decant||0)+PAPER_LOSS):0);
+  var k=Math.round(l.decant+added-l.fin);
+  return (k>=0&&k<=l.decant)?k:null;
+}
 function drinkTotal(e,fin){var f=fin!==undefined?fin:(e&&e.log&&e.log.fin);if(f)return Math.round(f);var c=(e&&e.calc)||{};if(e.recipe==='viet')return Math.round((c.pour||0)+(c.cm||0)+(c.ice||0));return Math.round(c.pour||c.jug||0)}
 function shareNote(l){if(l.share===undefined||l.share===null||l.share>=1)return '';return l.drank!==undefined&&l.drank!==null?' (you drank '+l.drank+' g)':' (your share of the brew)'}
 var SHARES=[[1,'All of it'],[0.5,'Half'],[0.333,'A third'],[0,'None']];
@@ -1450,7 +1458,7 @@ function entryDetail(e,editing){
     h+='<p class="note" style="margin:16px 0 0;color:var(--steel)">'+esc(bb.join(' \u00B7 '))+'</p>';
   }
   h+='<p class="note" style="margin:8px 0 0">'+(RECIPES[e.recipe||'black']?RECIPES[e.recipe||'black'].name:'Black')+' \u00B7 '+c.dose+' g into '+c.press+' g \u00B7 decant target '+c.decant+' g'
-   +(l.decant?', reached '+l.decant+' g':'')+(l.fin?' \u00B7 '+l.fin+' g in the glass':'')
+   +(l.decant?', reached '+l.decant+' g':'')+(l.fin?' \u00B7 '+l.fin+' g in the glass':'')+(paperKept(e)!==null?' \u00B7 paper and jug kept about '+paperKept(e)+' g':'')
    +(e.params.temp!==undefined?' \u00B7 water '+e.params.temp+'\u00B0C':'')+(e.params.loc?' \u00B7 '+esc(e.params.loc):'')+(e.params.paper?' \u00B7 through a paper filter'+(e.params.pfrom==='press'?', straight from the press':e.params.pfrom==='decanter'?', from the decanter':''):'')+(e.params.ice?' \u00B7 '+(e.params.ice==='other'?'other ice':'RO + Vedica ice'):'')
    +(l.jug!==undefined&&l.jug!==null?' \u00B7 jug '+l.jug+'\u00B0C':'')
    +(l.temp?' \u00B7 cup '+l.temp+'\u00B0C':'')+'</p>';
@@ -1608,6 +1616,7 @@ function brewText(e){
   L.push('Recipe: '+r.join(' \u00B7 '));
   var res=['decanted '+(l.decant?l.decant+' g':'not logged')+' (target '+c.decant+' g)'];
   if(l.fin)res.push(l.fin+' g in the glass (planned '+drinkTotal(e,0)+' g)');
+  if(paperKept(e)!==null)res.push('paper and jug kept about '+paperKept(e)+' g');
   if(l.jug!==null&&l.jug!==undefined)res.push('jug '+l.jug+'\u00B0C after stirring');
   if(l.temp!==null&&l.temp!==undefined)res.push('cup '+l.temp+'\u00B0C');
   res.push('contact '+mmss(e.contact||0)); res.push('total '+mmss(e.total||0));
