@@ -301,3 +301,33 @@ test('latte through paper: the milk warms during the drain, then the frother', a
   await page.click('#more summary');
   await expect(page.locator('#more-b')).toContainText('Heat first, then froth');
 });
+
+test('the final drink can be weighed on the score screen, and is optional', async ({ page }) => {
+  await page.goto('./');
+  await page.click('#rpick [data-r="black"]');
+  const planned = (await numberRow(page, 'Pour off').innerText()).replace(/\D/g, '');
+  const brew = async () => {
+    await page.click('#start');
+    for (let i = 0; i < 25 && !(await page.isVisible('#sc-review')); i++) await page.click('#next');
+  };
+  await brew();
+  await expect(page.locator('#rv-fin')).toHaveValue('');
+  await expect(page.locator('#rv-fin')).toHaveAttribute('placeholder', planned + ' planned');
+  await page.fill('#rv-fin', '215');
+  await page.click('#rv-score [data-v="5"]');
+  await page.click('#rv-save');
+  let saved = await page.evaluate(() => JSON.parse(localStorage.getItem('fp.log.v1'))[0]);
+  expect(saved.log.fin).toBe(215);
+  expect(saved.log.drank).toBe(215);
+  await page.locator('.entry').first().click();
+  await expect(page.locator('.detwrap').first()).toContainText('215 g in the glass');
+
+  /* left empty: nothing recorded, and how much was drunk follows the plan */
+  await page.click('#log-back');
+  await brew();
+  await page.click('#rv-score [data-v="4"]');
+  await page.click('#rv-save');
+  saved = await page.evaluate(() => JSON.parse(localStorage.getItem('fp.log.v1'))[0]);
+  expect(saved.log.fin).toBeUndefined();
+  expect(saved.log.drank).toBe(Number(planned));
+});
