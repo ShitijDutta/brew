@@ -14,6 +14,9 @@ Roughly in the order they would help.
 
 ## Done
 
+- Brews reach the log at the pour, marked unfinished, so one left half-done is never lost and can be scored later
+  (Nov 2026).
+
 - Something new: nine occasional drinks (milk with a frother, tonic, coconut, orange, shaken, affogato), apart from the daily
   recipes (Oct 2026).
 

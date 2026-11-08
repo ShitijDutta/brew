@@ -52,6 +52,11 @@ the glass, with a timed drain. No jug settle. Brews are tagged, and the Log show
 - **Cold brew** is a concentrate (1:8 by default, coffee to press water) steeped overnight in the fridge with room-temperature
   water, filtered, then diluted about 1:1. The fridge step has no timer: set the phone's alarm for 8 hours; the step shows when
   it is ready (8 h) and best by (12 h). The app lets the screen sleep during it and keeps the brew for up to two days.
+- A brew is saved to the log as soon as the coffee is in the water (when the pour step is done), marked **unfinished**.
+  Each step after that updates it on the phone; it syncs once then and again when the brew finishes or stops, not at every
+  step. Stopping after the pour, tapping **End it** on the interrupted-brew banner, leaving it for more than 12 hours (48 for
+  cold brew) or starting another brew all keep it in the log as *Unfinished · Not scored*, with the steps it got through, to
+  score later or delete. Stopping before the pour, and dry runs, save nothing.
 - Iced and Vietnamese iced have an **RO + Vedica ice / Other ice** switch. Other ice is recorded with the brew and shown in the
   log, so a bad iced cup can be traced to the ice rather than the method.
 

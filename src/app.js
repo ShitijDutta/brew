@@ -787,25 +787,26 @@ function buildSteps(oIn){
 
 var steps=[],idx=0,left=0,dur=0,running=false,tid=null,elapsed=0,wl=null,ac=null;
 var brewT0=0,tStart=0,tBase=0;
-var actuals=[],stepT0=0,runCalc=null,runMeta=null;
+var actuals=[],stepT0=0,runCalc=null,runMeta=null,runId=null;
 /* when a step's timer ran out, so the clock can keep counting past zero (shown as minus time) */
 var tOver0=0, over=0;
 function saveRun(){
   if(!steps.length)return;
   try{localStorage.setItem(RKEY,JSON.stringify({steps:steps,idx:idx,actuals:actuals,brewT0:brewT0,tStart:tStart,tBase:tBase,
-    running:running,dur:dur,stepT0:stepT0,tOver0:tOver0,speed:speed,testMode:testMode,runCalc:runCalc,meta:runMeta,savedAt:Date.now()}))}catch(e){}
+    running:running,dur:dur,stepT0:stepT0,tOver0:tOver0,speed:speed,testMode:testMode,runCalc:runCalc,meta:runMeta,runId:runId,savedAt:Date.now()}))}catch(e){}
 }
 function clearRun(){try{localStorage.removeItem(RKEY)}catch(e){}}
 function readRun(){
   try{var r=JSON.parse(localStorage.getItem(RKEY)||'null');
     var lng=r&&r.steps&&r.steps[r.idx]&&r.steps[r.idx].long;
     if(r&&r.steps&&r.steps.length&&Date.now()-r.savedAt<(lng?48:12)*3600000)return r;
-    if(r)clearRun();
+    /* too old to resume: a brew already in the log stays there, unfinished */
+    if(r){endStoredRun(r);clearRun()}
   }catch(e){}
   return null;
 }
 function resumeRun(r){
-  steps=r.steps; idx=r.idx; actuals=r.actuals||[]; brewT0=r.brewT0; tStart=r.tStart; tBase=r.tBase;
+  steps=r.steps; idx=r.idx; actuals=r.actuals||[]; brewT0=r.brewT0; tStart=r.tStart; tBase=r.tBase; runId=r.runId||null;
   running=!!r.running; dur=r.dur||0; stepT0=r.stepT0; tOver0=r.tOver0||0; speed=r.speed||1; testMode=!!r.testMode; runCalc=r.runCalc; runMeta=r.meta;
   left=Math.max(0,dur-tBase); cueDone={}; cueQuiet=true; closeRunPanel();
   $('dryflag').classList.toggle('hide',!testMode);
@@ -1037,8 +1038,10 @@ function leaveStep(){
   actuals.push({k:st.k,t:st.t,target:st.s||0,actual:((Date.now()-stepT0)/1000)*speed});
 }
 function startBrew(isTest){
+  /* a brew left half-done is replaced: if it had reached the log, it stays there, unfinished */
+  var old=readRun(); if(old)endStoredRun(old);
   testMode=!!isTest; speed=testMode?dryX():1;
-  steps=buildSteps(); actuals=[]; elapsed=0; runCalc=compute(); brewT0=Date.now();
+  steps=buildSteps(); actuals=[]; elapsed=0; runCalc=compute(); brewT0=Date.now(); runId=null;
   runMeta={recipe:S.recipe,mode:S.mode,params:{tgt:rs().tgt,ratio:rs().ratio,pratio:S.pratio,ved:S.ved,temp:coldBase(S.recipe)?undefined:S.temp,loc:(curLoc()||{}).name||undefined,vmode:S.recipe==='viet'?S.vmode:undefined,paper:rs().paper?true:undefined,pfrom:rs().paper?(rs().pflow==='press'?'press':'decanter'):undefined,ice:runCalc.iceKind||undefined},bean:beanSnap()};
   closeRunPanel();
   $('dryflag').classList.toggle('hide',!testMode);
@@ -1065,20 +1068,64 @@ function bestBrew(arr,rk){
 }
 
 function findAny(id){var r=null;LOG.concat(TLOG).forEach(function(x){if(String(x.id)===String(id))r=x});return r}
-function finishBrew(){
-  endTimers();
+/* A brew goes into the log as soon as the coffee is in the water (the pour step is done), marked unfinished.
+   Each later step updates it on this phone; it syncs then, and again when the brew is finished or stopped.
+   Left half-done, it stays in the log, unfinished, and can be scored like any other brew. */
+function brewEntry(id){
   var o=runCalc||compute();
   var m=runMeta||{recipe:S.recipe,mode:S.mode,params:{tgt:rs().tgt,ratio:rs().ratio,pratio:S.pratio,ved:S.ved,temp:S.temp,paper:rs().paper?true:undefined,pfrom:rs().paper?(rs().pflow==='press'?'press':'decanter'):undefined,ice:o.iceKind||undefined},bean:beanSnap()};
-  var now=Date.now();
-  var e={id:now, at:new Date(now).toISOString(), rev:now, pending:true,
-    test:testMode||undefined, recipe:m.recipe, mode:m.mode, bean:m.bean, params:m.params,
-    calc:{boil:o.boil,vedica:o.ved,ro:o.ro,dose:o.D,press:o.press,decant:Math.round(o.decant),jug:o.Y,pour:Math.round(o.recipe==='viet'?o.conc:o.T),ice:o.ice||0,milk:o.milk||0,cm:o.cm||0},
-    steps:actuals.map(function(a){return {k:a.k,t:a.t,target:Math.round(a.target),actual:Math.round(a.actual)}}),
-    total:Math.round(elapsed), contact:Math.round(contactOf(actuals)),
+  return {id:id, at:new Date(id).toISOString(), rev:id, pending:true,
+    test:testMode||undefined, recipe:m.recipe, mode:m.mode, bean:m.bean, params:m.params, calc:calcOf(o), steps:[], total:0, contact:0,
     log:{temp:null,decant:(runCalc&&runCalc.got)||null,score:null,tastes:[],faults:[],note:''}};
+}
+function calcOf(o){return {boil:o.boil,vedica:o.ved,ro:o.ro,dose:o.D,press:o.press,decant:Math.round(o.decant),jug:o.Y,pour:Math.round(o.recipe==='viet'?o.conc:o.T),ice:o.ice||0,milk:o.milk||0,cm:o.cm||0}}
+function stepRecs(a){return (a||[]).map(function(x){return {k:x.k,t:x.t,target:Math.round(x.target),actual:Math.round(x.actual)}})}
+function fillEntry(e){
+  e.steps=stepRecs(actuals); e.contact=Math.round(contactOf(actuals));
+  e.total=Math.round(((Date.now()-brewT0)/1000)*speed);
+  if(e.unfinished)e.planned=steps.length;
+}
+function entryById(id){var r=null;if(id!==null&&id!==undefined)LOG.forEach(function(x){if(String(x.id)===String(id))r=x});return r}
+function runEntry(){return testMode?null:entryById(runId)}
+/* the brew in progress, here or left on this phone to resume: its log entry is not waiting for a score yet */
+function liveRunId(){if(steps.length)return runId?String(runId):'';var r=readRun();return r&&r.runId?String(r.runId):''}
+/* the coffee is in the water once the pour is done (or, for a recipe without one, the first timed step) */
+function pastPour(){
+  var pi=-1; steps.forEach(function(s,i){if(pi<0&&s.k==='pour')pi=i});
+  if(pi<0)steps.forEach(function(s,i){if(pi<0&&s.s)pi=i});
+  return pi>=0&&actuals.length>pi;
+}
+function keepEntry(){
+  if(testMode)return;
+  var e=runEntry();
+  if(e){fillEntry(e);saveL();return}
+  if(!pastPour())return;
+  var now=Date.now(); e=brewEntry(now); e.unfinished=true; fillEntry(e);
+  runId=now; LOG.unshift(e); saveL(); pushPending(); saveRun();
+}
+/* stopped part way: what was done stays in the log, unfinished */
+function endEntry(){
+  var e=runEntry(); if(!e)return null;
+  fillEntry(e); e.rev=Date.now(); e.synced=false; saveL(); pushPending();
+  return e;
+}
+function endStoredRun(r){
+  if(!r||r.testMode||!r.runId)return;
+  var e=entryById(r.runId); if(!e||!e.unfinished)return;
+  var a=r.actuals||[];
+  e.steps=stepRecs(a); e.contact=Math.round(contactOf(a)); e.planned=(r.steps||[]).length;
+  e.total=Math.max(e.total||0,Math.round((((r.savedAt||Date.now())-r.brewT0)/1000)*(r.speed||1)));
+  e.rev=Date.now(); e.synced=false; saveL(); pushPending();
+}
+function finishBrew(){
+  endTimers();
+  var o=runCalc||compute(), now=Date.now(), e=runEntry(), fresh=!e;
+  if(fresh)e=brewEntry(now);
+  e.calc=calcOf(o); delete e.unfinished; delete e.planned; fillEntry(e);
+  e.log=e.log||{}; if(runCalc&&runCalc.got&&!e.log.decant)e.log.decant=runCalc.got;
   if(testMode){TLOG.unshift(e);saveT()}
-  else{LOG.unshift(e);saveL();pushPending()}
-  clearRun(); steps=[];
+  else{if(fresh)LOG.unshift(e); e.rev=now; e.synced=false; saveL(); pushPending()}
+  clearRun(); steps=[]; runId=null;
   var notice=testMode?'':checkPackAfterBrew(e);
   refreshAll();
   openReview(e.id,notice,true);
@@ -1095,6 +1142,7 @@ function openReview(id,notice,fresh){
     lines=(fresh?'':'Brewed '+fmtWhen(e.at)+'. ')+(isT?'Scaled as if real. ':'')+'Contact time <b>'+mmss(e.contact||0)+'</b>, total <b>'+mmss(e.total||0)+'</b>.';
     if(b&&b.contact&&String(b.id)!==String(e.id))lines+=' Your best-rated '+(isT?'dry run':'brew')+' ran '+mmss(b.contact)+' — '+signed((e.contact||0)-b.contact)+'.';
   }
+  if(e.unfinished)lines+='<br>Not finished: '+(e.steps||[]).length+(e.planned?' of '+e.planned:'')+' steps done.';
   if(!isT&&e.pending)lines+='<br>Already saved to your log. Score it now, or tap Score later and come back to it.';
   $('rv-summary').innerHTML=lines;
   $('rv-pack').classList.toggle('hide',!notice); $('rv-pack').textContent=notice||'';
@@ -1242,11 +1290,14 @@ function saveReview(){
 function paintBanners(){
   var h='', r=steps.length?null:readRun();
   if(r){
-    var st=r.steps[r.idx]||{};
-    h+='<div class="banner"><p>'+(r.testMode?'A dry run':'A brew')+' from '+esc(fmtWhen(new Date(r.brewT0).toISOString()))+' was interrupted at step '+(r.idx+1)+' of '+r.steps.length+', <b>'+esc(st.t||'')+'</b>. The timer kept counting while it was closed.</p>'
-      +'<div class="bacts"><button class="go" data-run="resume">Resume</button><button class="ghost del" data-run="drop">Discard</button></div></div>';
+    var st=r.steps[r.idx]||{}, kept=!r.testMode&&!!entryById(r.runId);
+    h+='<div class="banner"><p>'+(r.testMode?'A dry run':'A brew')+' from '+esc(fmtWhen(new Date(r.brewT0).toISOString()))+' was interrupted at step '+(r.idx+1)+' of '+r.steps.length+', <b>'+esc(st.t||'')+'</b>. The timer kept counting while it was closed.'
+      +(kept?' It is already in your log: ending it keeps it there, unfinished, to score whenever you like.':'')+'</p>'
+      +'<div class="bacts"><button class="go" data-run="resume">Resume</button>'
+      +(kept?'<button class="ghost" data-run="end">End it</button>':'<button class="ghost del" data-run="drop">Discard</button>')+'</div></div>';
   }
-  var pend=LOG.filter(function(e){return e.pending&&!e.skipped});
+  var live=liveRunId();
+  var pend=LOG.filter(function(e){return e.pending&&!e.skipped&&String(e.id)!==live});
   if(pend.length){
     var n=pend[0];
     h+='<div class="banner"><p>'+(pend.length>1?pend.length+' brews are waiting for a score.':(n.ref?'Your cup of '+esc(nameOf(n.ref.who))+'’s brew from '+esc(fmtWhen(n.at)):'Your brew from '+esc(fmtWhen(n.at)))+' is waiting for a score.')+'</p>'
@@ -1440,7 +1491,13 @@ function drCls(d,target){
   return a<=10?'dr-ok':a<=30?'dr-mid':'dr-bad';
 }
 function entryDetail(e,editing){
-  var h='<table><tr><th>Step</th><th>Target</th><th>Actual</th><th>Drift</th></tr>';
+  var h='';
+  if(e.unfinished){
+    var lv=String(e.id)===liveRunId(), n=(e.steps||[]).length;
+    h+='<p class="note" style="margin:0 0 10px;color:var(--steel)">'+(lv?'In progress':'Unfinished')+': '+n+(e.planned?' of '+e.planned:'')+' step'+((e.planned||n)===1?'':'s')+' done'
+      +(lv?'. It updates as you go.':'. Score it like any other brew, or delete it.')+'</p>';
+  }
+  h+='<table><tr><th>Step</th><th>Target</th><th>Actual</th><th>Drift</th></tr>';
   e.steps.forEach(function(s){
     var tg=s.target?mmss(s.target):'\u2014';
     var dr='\u2014';
@@ -1753,12 +1810,18 @@ function openLog(v){
     if(fpp.length&&fjj.length)h+='<br>Paper from the press <b>'+av(fpp)+'</b> over '+fpp.length+' \u00B7 from the decanter <b>'+av(fjj)+'</b> over '+fjj.length;}
   h+='</div>';
   stats.innerHTML=h;
+  var live=isT?'':liveRunId();
+  function scText(e,l){
+    if(String(e.id)===live)return 'In progress';
+    var s=l.score?fmtScore(l.score)+'/5':(e.pending?'Not scored':'');
+    return e.unfinished?'Unfinished'+(s?' · '+s:''):s;
+  }
   list.innerHTML=arr.map(function(e){
     var d=new Date(e.at), l=e.log||{};
     var ds=d.toLocaleDateString(undefined,{day:'numeric',month:'short'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
     var by=isA?' \u00B7 '+esc(nameOf(e._by)):e.ref?' \u00B7 '+esc(nameOf(e.ref.who))+'\u2019s brew':(e.with&&e.with.length?' \u00B7 shared':'');
     return '<button class="entry" data-id="'+e.id+'">'
-      +'<span class="l1"><span class="d">'+ds+'</span><span class="sc">'+(l.score?fmtScore(l.score)+'/5':(e.pending?'Not scored':''))+'</span></span>'
+      +'<span class="l1"><span class="d">'+ds+'</span><span class="sc">'+scText(e,l)+'</span></span>'
       +'<span class="l2">'+rname(e)+(e.params&&e.params.vmode?' ('+e.params.vmode+')':'')+(e.params&&e.params.paper?' \u00B7 paper':'')+(e.params&&e.params.ice==='other'?' \u00B7 other ice':'')+by+' \u00B7 '+e.calc.dose+' g \u00B7 contact '+mmss(e.contact||0)+(l.temp?' \u00B7 cup '+l.temp+'\u00B0C':'')+'</span></button>'
       +'<div class="detwrap hide" id="dt-'+e.id+'"></div>';
   }).join('');
@@ -1832,7 +1895,7 @@ $('pause').addEventListener('click',function(){
 });
 $('next').addEventListener('click',function(){
   leaveStep();
-  if(idx<steps.length-1)go(idx+1); else finishBrew();
+  if(idx<steps.length-1){go(idx+1);keepEntry()} else finishBrew();
 });
 function twoTap(b,armedHtml,idleHtml,act){
   if(!b.hasAttribute('data-armed')){
@@ -1843,9 +1906,10 @@ function twoTap(b,armedHtml,idleHtml,act){
   b.removeAttribute('data-armed');b.innerHTML=idleHtml;act();
 }
 $('abandon').addEventListener('click',function(){
-  function stop(){endTimers();clearRun();steps=[];refreshAll();show('sc-recipe')}
+  /* once the coffee is in the water, stopping keeps what was done in the log, unfinished */
+  function stop(){endEntry();endTimers();clearRun();steps=[];runId=null;refreshAll();show('sc-recipe')}
   if(testMode){stop();return}
-  twoTap(this,'Tap again to stop','&larr; Stop',stop);
+  twoTap(this,runEntry()?'Tap again to stop (kept in your log)':'Tap again to stop','&larr; Stop',stop);
 });
 $('start').addEventListener('click',function(){startBrew(false)});
 $('dry').addEventListener('click',function(){startBrew(true)});
@@ -1914,6 +1978,7 @@ $('banners').addEventListener('click',function(e){
   var b=e.target.closest('button'); if(!b)return;
   if(b.dataset.run==='resume'){var r=readRun();if(r)resumeRun(r);else paintBanners();return}
   if(b.dataset.run==='drop'){twoTap(b,'Tap again to discard','Discard',function(){clearRun();paintBanners()});return}
+  if(b.dataset.run==='end'){twoTap(b,'Tap again to end it','End it',function(){var r=readRun();if(r)endStoredRun(r);clearRun();refreshAll()});return}
   if(b.dataset.pend){openReview(b.dataset.pend,'',false);return}
   if(b.dataset.cup){var cp=b.dataset.cup.split('|'),ce=makeCup(cp[0],cp[1],false);if(ce){refreshAll();openReview(ce.id,'',false)}return}
   if(b.dataset.cupskip){var cs=b.dataset.cupskip.split('|');twoTap(b,'Tap again to confirm','Didn’t have any',function(){makeCup(cs[0],cs[1],true);refreshAll()});return}
