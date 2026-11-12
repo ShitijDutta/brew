@@ -67,8 +67,8 @@ picker:
 
 - **Made now** (a strong hot concentrate, about 1:7 to 1:9 in the press): Latte, Iced latte, Kaapi-style, Shaken iced, Affogato.
 - **From a cold brew batch** (overnight, keeps 3–4 days): Cold brew + milk, Cold brew tonic, Coconut cold brew, Orange cold brew.
-- **Pour-over (V60)**, recipes made for a coarser grind than usual: **V60 4:6** (Tetsu Kasuya: five equal pours, one every
-  45 s, lift the dripper off at 3:30) and **V60 double bloom** (Lance Hedrick: two small blooms, then one fast pour from higher
+- **Pour-over (V60)**, recipes made for a coarser grind than usual: **V60 4:6** (Tetsu Kasuya: five equal pours at 0:00, 0:45,
+  1:30, 2:15 and 2:45, lift the dripper off at 3:30) and **V60 double bloom** (Lance Hedrick: two small blooms, then one fast pour from higher
   up; 2:15). The target is the water poured; the cup is about 2 g less per gram of coffee. The pour step has one timer that
   counts up, shows the scale reading to pour to next in large type, chimes at each mark, and says when to lift the dripper
   off. Tap Next when it has drained: that time is saved as the drawdown (the brew's contact time).

@@ -20,7 +20,7 @@ test('the V60 recipes sit in their own group with water-to-pour numbers and no f
   await expect(page.locator('#tgt')).toHaveValue('300');
   await expect(num(page, 'Coffee')).toHaveText('20 g');
   await expect(num(page, 'Water to pour')).toHaveText('300 g');
-  await expect(num(page, 'Pours')).toHaveText('5 × 60 g, every 45 s');
+  await expect(num(page, 'Pours')).toHaveText('5 × 60 g, the last at 2:45');
   await expect(num(page, 'Lift the dripper off at')).toHaveText('3:30');
   await expect(num(page, 'In the cup')).toHaveText('about 260 g');
   await expect(num(page, 'Boil')).toHaveText('350 g');

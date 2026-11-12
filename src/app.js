@@ -383,14 +383,15 @@ var RECIPES={
    hint:'Cold brew concentrate with fresh orange juice, about 1:1, over ice. Fruity coffees with citrus notes suit it.'},
  /* pour-over on the V60, with recipes built for a coarser grind than usual */
  v_46:{extra:'pour',name:'V60 4:6',label:'Water to pour',unit:'grams through the coffee; the cup is about 2 g less per gram of coffee',modes:false,
-   hint:'Tetsu Kasuya’s 4:6: five equal pours, one every 45 seconds. The first two set sweetness against acidity, the last three set the body. Short pours that drain in between suit a coarse grind.'},
+   hint:'Tetsu Kasuya’s 4:6: five equal pours, about 45 seconds apart, the last at 2:45. The first two set sweetness against acidity, the last three set the body. Short pours that drain in between suit a coarse grind.'},
  v_bloom:{extra:'pour',name:'V60 double bloom',label:'Water to pour',unit:'grams through the coffee; the cup is about 2 g less per gram of coffee',modes:false,
    hint:'Lance Hedrick’s double bloom: two small blooms, then one fast pour from higher up to stir the bed. Made for a coarser grind than usual pour-over.'}
 };
 /* pour-over: when each pour starts (seconds into the pouring) and the scale reading to pour to; end = lift the dripper off */
 var POUR={
-  v_46:{end:210,pours:function(W){var p=[],n=['The bloom','Second pour','Third pour','Fourth pour','Last pour'];
-    for(var i=1;i<=5;i++)p.push({at:45*(i-1),to:Math.round(W*i/5),t:n[i-1]});return p}},
+  /* Philocoffea's timings: 0:00, 0:45, 1:30, 2:15, 2:45, dripper off at 3:30 */
+  v_46:{end:210,pours:function(W){var p=[],n=['The bloom','Second pour','Third pour','Fourth pour','Last pour'],at=[0,45,90,135,165];
+    for(var i=1;i<=5;i++)p.push({at:at[i-1],to:Math.round(W*i/5),t:n[i-1]});return p}},
   v_bloom:{end:135,pours:function(W,D){var b=Math.min(3*D,Math.round(W/5));
     return [{at:0,to:b,t:'The bloom. Gently, then leave it'},{at:30,to:2*b,t:'Second bloom. Gently again'},{at:60,to:W,t:'Main pour: fast, from higher up, to stir the bed'}]}}
 };
@@ -499,9 +500,9 @@ function numRows(o,mode,loc){
   if(o.paper)rows.push(['Paper rinse',o.rinse+' g plain RO','']);
   rows.push(['Coffee',o.D+' g','lead']);
   if(o.pours){
-    var P0=o.pours, gap=P0.length>2?P0[1].at:0;
+    var P0=o.pours;
     rows.push(['Water to pour',o.press+' g','lead']);
-    rows.push(['Pours',rk==='v_46'?P0.length+' × '+P0[0].to+' g, every '+gap+' s':P0[0].to+' g, '+(P0[1].to-P0[0].to)+' g, then to '+o.press+' g','accent']);
+    rows.push(['Pours',rk==='v_46'?P0.length+' × '+P0[0].to+' g, the last at '+mmss(P0[P0.length-1].at):P0[0].to+' g, '+(P0[1].to-P0[0].to)+' g, then to '+o.press+' g','accent']);
     rows.push(['Lift the dripper off at',mmss(o.end),'']);
     rows.push(['In the cup','about '+o.T+' g','lead']);
     return rows;
