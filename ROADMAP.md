@@ -14,6 +14,8 @@ Roughly in the order they would help.
 
 ## Done
 
+- Pour-over on the V60 under Something new: Kasuya's 4:6 and Hedrick's double bloom, with a counting-up pour timer that
+  shows each mark to pour to (Nov 2026).
 - Brews reach the log at the pour, marked unfinished, so one left half-done is never lost and can be scored later
   (Nov 2026).
 

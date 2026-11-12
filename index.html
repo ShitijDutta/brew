@@ -119,6 +119,7 @@
   <p class="dryflag hide" id="dryflag">Dry run &middot; timers at 20&times;, recorded times scaled back up</p>
   <p class="stage" id="stage"></p>
   <p class="detail" id="detail"></p>
+  <div class="pours hide" id="pours"></div>
   <div class="gotrow hide" id="gotrow">
     <button type="button" class="gotlink" id="gotlink">Poured a different amount?</button>
     <div class="gotbox hide" id="gotbox">
@@ -162,8 +163,10 @@
   <label class="lab" for="rv-temp">Cup temperature at first sip &deg;C</label>
   <div class="stp"><button type="button" class="sb" data-st="rv-temp" data-d="-1" aria-label="Lower cup temperature">&minus;</button><input type="number" id="rv-temp" class="tin sv" inputmode="decimal" enterkeyhint="done" min="0" max="95" step="1" placeholder="not taken"><button type="button" class="sb" data-st="rv-temp" data-d="1" aria-label="Raise cup temperature">+</button></div>
   <div id="rv-dec-wrap">
+  <div id="rv-decg">
   <label class="lab" for="rv-dec">Grams actually decanted</label>
   <div class="stp"><button type="button" class="sb" data-st="rv-dec" data-d="-1" aria-label="Lower grams decanted">&minus;</button><input type="number" id="rv-dec" class="tin sv" inputmode="decimal" enterkeyhint="done" min="0" max="900" step="1" placeholder=""><button type="button" class="sb" data-st="rv-dec" data-d="1" aria-label="Raise grams decanted">+</button></div>
+  </div>
   <label class="lab" for="rv-fin">Final drink in the glass, grams</label>
   <div class="stp"><button type="button" class="sb" data-st="rv-fin" data-d="-1" aria-label="Lower final drink grams">&minus;</button><input type="number" id="rv-fin" class="tin sv" inputmode="decimal" enterkeyhint="done" min="0" max="3000" step="1" placeholder="not weighed"><button type="button" class="sb" data-st="rv-fin" data-d="1" aria-label="Raise final drink grams">+</button></div>
   </div>

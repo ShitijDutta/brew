@@ -44,6 +44,7 @@ function applyStepEdits(e,px){
 var DEF={black:{tgt:200,ratio:16.9},hoff:{tgt:300,ratio:16.7},iced:{tgt:280,ratio:16.9},aulait:{tgt:300,ratio:12.5},viet:{tgt:110,ratio:7.3},cold:{tgt:500,ratio:8},
   x_latte:{tgt:300,ratio:9},x_icedlatte:{tgt:300,ratio:8},x_kaapi:{tgt:200,ratio:8},x_shaken:{tgt:150,ratio:9},x_affogato:{tgt:120,ratio:7},
   x_cbmilk:{tgt:400,ratio:8},x_tonic:{tgt:480,ratio:8},x_coconut:{tgt:600,ratio:8},x_orange:{tgt:400,ratio:8},
+  v_46:{tgt:300,ratio:15},v_bloom:{tgt:225,ratio:15},
   vietHot:{tgt:140,ratio:7.3},vietIced:{tgt:290,ratio:7.3}};
 var S={recipe:'black',mode:'direct',vmode:'iced',pratio:14.6,ved:20,ceil:450,temp:94,panloss:30,dspeed:10,lead:3,theme:'',
   r:{black:{tgt:200,ratio:16.9},iced:{tgt:280,ratio:16.9},aulait:{tgt:300,ratio:12.5},vietHot:{tgt:140,ratio:7.3},vietIced:{tgt:290,ratio:7.3}},
@@ -379,8 +380,21 @@ var RECIPES={
  x_coconut:{extra:'cold',name:'Coconut cold brew',label:'Finished drinks',unit:'grams, about 300 g a glass',modes:false,
    hint:'Cold brew concentrate with chilled tender coconut water, about 1 to 2, over ice. Sweet without sugar.'},
  x_orange:{extra:'cold',name:'Orange cold brew',label:'Finished drinks',unit:'grams, about 200 g a glass',modes:false,
-   hint:'Cold brew concentrate with fresh orange juice, about 1:1, over ice. Fruity coffees with citrus notes suit it.'}
+   hint:'Cold brew concentrate with fresh orange juice, about 1:1, over ice. Fruity coffees with citrus notes suit it.'},
+ /* pour-over on the V60, with recipes built for a coarser grind than usual */
+ v_46:{extra:'pour',name:'V60 4:6',label:'Water to pour',unit:'grams through the coffee; the cup is about 2 g less per gram of coffee',modes:false,
+   hint:'Tetsu Kasuya’s 4:6: five equal pours, one every 45 seconds. The first two set sweetness against acidity, the last three set the body. Short pours that drain in between suit a coarse grind.'},
+ v_bloom:{extra:'pour',name:'V60 double bloom',label:'Water to pour',unit:'grams through the coffee; the cup is about 2 g less per gram of coffee',modes:false,
+   hint:'Lance Hedrick’s double bloom: two small blooms, then one fast pour from higher up to stir the bed. Made for a coarser grind than usual pour-over.'}
 };
+/* pour-over: when each pour starts (seconds into the pouring) and the scale reading to pour to; end = lift the dripper off */
+var POUR={
+  v_46:{end:210,pours:function(W){var p=[],n=['The bloom','Second pour','Third pour','Fourth pour','Last pour'];
+    for(var i=1;i<=5;i++)p.push({at:45*(i-1),to:Math.round(W*i/5),t:n[i-1]});return p}},
+  v_bloom:{end:135,pours:function(W,D){var b=Math.min(3*D,Math.round(W/5));
+    return [{at:0,to:b,t:'The bloom. Gently, then leave it'},{at:30,to:2*b,t:'Second bloom. Gently again'},{at:60,to:W,t:'Main pour: fast, from higher up, to stir the bed'}]}}
+};
+function isPour(k){return !!POUR[k]}
 /* base: hot concentrate made now, or cold brew concentrate overnight; part: the share of the drink that is not coffee */
 var XDRINK={
   x_latte:{base:'hot',part:0.5,with:'full-cream milk'},
@@ -408,7 +422,12 @@ function compute(){
   var L=st.paper?PAPER_LOSS:0; o.paper=!!st.paper; o.loss=L; o.rinse=st.paper?PAPER_RINSE:0;
   o.pflow=st.paper?(st.pflow==='press'?'press':'jug'):null;
 
-  if(S.recipe==='black'){
+  if(isPour(S.recipe)){
+    /* the target is the water poured; the wet bed keeps about 2 g per gram of coffee, so the cup is that much less */
+    o.paper=true; o.loss=0; o.rinse=PAPER_RINSE; o.pflow=null;
+    o.D=Math.round(T/R); o.press=T; o.T=Math.max(0,T-2*o.D); o.Y=o.T; o.decant=0; o.bypass=0; o.j=0; o.extra=0;
+    o.pours=POUR[S.recipe].pours(T,o.D); o.end=POUR[S.recipe].end;
+  } else if(S.recipe==='black'){
     /* without paper, the jug keeps back a little at the end to hold the silt; through paper there is none to hold back */
     o.j=L?0:Math.round(15+T/40); o.Y=T+o.j;
     var W=r5((o.Y+L+20)/(1-2/R)); o.D=Math.round(W/R);
@@ -460,6 +479,7 @@ function compute(){
     o.extra=0;
   }
   o.boil=o.press+Math.max(o.bypass,0)+(coldBase(S.recipe)?0:pl);   /* cold brew water is not boiled, so nothing is lost */
+  if(o.pours)o.boil+=20;   /* pouring from a jug in stages leaves a little behind */
   o.ved=Math.round(o.boil*vp/100);
   o.ro=o.boil-o.ved;
   o.iceVed=o.ice?Math.round(o.ice*vp/100):0;
@@ -478,6 +498,14 @@ function numRows(o,mode,loc){
   rows.push(['Vedica / RO',o.ved+' / '+o.ro+' g','']);
   if(o.paper)rows.push(['Paper rinse',o.rinse+' g plain RO','']);
   rows.push(['Coffee',o.D+' g','lead']);
+  if(o.pours){
+    var P0=o.pours, gap=P0.length>2?P0[1].at:0;
+    rows.push(['Water to pour',o.press+' g','lead']);
+    rows.push(['Pours',rk==='v_46'?P0.length+' × '+P0[0].to+' g, every '+gap+' s':P0[0].to+' g, '+(P0[1].to-P0[0].to)+' g, then to '+o.press+' g','accent']);
+    rows.push(['Lift the dripper off at',mmss(o.end),'']);
+    rows.push(['In the cup','about '+o.T+' g','lead']);
+    return rows;
+  }
   if(!coldBase(rk))rows.push(['Water into press',o.press+' g','']);
   rows.push([o.paper?'Decant to':(rk==='hoff'?'Pour into the cup':(rk==='viet'||rk==='cold'||XDRINK[rk]?'Concentrate to decant':'Decant to')),Math.round(o.decant)+' g',rk==='hoff'?'lead':'']);
   if(rk==='black'){
@@ -536,6 +564,9 @@ function render(){
       :'Brewed tighter with less water in the press, then diluted in the jug. Use it when the fill gets deep enough for the bed to reach the screen on the tilt.';
   } else if(S.recipe==='iced'){
     $('blurb').textContent='The press runs at about 1:'+(o.press/o.D).toFixed(1)+' and the ice brings it to your ratio. Glass ice depends on the jug: none at 10\u00B0C or below, up to 40 g above it.';
+  } else if(isPour(S.recipe)){
+    $('blurb').textContent='Your water just off the boil and pours on a timer: the app shows when to pour and what the scale should read. '
+      +'Time how long it takes to drain; with French press grind, much faster than '+mmss(o.end)+' and a thin or sour cup means the grind is too coarse for it.';
   } else if(XDRINK[S.recipe]){
     $('blurb').textContent=coldBase(S.recipe)
       ?'Cold brew concentrate at about 1:'+R1(o.press/o.D)+', overnight in the fridge. It keeps 3\u20134 days, so one batch makes several drinks.'
@@ -550,16 +581,17 @@ function render(){
     $('blurb').textContent=(S.vmode==='hot'?'C\u00E0 ph\u00EA s\u1EEFa n\u00F3ng: drink it as soon as it is stirred. ':'C\u00E0 ph\u00EA s\u1EEFa \u0111\u00E1: covered ice only, or the freezer taste comes through. ')+'Built around dark robusta, so a medium arabica lands smoother and less punchy.';
   }
   $('f-mesh').setAttribute('aria-pressed',String(!o.paper)); $('f-paper').setAttribute('aria-pressed',String(o.paper));
-  $('pwseg').classList.toggle('hide',!o.paper);
+  $('fltseg').classList.toggle('hide',!!o.pours);
+  $('pwseg').classList.toggle('hide',!o.paper||!!o.pours);
   $('pw-press').setAttribute('aria-pressed',String(o.pflow==='press')); $('pw-jug').setAttribute('aria-pressed',String(o.pflow==='jug'));
   $('iceseg').classList.toggle('hide',!o.ice);
   $('ice-blend').setAttribute('aria-pressed',String(o.iceKind!=='other')); $('ice-other').setAttribute('aria-pressed',String(o.iceKind==='other'));
-  if(o.paper)$('blurb').textContent+=o.pflow==='press'
+  if(o.paper&&!o.pours)$('blurb').textContent+=o.pflow==='press'
     ?' Paper filter, from the press: the paper is filled straight from the press, held at its tilt while the paper drains.'
     :' Paper filter, from the decanter: one pour from the press into the decanter, then through the paper. The press is only tipped once.';
   var f=$('flag'), msg='', cls='w';
   if(S.recipe==='black'&&S.mode==='bypass'&&o.bypass<10){msg='Press ratio is too loose \u2014 bypass falls to '+Math.round(o.bypass)+' g. Lower it for real headroom.';cls='s'}
-  else if(o.press>S.ceil){msg='Needs '+o.press+' g in the press, above your '+S.ceil+' g ceiling.'+(S.recipe==='black'&&S.mode==='direct'?' Try bypass.':' Brew this in two batches.');cls=(S.recipe==='black'&&S.mode==='direct')?'w':'s'}
+  else if(!o.pours&&o.press>S.ceil){msg='Needs '+o.press+' g in the press, above your '+S.ceil+' g ceiling.'+(S.recipe==='black'&&S.mode==='direct'?' Try bypass.':' Brew this in two batches.');cls=(S.recipe==='black'&&S.mode==='direct')?'w':'s'}
   else if(S.recipe==='viet'&&o.press<200){msg='Only '+o.press+' g in the press \u2014 shallow for a 600 ml carafe. It works; press gently. Making two drinks at once gives the mesh more to work against.';cls='w'}
   else if(XDRINK[S.recipe]&&o.press<200){msg='Only '+o.press+' g in the press \u2014 shallow for a 600 ml carafe. It works; plunge gently, or make a bigger batch.';cls='w'}
   else if(S.recipe==='iced'&&o.press<200){msg='Only '+o.press+' g in the press \u2014 a little shallow for a 600 ml carafe. It still works; plunge extra slowly.';cls='w'}
@@ -619,6 +651,21 @@ function buildSteps(oIn){
     plunge:step('plunge','Plunge','Slowly, until the screen touches the liquid. Done by the beep.',{s:15,more:'This counts as contact time.'})
   };
 
+  if(o.pours){
+    /* pour-over: one timer that counts up through the pours, with each pour's mark shown as it comes due */
+    var POT=R==='v_46'
+      ?'The first two pours set the balance: a smaller first pour makes it sweeter, a bigger one brighter. The last three set the body. Each pour should drain before the next; if it is still pooling at the mark, wait for it.'
+      :'Blooms gently, with no swirl, so the bed stays even. The main pour goes in fast and from higher up: that stir is part of the recipe.';
+    s.push(step('dose','Weigh the water',B(o.ved+' g')+' Vedica + '+B(o.ro+' g')+' RO, '+B(o.boil+' g')+' in all. Bring it to the boil.',
+      {w:[W('Heat '+B(o.rinse+' g')+' plain RO for the paper rinse')]}));
+    s.push(step('prep','Rinse and dose','Rinse the paper with the hot RO, tip it out. '+B(o.D+' g')+' of coffee in, level. Dripper on the jug, on the scale, tared.',
+      {more:'Tap Next once the water is just off the boil: the pour timer starts straight away. A small dip in the middle of the bed helps the bloom wet it all.'}));
+    s.push({k:'pour',t:'Pour',d:'Pour to each mark on time; the scale shows the total. Tap Next when it has drained.',s:o.end,up:true,pours:o.pours,
+      more:'Hold the jug spout low, a centimetre or two above the bed, and pour into the middle in small circles. '+POT
+        +' The time when you tap Next is saved as the drawdown. Drained well before '+mmss(o.end)+' and thin or sour: next time swirl the dripper after each pour, or try 1:14.'});
+    s.push(step('off','Swirl and serve','Swirl the jug, then into your cup, about '+B(o.T+' g')+'.'));
+    return s;
+  }
   if(R==='black'){
     push([common.prep,common.dose,common.pour,common.steep]);
     s.push(step('crust','Break the crust','Press the floating bed down a centimetre, three or four presses. No stirring.'+(P?' Skim the foam.':'')+' Lid back on.',
@@ -847,7 +894,7 @@ function paint(){
   $('count').textContent=(idx+1)+' of '+steps.length;
   $('stage').textContent=st.t;
   $('detail').innerHTML=st.d+(st.ready?' '+readyText(st):'');
-  paintWait(); paintGot();
+  paintWait(); paintGot(); pourAt=-1;
   var mo=$('more'); mo.open=false; mo.classList.toggle('hide',!st.more); $('more-b').innerHTML=st.more||'';
   paintRunBar(); paintRunPanel();
   var timed=!!st.s;
@@ -861,10 +908,42 @@ function paint(){
   else u.textContent='Last step';
   tickPaint();
 }
+/* time into the current step: what a pour-over's counting-up clock and its pour marks go by */
+function stepSpent(){
+  if(over>0)return dur+over;
+  return tBase+(running?((Date.now()-tStart)/1000)*speed:0);
+}
+/* the pour marks: the one to pour to now, large, and when the next one comes */
+var pourAt=-1;
+function pourNow(st){var t=stepSpent(),ci=-1;(st.pours||[]).forEach(function(p,i){if(t>=p.at)ci=i});return ci}
+function paintPours(force){
+  var st=steps[idx], el=$('pours');
+  if(!st||!st.pours){el.classList.add('hide');el.innerHTML='';pourAt=-1;return}
+  el.classList.remove('hide');
+  /* phase: the pour under way, or P.length once it is time to lift the dripper off */
+  var t=stepSpent(), P=st.pours, ci=pourNow(st), ph=t>=st.s?P.length:ci, nx=P[ci+1];
+  if(force||ph!==pourAt){
+    if(ph>pourAt&&pourAt>=0&&ph<P.length&&!cueQuiet)chime();
+    pourAt=ph;
+    var cur=P[Math.max(ci,0)], end=ph===P.length;
+    el.innerHTML=(end?'<p class="pnow"><b>Lift the dripper off</b></p><p class="pt">If it is still dripping. Tap Next when it is done.</p>'
+        :'<p class="pnow">Pour to <b>'+cur.to+' g</b></p><p class="pt">'+esc(cur.t)+'</p><p class="pnext" id="pnext"></p>')
+      +'<ol class="plist">'+P.map(function(p,i){return '<li class="'+(i<ph?'done':(i===ph?'cur':''))+'"><span class="when">'+mmss(p.at)+'</span> to <b>'+p.to+' g</b></li>'}).join('')
+      +'<li class="'+(end?'cur':'')+'"><span class="when">'+mmss(st.s)+'</span> lift the dripper off</li></ol>';
+  }
+  var pn=$('pnext');
+  if(pn)pn.textContent=nx?'Next: to '+nx.to+' g at '+mmss(nx.at)+', in '+mmss(Math.ceil(nx.at-t)):'Then let it drain. Lift it off at '+mmss(st.s)+' if it is still dripping.';
+}
 function tickPaint(){
-  var c=$('clock');
-  c.textContent=over>0?'\u2212'+mmss(over):mmss(left);
-  c.className='clock'+(left<=0?' done':(left<=10?' low':''))+(over>0?' over':'');
+  var c=$('clock'), cs=steps[idx];
+  if(cs&&cs.up){
+    c.textContent=mmss(stepSpent());
+    c.className='clock up'+(over>0?' over':'');
+  } else {
+    c.textContent=over>0?'\u2212'+mmss(over):mmss(left);
+    c.className='clock'+(left<=0?' done':(left<=10?' low':''))+(over>0?' over':'');
+  }
+  paintPours(false);
   $('bar').style.width=dur?Math.min(100,((dur-left)/dur)*100)+'%':'0%';
   $('total').textContent='Total elapsed '+mmss(elapsed);
   var rl=document.getElementById('rp-left'); if(rl)rl.textContent=leftText();
@@ -1042,7 +1121,7 @@ function startBrew(isTest){
   var old=readRun(); if(old)endStoredRun(old);
   testMode=!!isTest; speed=testMode?dryX():1;
   steps=buildSteps(); actuals=[]; elapsed=0; runCalc=compute(); brewT0=Date.now(); runId=null;
-  runMeta={recipe:S.recipe,mode:S.mode,params:{tgt:rs().tgt,ratio:rs().ratio,pratio:S.pratio,ved:S.ved,temp:coldBase(S.recipe)?undefined:S.temp,loc:(curLoc()||{}).name||undefined,vmode:S.recipe==='viet'?S.vmode:undefined,paper:rs().paper?true:undefined,pfrom:rs().paper?(rs().pflow==='press'?'press':'decanter'):undefined,ice:runCalc.iceKind||undefined},bean:beanSnap()};
+  runMeta={recipe:S.recipe,mode:S.mode,params:{tgt:rs().tgt,ratio:rs().ratio,pratio:S.pratio,ved:S.ved,temp:coldBase(S.recipe)?undefined:S.temp,loc:(curLoc()||{}).name||undefined,vmode:S.recipe==='viet'?S.vmode:undefined,paper:(rs().paper||runCalc.pours)?true:undefined,pfrom:(rs().paper&&!runCalc.pours)?(rs().pflow==='press'?'press':'decanter'):undefined,ice:runCalc.iceKind||undefined},bean:beanSnap()};
   closeRunPanel();
   $('dryflag').classList.toggle('hide',!testMode);
   show('sc-brew'); ctx(); lock();
@@ -1151,7 +1230,9 @@ function openReview(id,notice,fresh){
   $('rv-wt-wrap').classList.toggle('hide',cup||coldBase(e.recipe)); $('rv-dec-wrap').classList.toggle('hide',cup); $('rv-steps').classList.toggle('hide',cup);
   rvWith={}; (e.with||[]).forEach(function(pid){rvWith[pid]=1}); rvShareAuto=false;
   $('rv-with-wrap').classList.toggle('hide',cup||isT||!othersList().length);
-  $('rv-dec').value=l.decant||(e.calc?e.calc.decant:'');
+  /* pour-over has no decant: the cup is weighed, if anything */
+  var po=isPour(e.recipe); $('rv-decg').classList.toggle('hide',po);
+  $('rv-dec').value=po?'':(l.decant||(e.calc?e.calc.decant:''));
   /* optional: what actually ended up in the glass, weighed; left empty it is simply not recorded */
   var plan=drinkTotal(e,0); $('rv-fin').value=l.fin||''; $('rv-fin').placeholder=plan?plan+' planned':'not weighed'; $('rv-fin').setAttribute('data-def',String(plan||''));
   $('rv-temp').value=(l.temp!==null&&l.temp!==undefined)?l.temp:'';
@@ -1572,7 +1653,7 @@ function editForm(e){
     +(cup||coldBase(e.recipe)?'':'<label class="lab" for="ed-wt">Water &deg;C</label>'+stpH('ed-wt',e.params&&e.params.temp,0.5,60,100,'','water temperature',S.temp))
     +'<label class="lab" for="ed-ct">Cup &deg;C at first sip</label>'+stpH('ed-ct',l.temp,1,0,95,'not taken','cup temperature',servedCold(e.recipe)?6:58)
     +((e.recipe==='iced'&&!cup)?'<label class="lab" for="ed-jg">Jug &deg;C after stirring</label>'+stpH('ed-jg',l.jug,0.5,0,40,'not taken','jug temperature',8):'')
-    +(cup?'':'<label class="lab" for="ed-dc">Grams actually decanted</label>'+stpH('ed-dc',l.decant,1,0,900,'','grams decanted',e.calc&&e.calc.decant))
+    +(cup||isPour(e.recipe)?'':'<label class="lab" for="ed-dc">Grams actually decanted</label>'+stpH('ed-dc',l.decant,1,0,900,'','grams decanted',e.calc&&e.calc.decant))
     +(cup?'':'<label class="lab" for="ed-fn">Final drink in the glass, grams</label>'+stpH('ed-fn',l.fin,1,0,3000,'not weighed','final drink grams',drinkTotal(e,0)||''))
     +'<label class="lab" for="ed-fine">Overall <span class="sval" id="ed-val"></span></label><div class="scale" id="ed-sc" role="group" aria-label="Score">'
     +[1,2,3,4,5].map(function(v){return '<button data-esc="'+v+'" aria-pressed="false">'+v+'</button>'}).join('')+'</div>'
@@ -2042,7 +2123,7 @@ function paintPicker(){
   var grp=function(g,title){return '<p class="xgrp">'+title+'</p><div class="xlist">'+Object.keys(RECIPES).filter(function(k){return RECIPES[k].extra===g}).map(function(k){
     return '<button data-r="'+k+'" aria-pressed="'+(k===S.recipe)+'">'+RECIPES[k].name+'</button>';
   }).join('')+'</div>'};
-  $('xpick').innerHTML=grp('now','Made now')+grp('cold','From a cold brew batch (overnight)');
+  $('xpick').innerHTML=grp('now','Made now')+grp('cold','From a cold brew batch (overnight)')+grp('pour','Pour-over (V60)');
   var x=RECIPES[S.recipe]&&RECIPES[S.recipe].extra;
   if(x)$('newdrinks').open=true;
   $('xnow').textContent=x?'Trying: '+RECIPES[S.recipe].name:'';

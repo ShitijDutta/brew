@@ -12,6 +12,8 @@
   "cup" in each drinker's own folder (`ref: {who, id}`, same id as the brew; `skipped: true` when they had none).
 - Brew steps (`buildSteps`): `d` is one line of what to do with the numbers; reasons and tips go in `more` (folded);
   prep goes in `w` on the step whose timer it runs under, with `at` = seconds left when it is due. Shitij asked for no long text mid-brew.
+- Pour-over recipes (`POUR`, `isPour`) are one `pour` step with `up: true` (the clock counts up) and `pours: [{at, to, t}]`
+  (seconds into the step, scale reading, label), painted by `paintPours`. `tgt` is the water poured; `calc.press` holds it.
 - A brew enters `LOG` when its pour step is done (`unfinished: true`, `planned` = step count; `runId` in the saved run).
   Later steps update it locally without bumping `rev`; it syncs at the pour and when finished or stopped. Never drop a run that
   has a log entry without `endStoredRun` (expiry, End it, starting another brew).

@@ -259,17 +259,18 @@ test('Something new: drinks folded away from the daily recipes, each one brews t
   await expect(page.locator('#xpick')).toBeHidden();
   await page.click('#newdrinks summary');
   const drinks = await page.locator('#xpick button').allInnerTexts();
-  expect(drinks).toEqual(['Latte', 'Iced latte', 'Kaapi-style', 'Shaken iced', 'Affogato', 'Cold brew + milk', 'Cold brew tonic', 'Coconut cold brew', 'Orange cold brew']);
+  expect(drinks).toEqual(['Latte', 'Iced latte', 'Kaapi-style', 'Shaken iced', 'Affogato', 'Cold brew + milk', 'Cold brew tonic', 'Coconut cold brew', 'Orange cold brew', 'V60 4:6', 'V60 double bloom']);
   const ends = {
     'Latte': ['Froth the milk', 'Pour'], 'Iced latte': ['Add the milk'], 'Kaapi-style': ['Froth the milk', 'Pour back and forth'],
     'Shaken iced': ['Shake', 'Pour off the ice'], 'Affogato': ['Over the ice cream'], 'Cold brew + milk': ['Over ice with milk'],
-    'Cold brew tonic': ['Build the tonic'], 'Coconut cold brew': ['Over ice'], 'Orange cold brew': ['Over ice']
+    'Cold brew tonic': ['Build the tonic'], 'Coconut cold brew': ['Over ice'], 'Orange cold brew': ['Over ice'],
+    'V60 4:6': ['Pour', 'Swirl and serve'], 'V60 double bloom': ['Pour', 'Swirl and serve']
   };
   for (const name of drinks) {
     await page.locator('#xpick').getByRole('button', { name, exact: true }).click();
     await expect(page.locator('#xnow')).toHaveText('Trying: ' + name);
     await expect(page.locator('#rpick button[aria-pressed="true"]')).toHaveCount(0);
-    await expect(page.locator('#numbers')).toContainText('Concentrate to decant');
+    await expect(page.locator('#numbers')).toContainText(name.startsWith('V60') ? 'Water to pour' : 'Concentrate to decant');
     await page.click('#dry');
     const titles = [];
     for (let i = 0; i < 25 && !(await page.isVisible('#sc-review')); i++) {
