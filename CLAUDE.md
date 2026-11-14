@@ -14,7 +14,8 @@
   prep goes in `w` on the step whose timer it runs under, with `at` = seconds left when it is due. Shitij asked for no long text mid-brew.
 - Pour-over recipes (`POUR`, `isPour`): one step per pour (`pour`, `pour2`…), each `up` + `open` (the clock counts up and
   never ends; `s` is the recipe's interval, for drift) with `pour: {i, n, at, to, note, who, end, lift}`, painted by
-  `paintPours`. The first pour has `hold` (waits for Start). `pourT0` is when the first pour started (the brew clock).
+  `paintPours`. The first pour has `hold` (waits for Start). `pourT0` is when the first pour started; `paintBrewClock` shows the brew clock
+  and the lag against the recipe (the larger of how late this pour started and how far past the next mark).
   `tgt` is the water poured; `calc.press` holds it.
 - A brew enters `LOG` when its pour step is done (`unfinished: true`, `planned` = step count; `runId` in the saved run).
   Later steps update it locally without bumping `rev`; it syncs at the pour and when finished or stopped. Never drop a run that

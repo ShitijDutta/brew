@@ -106,6 +106,9 @@ details[open]>summary::after{content:" \2212"}
 .acts.two{grid-template-columns:104px 1fr}
 .acts .go,.acts .flat{margin-bottom:0}
 .total{text-align:center;color:var(--faint);font-size:13px;margin-top:6px}
+.brewclk{text-align:center;color:var(--ink);font-size:15px;margin-top:8px;font-variant-numeric:tabular-nums}
+.brewclk .late{color:var(--warn)}
+.brewclk .early{color:var(--acc)}
 .upnext{text-align:center;color:var(--steel);font-size:13.5px;margin-top:20px}
 .upnext b{font-weight:500;color:var(--ink)}
 

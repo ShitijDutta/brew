@@ -922,6 +922,26 @@ function stepSpent(){
 }
 /* time since the first pour began: the recipe's own clock */
 function brewSpent(){return pourT0?((Date.now()-pourT0)/1000)*speed:0}
+/* ahead of or behind the recipe's own times, in seconds (positive = behind) */
+function lagText(l){l=Math.round(l);if(Math.abs(l)<3)return 'on time';var a=Math.abs(l),t=a<60?a+' s':mmss(a);return t+(l>0?' behind':' ahead of')}
+function lagSpan(l,who){var t=lagText(l);return t==='on time'?'on time with '+who:'<span class="'+(l>0?'late':'early')+'">'+t+'</span> '+who}
+/* the brew clock: time since the first pour, against the recipe. On a pour it is the larger of how late that pour
+   started and how far past the recipe's next mark you are while the bed drains; on the last pour, against the end. */
+function paintBrewClock(){
+  var el=$('brewclk'), st=steps[idx]||{}, p=st.pour, P=runCalc&&runCalc.pours;
+  if(!P){el.classList.add('hide');return}
+  var R=POUR[(runMeta&&runMeta.recipe)||S.recipe], who=R?R.who:'';
+  var pt=actuals.filter(function(a){return /^pour/.test(a.k)}).reduce(function(x,a){return x+a.actual},0);
+  if(p){
+    if(st.hold&&!running&&!tBase){el.classList.add('hide');return}
+    var now=brewSpent(), start=pourT0?((stepT0-pourT0)/1000)*speed:0, nxt=p.i<p.n-1?P[p.i+1].at:p.end;
+    el.innerHTML='Brew <b>'+mmss(now)+'</b> \u00B7 '+lagSpan(Math.max(start-p.at,now-nxt),who);
+  } else if(pt>0&&idx>0&&steps[idx-1]&&steps[idx-1].pour){
+    var end=R?R.end:0;
+    el.innerHTML='Brew took <b>'+mmss(pt)+'</b> \u00B7 '+lagSpan(pt-end,who)+' ('+mmss(end)+')';
+  } else {el.classList.add('hide');return}
+  el.classList.remove('hide');
+}
 /* a pour step: the mark to pour to, large; its note where it has one; the brew clock against the recipe's;
    and the whole schedule underneath. 4:6's last pour chimes at 3:30 to lift the dripper off. */
 var pourAt=-1;
@@ -942,7 +962,7 @@ function paintPours(force){
   }
   var pn=$('pnext'); if(!pn)return;
   if(st.hold&&!running&&!tBase)pn.textContent='Tap Start as the water hits the coffee.';
-  else pn.textContent='Brew '+mmss(bt)+' \u00B7 '+(p.i===0?p.who+' starts here':p.who+' pours this at '+mmss(p.at))+(p.end&&!p.lift?', done by about '+mmss(p.end):'');
+  else pn.textContent=(p.i===0?p.who+' starts here':p.who+' pours this at '+mmss(p.at))+(p.end&&!p.lift?', done by about '+mmss(p.end):'');
 }
 function tickPaint(){
   var c=$('clock'), cs=steps[idx];
@@ -953,7 +973,7 @@ function tickPaint(){
     c.textContent=over>0?'\u2212'+mmss(over):mmss(left);
     c.className='clock'+(left<=0?' done':(left<=10?' low':''))+(over>0?' over':'');
   }
-  paintPours(false);
+  paintPours(false); paintBrewClock();
   $('bar').style.width=dur?Math.min(100,((dur-left)/dur)*100)+'%':'0%';
   $('total').textContent='Total elapsed '+mmss(elapsed);
   var rl=document.getElementById('rp-left'); if(rl)rl.textContent=leftText();
@@ -1589,6 +1609,10 @@ function entryDetail(e,editing){
     var lv=String(e.id)===liveRunId(), n=(e.steps||[]).length;
     h+='<p class="note" style="margin:0 0 10px;color:var(--steel)">'+(lv?'In progress':'Unfinished')+': '+n+(e.planned?' of '+e.planned:'')+' step'+((e.planned||n)===1?'':'s')+' done'
       +(lv?'. It updates as you go.':'. Score it like any other brew, or delete it.')+'</p>';
+  }
+  if(isPour(e.recipe)&&e.contact&&!e.unfinished){
+    var PR=POUR[e.recipe];
+    h+='<p class="note" style="margin:0 0 10px;color:var(--steel)">Brew took '+mmss(e.contact)+' \u00B7 '+lagText(e.contact-PR.end)+(lagText(e.contact-PR.end)==='on time'?' with ':' ')+PR.who+' ('+mmss(PR.end)+')</p>';
   }
   h+='<table><tr><th>Step</th><th>Target</th><th>Actual</th><th>Drift</th></tr>';
   e.steps.forEach(function(s){

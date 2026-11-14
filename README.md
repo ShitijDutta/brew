@@ -71,7 +71,9 @@ picker:
   1:30, 2:15 and 2:45, dripper off at 3:30) and **V60 double bloom** (Lance Hedrick: two small blooms, then one fast pour from
   higher up; done by about 2:15). Water at about 93 °C for light roasts (88 medium, 83 dark). The target is the water poured;
   the cup is about 2 g less per gram of coffee. Each pour is its own step: the mark to pour to in large type, a clock counting
-  up for that pour, and the brew time against the recipe's ("Brew 1:32 · Kasuya pours this at 1:30"). Tap Next once the bed
+  up for that pour, the recipe's time for it ("Kasuya pours this at 1:30"), and above Total elapsed a brew clock from the
+  first pour with how far ahead of or behind the recipe you are ("Brew 2:07 · 37 s behind Kasuya"); the log shows the same
+  against the recipe's end. Tap Next once the bed
   shows, so a slow drain is saved against the pour it followed. The first pour waits for **Start**; later pours start on Next.
   4:6's last pour chimes at 3:30 to lift the dripper off.
 
