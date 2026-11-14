@@ -100,6 +100,25 @@ test('each pour is a step: the first waits for Start, the clock counts up withou
   await expect(page.locator('#brewclk')).toContainText(/Brew took \d:\d\d · .*Kasuya \(3:30\)/);
 });
 
+test('a last pour that starts after 3:30 still says to pour, and the lift-off comes 45 s later', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('fp.v1', JSON.stringify({ dspeed: 30 })));
+  await page.goto('./');
+  await pick(page, 'V60 4:6');
+  await page.click('#dry');
+  await page.click('#next'); await page.click('#next');
+  await page.click('#pause');                      /* Start */
+  await page.waitForTimeout(7600);                 /* past 3:30 on the brew clock before pour 5 */
+  for (let i = 0; i < 4; i++) await page.click('#next');
+  await expect(page.locator('#stage')).toHaveText('Pour 5 of 5');
+  const pours = page.locator('#pours');
+  await expect(pours.locator('.pnow')).toHaveText('Pour to 300 g');
+  const lastItem = await pours.locator('.plist li').last().innerText();
+  const sec = s => s.split(':').reduce((a, b) => a * 60 + Number(b), 0);
+  expect(sec(lastItem.match(/\d+:\d\d/)[0])).toBeGreaterThan(210 + 45);
+  await expect(pours.locator('.pnow')).toHaveText('Lift the dripper off', { timeout: 5000 });
+  await expect(pours.locator('.plist li').last()).toHaveClass(/cur/);
+});
+
 test('double bloom: three pour steps, the main pour runs until it drains', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('fp.v1', JSON.stringify({ dspeed: 60 })));
   await page.goto('./');

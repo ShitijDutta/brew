@@ -943,13 +943,16 @@ function paintBrewClock(){
   el.classList.remove('hide');
 }
 /* a pour step: the mark to pour to, large; its note where it has one; the brew clock against the recipe's;
-   and the whole schedule underneath. 4:6's last pour chimes at 3:30 to lift the dripper off. */
+   and the whole schedule underneath. 4:6's last pour chimes at 3:30 to lift the dripper off, or 45 s after
+   the last pour began if it began late. */
 var pourAt=-1;
 function paintPours(force){
   var st=steps[idx], el=$('pours'), p=st&&st.pour;
   if(!p){el.classList.add('hide');el.innerHTML='';pourAt=-1;return}
   el.classList.remove('hide');
-  var bt=brewSpent(), lift=p.lift&&bt>=p.end, ph=lift?1:0;
+  /* a late last pour still gets the recipe's gap (2:45 to 3:30) before the lift-off, so the pour is never skipped */
+  var bt=brewSpent(), start=pourT0?((stepT0-pourT0)/1000)*speed:0, liftAt=Math.max(p.end,Math.round(start)+p.end-p.at),
+      lift=p.lift&&bt>=liftAt, ph=lift?1:0;
   if(force||ph!==pourAt){
     if(ph>pourAt&&pourAt>=0&&!cueQuiet)chime();
     pourAt=ph;
@@ -958,7 +961,7 @@ function paintPours(force){
         :'<p class="pnow">Pour to <b>'+p.to+' g</b></p>'+(p.note?'<p class="pt">'+esc(p.note)+'</p>':''))
       +'<p class="pnext" id="pnext"></p>'
       +'<ol class="plist">'+all.map(function(q,i){return '<li class="'+(i<p.i?'done':(i===p.i?'cur':''))+'"><span class="when">'+mmss(q.at)+'</span> to <b>'+q.to+' g</b></li>'}).join('')
-      +(p.lift?'<li class="'+(lift?'cur':'')+'"><span class="when">'+mmss(p.end)+'</span> lift the dripper off</li>':'')+'</ol>';
+      +(p.lift?'<li class="'+(lift?'cur':'')+'"><span class="when">'+mmss(liftAt)+'</span> lift the dripper off</li>':'')+'</ol>';
   }
   var pn=$('pnext'); if(!pn)return;
   if(st.hold&&!running&&!tBase)pn.textContent='Tap Start as the water hits the coffee.';

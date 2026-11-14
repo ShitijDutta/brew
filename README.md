@@ -75,7 +75,8 @@ picker:
   first pour with how far ahead of or behind the recipe you are ("Brew 2:07 · 37 s behind Kasuya"); the log shows the same
   against the recipe's end. Tap Next once the bed
   shows, so a slow drain is saved against the pour it followed. The first pour waits for **Start**; later pours start on Next.
-  4:6's last pour chimes at 3:30 to lift the dripper off.
+  4:6's last pour chimes at 3:30 to lift the dripper off; if that pour started late, the screen still says to pour first,
+  and the lift-off comes 45 s after it began (the recipe's own gap from 2:45 to 3:30).
 
 Milk drinks use a handheld frother: heat first to 60–65 °C, then froth just under the surface and then deeper; cold foam uses
 the whisk attachment on cold milk. Press coffee is weaker than espresso, so milk stays close to 1:1 with the coffee.
