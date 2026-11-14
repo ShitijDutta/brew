@@ -264,7 +264,7 @@ test('Something new: drinks folded away from the daily recipes, each one brews t
     'Latte': ['Froth the milk', 'Pour'], 'Iced latte': ['Add the milk'], 'Kaapi-style': ['Froth the milk', 'Pour back and forth'],
     'Shaken iced': ['Shake', 'Pour off the ice'], 'Affogato': ['Over the ice cream'], 'Cold brew + milk': ['Over ice with milk'],
     'Cold brew tonic': ['Build the tonic'], 'Coconut cold brew': ['Over ice'], 'Orange cold brew': ['Over ice'],
-    'V60 4:6': ['Pour', 'Swirl and serve'], 'V60 double bloom': ['Pour', 'Swirl and serve']
+    'V60 4:6': ['Pour 4 of 5', 'Pour 5 of 5', 'Swirl and serve'], 'V60 double bloom': ['Second bloom', 'Main pour', 'Swirl and serve']
   };
   for (const name of drinks) {
     await page.locator('#xpick').getByRole('button', { name, exact: true }).click();

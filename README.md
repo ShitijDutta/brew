@@ -68,10 +68,12 @@ picker:
 - **Made now** (a strong hot concentrate, about 1:7 to 1:9 in the press): Latte, Iced latte, Kaapi-style, Shaken iced, Affogato.
 - **From a cold brew batch** (overnight, keeps 3–4 days): Cold brew + milk, Cold brew tonic, Coconut cold brew, Orange cold brew.
 - **Pour-over (V60)**, recipes made for a coarser grind than usual: **V60 4:6** (Tetsu Kasuya: five equal pours at 0:00, 0:45,
-  1:30, 2:15 and 2:45, lift the dripper off at 3:30) and **V60 double bloom** (Lance Hedrick: two small blooms, then one fast pour from higher
-  up; 2:15). The target is the water poured; the cup is about 2 g less per gram of coffee. The pour step has one timer that
-  counts up, shows the scale reading to pour to next in large type, chimes at each mark, and says when to lift the dripper
-  off. Tap Next when it has drained: that time is saved as the drawdown (the brew's contact time).
+  1:30, 2:15 and 2:45, dripper off at 3:30) and **V60 double bloom** (Lance Hedrick: two small blooms, then one fast pour from
+  higher up; done by about 2:15). Water at about 93 °C for light roasts (88 medium, 83 dark). The target is the water poured;
+  the cup is about 2 g less per gram of coffee. Each pour is its own step: the mark to pour to in large type, a clock counting
+  up for that pour, and the brew time against the recipe's ("Brew 1:32 · Kasuya pours this at 1:30"). Tap Next once the bed
+  shows, so a slow drain is saved against the pour it followed. The first pour waits for **Start**; later pours start on Next.
+  4:6's last pour chimes at 3:30 to lift the dripper off.
 
 Milk drinks use a handheld frother: heat first to 60–65 °C, then froth just under the surface and then deeper; cold foam uses
 the whisk attachment on cold milk. Press coffee is weaker than espresso, so milk stays close to 1:1 with the coffee.

@@ -10,7 +10,7 @@ var SKEY='fp.v1'+WHO.suffix, LKEY='fp.log.v1'+WHO.suffix, TKEY='fp.log.test.v1'+
 var FAULTS=['Sour','Grassy','Bitter','Astringent','Flat','Thin','Silty','Stalled pour','Too hot','Too cool'];
 var TASTES=['Sweet','Juicy','Fruity','Floral','Citrus','Chocolatey','Nutty','Winey'];
 var DKEY='fp.log.del.v1'+WHO.suffix;
-var CONTACT={pour:1,steep:1,crust:1,settle:1,plunge:1,decant:1};
+var CONTACT={pour:1,pour2:1,pour3:1,pour4:1,pour5:1,steep:1,crust:1,settle:1,plunge:1,decant:1};
 /* step times can be corrected after the fact, e.g. when a timer kept running because Next was tapped late */
 function stepEditHTML(e,px){
   if(!e.steps||!e.steps.length)return '';
@@ -387,13 +387,16 @@ var RECIPES={
  v_bloom:{extra:'pour',name:'V60 double bloom',label:'Water to pour',unit:'grams through the coffee; the cup is about 2 g less per gram of coffee',modes:false,
    hint:'Lance Hedrick’s double bloom: two small blooms, then one fast pour from higher up to stir the bed. Made for a coarser grind than usual pour-over.'}
 };
-/* pour-over: when each pour starts (seconds into the pouring) and the scale reading to pour to; end = lift the dripper off */
+/* pour-over: each pour is its own step. at = when the recipe pours it (seconds from the first pour), to = the scale reading,
+   t = step title, note = shown only where it matters. end = when the recipe is done (4:6 lifts the dripper off then) */
 var POUR={
-  /* Philocoffea's timings: 0:00, 0:45, 1:30, 2:15, 2:45, dripper off at 3:30 */
-  v_46:{end:210,pours:function(W){var p=[],n=['The bloom','Second pour','Third pour','Fourth pour','Last pour'],at=[0,45,90,135,165];
-    for(var i=1;i<=5;i++)p.push({at:at[i-1],to:Math.round(W*i/5),t:n[i-1]});return p}},
-  v_bloom:{end:135,pours:function(W,D){var b=Math.min(3*D,Math.round(W/5));
-    return [{at:0,to:b,t:'The bloom. Gently, then leave it'},{at:30,to:2*b,t:'Second bloom. Gently again'},{at:60,to:W,t:'Main pour: fast, from higher up, to stir the bed'}]}}
+  v_46:{who:'Kasuya',end:210,lift:true,pours:function(W){var at=[0,45,90,135,165],p=[];
+    for(var i=0;i<5;i++)p.push({at:at[i],to:Math.round(W*(i+1)/5),t:'Pour '+(i+1)+' of 5'+(i?'':': the bloom'),
+      note:i===0?'Gently, wetting every ground. A smaller first pour makes it sweeter, a bigger one brighter.':(i===4?'Kasuya lifts the dripper off at 3:30 if it is still dripping.':'')});
+    return p}},
+  v_bloom:{who:'Hedrick',end:135,pours:function(W,D){var b=Math.min(3*D,Math.round(W/5));
+    return [{at:0,to:b,t:'Bloom',note:'Gently, then leave it.'},{at:30,to:2*b,t:'Second bloom',note:'Gently again.'},
+      {at:60,to:W,t:'Main pour',note:'Fast, from higher up, to stir the bed. Then let it drain.'}]}}
 };
 function isPour(k){return !!POUR[k]}
 /* base: hot concentrate made now, or cold brew concentrate overnight; part: the share of the drink that is not coffee */
@@ -503,7 +506,7 @@ function numRows(o,mode,loc){
     var P0=o.pours;
     rows.push(['Water to pour',o.press+' g','lead']);
     rows.push(['Pours',rk==='v_46'?P0.length+' × '+P0[0].to+' g, the last at '+mmss(P0[P0.length-1].at):P0[0].to+' g, '+(P0[1].to-P0[0].to)+' g, then to '+o.press+' g','accent']);
-    rows.push(['Lift the dripper off at',mmss(o.end),'']);
+    rows.push([POUR[rk].lift?'Lift the dripper off at':'Done by about',mmss(o.end),'']);
     rows.push(['In the cup','about '+o.T+' g','lead']);
     return rows;
   }
@@ -566,8 +569,8 @@ function render(){
   } else if(S.recipe==='iced'){
     $('blurb').textContent='The press runs at about 1:'+(o.press/o.D).toFixed(1)+' and the ice brings it to your ratio. Glass ice depends on the jug: none at 10\u00B0C or below, up to 40 g above it.';
   } else if(isPour(S.recipe)){
-    $('blurb').textContent='Your water just off the boil and pours on a timer: the app shows when to pour and what the scale should read. '
-      +'Time how long it takes to drain; with French press grind, much faster than '+mmss(o.end)+' and a thin or sour cup means the grind is too coarse for it.';
+    $('blurb').textContent='Water at about 93 \u00B0C for a light roast (88 medium, 83 dark). Each pour is a step: pour to the mark the app shows, '
+      +'then tap Next once the bed shows, so a slow drain is timed against the pour it followed. The recipe is done by '+mmss(o.end)+'.';
   } else if(XDRINK[S.recipe]){
     $('blurb').textContent=coldBase(S.recipe)
       ?'Cold brew concentrate at about 1:'+R1(o.press/o.D)+', overnight in the fridge. It keeps 3\u20134 days, so one batch makes several drinks.'
@@ -653,17 +656,20 @@ function buildSteps(oIn){
   };
 
   if(o.pours){
-    /* pour-over: one timer that counts up through the pours, with each pour's mark shown as it comes due */
-    var POT=R==='v_46'
-      ?'The first two pours set the balance: a smaller first pour makes it sweeter, a bigger one brighter. The last three set the body. Each pour should drain before the next; if it is still pooling at the mark, wait for it.'
-      :'Blooms gently, with no swirl, so the bed stays even. The main pour goes in fast and from higher up: that stir is part of the recipe.';
-    s.push(step('dose','Weigh the water',B(o.ved+' g')+' Vedica + '+B(o.ro+' g')+' RO, '+B(o.boil+' g')+' in all. Bring it to the boil.',
-      {w:[W('Heat '+B(o.rinse+' g')+' plain RO for the paper rinse')]}));
+    /* pour-over: one step per pour. Its clock counts up from the pour until you tap Next once the bed shows,
+       so a slow drain shows up against the pour it followed. The first pour waits for Start. */
+    var PR=POUR[R], np=o.pours.length;
+    s.push(step('dose','Weigh the water',B(o.ved+' g')+' Vedica + '+B(o.ro+' g')+' RO, '+B(o.boil+' g')+' in all. Boil, then cool to about 93 \u00B0C.',
+      {w:[W('Heat '+B(o.rinse+' g')+' plain RO for the paper rinse')],more:'About 93 \u00B0C for light roasts, 88 \u00B0C for medium, 83 \u00B0C for dark: Kasuya avoids freshly boiled water. Your thermometer in the kettle tells you when.'}));
     s.push(step('prep','Rinse and dose','Rinse the paper with the hot RO, tip it out. '+B(o.D+' g')+' of coffee in, level. Dripper on the jug, on the scale, tared.',
-      {more:'Tap Next once the water is just off the boil: the pour timer starts straight away. A small dip in the middle of the bed helps the bloom wet it all.'}));
-    s.push({k:'pour',t:'Pour',d:'Pour to each mark on time; the scale shows the total. Tap Next when it has drained.',s:o.end,up:true,pours:o.pours,
-      more:'Hold the jug spout low, a centimetre or two above the bed, and pour into the middle in small circles. '+POT
-        +' The time when you tap Next is saved as the drawdown. Drained well before '+mmss(o.end)+' and thin or sour: next time swirl the dripper after each pour, or try 1:14.'});
+      {more:'The first pour waits for you to tap Start, so get the water to temperature first. A small dip in the middle of the bed helps the bloom wet it all.'}));
+    o.pours.forEach(function(p,i){
+      var last=i===np-1, nxt=last?o.end:o.pours[i+1].at;
+      s.push({k:i?'pour'+(i+1):'pour',t:p.t,s:Math.max(1,nxt-p.at),up:true,open:true,hold:i===0,
+        d:'Pour to '+B(p.to+' g')+'. Tap Next when '+(last?'it has drained.':'the bed shows.'),
+        pour:{i:i,n:np,at:p.at,to:p.to,note:p.note||'',who:PR.who,end:last?o.end:0,lift:last&&!!PR.lift},
+        more:i===0?'Hold the jug spout low, a centimetre or two above the bed, and pour into the middle in small circles, off the walls. If the last pour is still pooling, wait for it: the clock is there to show you how long it took, not to rush you.':undefined});
+    });
     s.push(step('off','Swirl and serve','Swirl the jug, then into your cup, about '+B(o.T+' g')+'.'));
     return s;
   }
@@ -835,13 +841,13 @@ function buildSteps(oIn){
 
 var steps=[],idx=0,left=0,dur=0,running=false,tid=null,elapsed=0,wl=null,ac=null;
 var brewT0=0,tStart=0,tBase=0;
-var actuals=[],stepT0=0,runCalc=null,runMeta=null,runId=null;
+var actuals=[],stepT0=0,runCalc=null,runMeta=null,runId=null,pourT0=0;
 /* when a step's timer ran out, so the clock can keep counting past zero (shown as minus time) */
 var tOver0=0, over=0;
 function saveRun(){
   if(!steps.length)return;
   try{localStorage.setItem(RKEY,JSON.stringify({steps:steps,idx:idx,actuals:actuals,brewT0:brewT0,tStart:tStart,tBase:tBase,
-    running:running,dur:dur,stepT0:stepT0,tOver0:tOver0,speed:speed,testMode:testMode,runCalc:runCalc,meta:runMeta,runId:runId,savedAt:Date.now()}))}catch(e){}
+    running:running,dur:dur,stepT0:stepT0,tOver0:tOver0,speed:speed,testMode:testMode,runCalc:runCalc,meta:runMeta,runId:runId,pourT0:pourT0,savedAt:Date.now()}))}catch(e){}
 }
 function clearRun(){try{localStorage.removeItem(RKEY)}catch(e){}}
 function readRun(){
@@ -854,13 +860,13 @@ function readRun(){
   return null;
 }
 function resumeRun(r){
-  steps=r.steps; idx=r.idx; actuals=r.actuals||[]; brewT0=r.brewT0; tStart=r.tStart; tBase=r.tBase; runId=r.runId||null;
+  steps=r.steps; idx=r.idx; actuals=r.actuals||[]; brewT0=r.brewT0; tStart=r.tStart; tBase=r.tBase; runId=r.runId||null; pourT0=r.pourT0||0;
   running=!!r.running; dur=r.dur||0; stepT0=r.stepT0; tOver0=r.tOver0||0; speed=r.speed||1; testMode=!!r.testMode; runCalc=r.runCalc; runMeta=r.meta;
   left=Math.max(0,dur-tBase); cueDone={}; cueQuiet=true; closeRunPanel();
   $('dryflag').classList.toggle('hide',!testMode);
   show('sc-brew'); ctx(); if(!(steps[idx]&&steps[idx].long))lock();
   if(!tid)tid=setInterval(loop,200);
-  $('pause').textContent=running?'Pause':(dur&&tBase>=dur?'Restart':'Resume');
+  $('pause').textContent=running?'Pause':(steps[idx].hold&&!tBase?'Start':(dur&&tBase>=dur&&!steps[idx].open?'Restart':'Resume'));
   paint(); loop();
 }
 
@@ -905,7 +911,7 @@ function paint(){
   $('acts').classList.toggle('two',timed);
   $('next').textContent=idx===steps.length-1?'Finish':'Next';
   var nx=steps[idx+1], u=$('upnext');
-  if(nx)u.innerHTML='Next \u2014 <b>'+nx.t+'</b>'+(nx.s?', '+mmss(nx.s)+' timer':', no timer');
+  if(nx)u.innerHTML='Next \u2014 <b>'+nx.t+'</b>'+(nx.open?'':(nx.s?', '+mmss(nx.s)+' timer':', no timer'));
   else u.textContent='Last step';
   tickPaint();
 }
@@ -914,32 +920,35 @@ function stepSpent(){
   if(over>0)return dur+over;
   return tBase+(running?((Date.now()-tStart)/1000)*speed:0);
 }
-/* the pour marks: the one to pour to now, large, and when the next one comes */
+/* time since the first pour began: the recipe's own clock */
+function brewSpent(){return pourT0?((Date.now()-pourT0)/1000)*speed:0}
+/* a pour step: the mark to pour to, large; its note where it has one; the brew clock against the recipe's;
+   and the whole schedule underneath. 4:6's last pour chimes at 3:30 to lift the dripper off. */
 var pourAt=-1;
-function pourNow(st){var t=stepSpent(),ci=-1;(st.pours||[]).forEach(function(p,i){if(t>=p.at)ci=i});return ci}
 function paintPours(force){
-  var st=steps[idx], el=$('pours');
-  if(!st||!st.pours){el.classList.add('hide');el.innerHTML='';pourAt=-1;return}
+  var st=steps[idx], el=$('pours'), p=st&&st.pour;
+  if(!p){el.classList.add('hide');el.innerHTML='';pourAt=-1;return}
   el.classList.remove('hide');
-  /* phase: the pour under way, or P.length once it is time to lift the dripper off */
-  var t=stepSpent(), P=st.pours, ci=pourNow(st), ph=t>=st.s?P.length:ci, nx=P[ci+1];
+  var bt=brewSpent(), lift=p.lift&&bt>=p.end, ph=lift?1:0;
   if(force||ph!==pourAt){
-    if(ph>pourAt&&pourAt>=0&&ph<P.length&&!cueQuiet)chime();
+    if(ph>pourAt&&pourAt>=0&&!cueQuiet)chime();
     pourAt=ph;
-    var cur=P[Math.max(ci,0)], end=ph===P.length;
-    el.innerHTML=(end?'<p class="pnow"><b>Lift the dripper off</b></p><p class="pt">If it is still dripping. Tap Next when it is done.</p>'
-        :'<p class="pnow">Pour to <b>'+cur.to+' g</b></p><p class="pt">'+esc(cur.t)+'</p><p class="pnext" id="pnext"></p>')
-      +'<ol class="plist">'+P.map(function(p,i){return '<li class="'+(i<ph?'done':(i===ph?'cur':''))+'"><span class="when">'+mmss(p.at)+'</span> to <b>'+p.to+' g</b></li>'}).join('')
-      +'<li class="'+(end?'cur':'')+'"><span class="when">'+mmss(st.s)+'</span> lift the dripper off</li></ol>';
+    var all=(runCalc&&runCalc.pours)||[];
+    el.innerHTML=(lift?'<p class="pnow"><b>Lift the dripper off</b></p><p class="pt">If it is still dripping. Tap Next when it is done.</p>'
+        :'<p class="pnow">Pour to <b>'+p.to+' g</b></p>'+(p.note?'<p class="pt">'+esc(p.note)+'</p>':''))
+      +'<p class="pnext" id="pnext"></p>'
+      +'<ol class="plist">'+all.map(function(q,i){return '<li class="'+(i<p.i?'done':(i===p.i?'cur':''))+'"><span class="when">'+mmss(q.at)+'</span> to <b>'+q.to+' g</b></li>'}).join('')
+      +(p.lift?'<li class="'+(lift?'cur':'')+'"><span class="when">'+mmss(p.end)+'</span> lift the dripper off</li>':'')+'</ol>';
   }
-  var pn=$('pnext');
-  if(pn)pn.textContent=nx?'Next: to '+nx.to+' g at '+mmss(nx.at)+', in '+mmss(Math.ceil(nx.at-t)):'Then let it drain. Lift it off at '+mmss(st.s)+' if it is still dripping.';
+  var pn=$('pnext'); if(!pn)return;
+  if(st.hold&&!running&&!tBase)pn.textContent='Tap Start as the water hits the coffee.';
+  else pn.textContent='Brew '+mmss(bt)+' \u00B7 '+(p.i===0?p.who+' starts here':p.who+' pours this at '+mmss(p.at))+(p.end&&!p.lift?', done by about '+mmss(p.end):'');
 }
 function tickPaint(){
   var c=$('clock'), cs=steps[idx];
   if(cs&&cs.up){
     c.textContent=mmss(stepSpent());
-    c.className='clock up'+(over>0?' over':'');
+    c.className='clock up'+(over>0&&!cs.open?' over':'');
   } else {
     c.textContent=over>0?'\u2212'+mmss(over):mmss(left);
     c.className='clock'+(left<=0?' done':(left<=10?' low':''))+(over>0?' over':'');
@@ -956,7 +965,8 @@ function loop(){
   if(dur){
     var spent=tBase+(running?((now-tStart)/1000)*speed:0);
     var nl=Math.max(0,dur-spent);
-    if(running&&nl<=0){running=false;tBase=dur;left=0;tOver0=now-((spent-dur)/speed)*1000;$('pause').textContent='Restart';beep(3);saveRun()}
+    if(steps[idx]&&steps[idx].open)left=nl;
+    else if(running&&nl<=0){running=false;tBase=dur;left=0;tOver0=now-((spent-dur)/speed)*1000;$('pause').textContent='Restart';beep(3);saveRun()}
     else left=nl;
   }
   over=(dur&&!running&&tOver0&&tBase>=dur)?((now-tOver0)/1000)*speed:0;
@@ -1107,10 +1117,11 @@ $('got').addEventListener('input',function(){
 
 function go(i){
   idx=i; var st=steps[idx];
-  dur=st.s?st.s:0; left=dur; running=!!st.s; tBase=0; tStart=Date.now();
+  dur=st.s?st.s:0; left=dur; running=!!st.s&&!st.hold; tBase=0; tStart=Date.now();
   stepT0=Date.now(); cueDone={}; cueQuiet=true; tOver0=0; over=0;
+  if(st.pour&&running&&!pourT0)pourT0=Date.now();
   if(st.long)unlock(); else if(!wl)lock();
-  $('pause').textContent='Pause';
+  $('pause').textContent=st.hold?'Start':'Pause';
   paint(); saveRun();
 }
 function leaveStep(){
@@ -1121,7 +1132,7 @@ function startBrew(isTest){
   /* a brew left half-done is replaced: if it had reached the log, it stays there, unfinished */
   var old=readRun(); if(old)endStoredRun(old);
   testMode=!!isTest; speed=testMode?dryX():1;
-  steps=buildSteps(); actuals=[]; elapsed=0; runCalc=compute(); brewT0=Date.now(); runId=null;
+  steps=buildSteps(); actuals=[]; elapsed=0; runCalc=compute(); brewT0=Date.now(); runId=null; pourT0=0;
   runMeta={recipe:S.recipe,mode:S.mode,params:{tgt:rs().tgt,ratio:rs().ratio,pratio:S.pratio,ved:S.ved,temp:coldBase(S.recipe)?undefined:S.temp,loc:(curLoc()||{}).name||undefined,vmode:S.recipe==='viet'?S.vmode:undefined,paper:(rs().paper||runCalc.pours)?true:undefined,pfrom:(rs().paper&&!runCalc.pours)?(rs().pflow==='press'?'press':'decanter'):undefined,ice:runCalc.iceKind||undefined},bean:beanSnap()};
   closeRunPanel();
   $('dryflag').classList.toggle('hide',!testMode);
@@ -1969,8 +1980,10 @@ $('rs-go').addEventListener('click',function(){
 });
 
 $('pause').addEventListener('click',function(){
-  var now=Date.now();
-  if(left<=0){tBase=0;tStart=now;left=dur;running=true;this.textContent='Pause';cueDone={};cueQuiet=true;tOver0=0;over=0;paintWait()}
+  var now=Date.now(), st=steps[idx]||{};
+  if(st.hold&&!running&&!tBase){tStart=now;stepT0=now;running=true;if(!pourT0)pourT0=now;this.textContent='Pause'}
+  else if(st.open){if(running){tBase+=((now-tStart)/1000)*speed;running=false;this.textContent='Resume'}else{tStart=now;running=true;this.textContent='Pause'}}
+  else if(left<=0){tBase=0;tStart=now;left=dur;running=true;this.textContent='Pause';cueDone={};cueQuiet=true;tOver0=0;over=0;paintWait()}
   else if(running){tBase+=((now-tStart)/1000)*speed;running=false;this.textContent='Resume'}
   else{tStart=now;running=true;this.textContent='Pause'}
   ctx();loop();saveRun();
