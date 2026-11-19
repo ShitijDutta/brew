@@ -45,7 +45,7 @@ test('adding a person gives them their own empty space, and their brews go to th
   expect(gh.read('people.json').people).toEqual(TWO.people);
   await expect(page.locator('#who-name')).toHaveText('Shitij');
   await switchTo(page, 'ananya');
-  await expect(page.locator('#pack-sum')).toContainText('No pack in use');
+  await expect(page.locator('#pack-line')).toContainText('No pack in use');
   await expect(page.locator('#loc-pick')).toContainText('Home');
   await page.click('#open-try');
   await expect(page.locator('#try-sum')).toHaveText('Nothing on the list yet.');
@@ -130,7 +130,7 @@ test('her own phone joins as her: earlier brews move to her folder and nothing o
   await connectAs(page, 'ananya');
   await expect(page.locator('#who-name')).toHaveText('Ananya');
   await expect.poll(() => Object.values(brewsIn(gh, 'people/ananya/')).map(b => b.log.note)).toEqual(['Before connecting']);
-  await expect(page.locator('#pack-sum')).toContainText('No pack in use');
+  await expect(page.locator('#pack-line')).toContainText('No pack in use');
   await page.click('#open-log');
   await expect(page.locator('.entry')).toHaveCount(1);
   await page.click('#lv-all');

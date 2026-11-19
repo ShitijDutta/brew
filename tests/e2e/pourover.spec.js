@@ -38,8 +38,15 @@ test('the V60 recipes sit in their own group with water-to-pour numbers and no f
   await expect(page.locator('#fltseg')).toBeVisible();
 });
 
-test('each pour is a step: the first waits for Start, the clock counts up without ending, 4:6 says when to lift the dripper off', async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem('fp.v1', JSON.stringify({ dspeed: 60 })));
+const sec = s => s.split(':').reduce((a, b) => a * 60 + Number(b), 0);
+/* the one button on a pour: start the next pour, tapping Bed shows first if that is what it offers */
+async function nextPour(page) {
+  if ((await page.locator('#next').innerText()) === 'Bed shows') await page.click('#next');
+  await page.click('#next');
+}
+
+test('4:6 runs on one brew clock: Start, Bed shows, waiting for the time, a slow pour, a late pour, lift-off, then the summary', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('fp.v1', JSON.stringify({ dspeed: 20 })));
   await page.goto('./');
   await pick(page, 'V60 4:6');
   await page.click('#dry');
@@ -48,56 +55,69 @@ test('each pour is a step: the first waits for Start, the clock counts up withou
   await expect(page.locator('#wait')).toContainText('100 g plain RO for the paper rinse');
   await page.click('#next');
   await expect(page.locator('#stage')).toHaveText('Rinse and dose');
-  await expect(page.locator('#detail')).toContainText('20 g');
   await page.click('#next');
-  /* the bloom waits for Start */
+  /* the bloom waits for Start: one button, no pause, no step clock */
+  const pours = page.locator('#pours'), next = page.locator('#next'), b1 = page.locator('#p-b1');
   await expect(page.locator('#stage')).toHaveText('Pour 1 of 5: the bloom');
-  const pours = page.locator('#pours'), clock = page.locator('#clock');
-  await expect(page.locator('#pause')).toHaveText('Start');
+  await expect(next).toHaveText('Start');
+  await expect(page.locator('#pause')).toBeHidden();
+  await expect(page.locator('#timed')).toBeHidden();
+  await expect(page.locator('#detail')).toBeHidden();
   await expect(pours.locator('.pnow')).toHaveText('Pour to 60 g');
   await expect(pours.locator('.pt')).toContainText('smaller first pour makes it sweeter');
-  await expect(pours.locator('.pnext')).toHaveText('Tap Start as the water hits the coffee.');
-  await page.waitForTimeout(700);
-  await expect(clock).toHaveText('0:00');
-  await expect(page.locator('#brewclk')).toBeHidden();
+  await expect(page.locator('#pc-t')).toHaveText('0:00');
+  await expect(page.locator('#pc-c')).toHaveText('Starts when you tap Start');
+  await expect(b1).toHaveText('Tap Start as the water hits the coffee.');
+  /* the timeline: five pours and the lift, the short 30 s gap marked */
+  await expect(pours.locator('.pline .tk')).toHaveCount(6);
+  await expect(pours.locator('.pline .gs')).toHaveText('30 s');
   expect(await noOverflow(page)).toBe(true);
-  await page.click('#pause');
-  await expect(page.locator('#pause')).toHaveText('Pause');
-  await expect(pours.locator('.pnext')).toContainText('Kasuya starts here');
-  await expect(page.locator('#brewclk')).toContainText('on time with Kasuya');
-  await expect(clock).not.toHaveText('0:00');
-  /* later pours start on Next, with no note, and show the brew clock against the recipe */
-  await page.click('#next');
+  await next.click();                                       /* Start */
+  await expect(page.locator('#pc-c')).toHaveText('Brew clock, from your first pour');
+  await expect(next).toHaveText('Bed shows');
+  await expect(b1).toHaveText('Next: pour to 120 g at 0:45');
+  await expect(page.locator('#p-lag')).toContainText('on time with Kasuya');
+  await next.click();                                       /* the bed shows early: wait for 0:45 */
+  await expect(next).toHaveText('Start pour 2');
+  await expect(page.locator('#p-b2')).toContainText('Bed showed at');
+  await expect(page.locator('#p-b2')).toContainText('wait for Kasuya’s time');
+  await expect(b1).toHaveText('Pour now: to 120 g', { timeout: 6000 });
+  await expect(page.locator('#p-box')).toHaveClass(/now/);
+  await next.click();                                       /* Start pour 2 */
   await expect(page.locator('#stage')).toHaveText('Pour 2 of 5');
-  await expect(page.locator('#pause')).toHaveText('Pause');
   await expect(pours.locator('.pnow')).toHaveText('Pour to 120 g');
   await expect(pours.locator('.pt')).toHaveCount(0);
-  await expect(pours.locator('.pnext')).toHaveText('Kasuya pours this at 0:45');
-  /* poured well before 0:45: ahead, then behind once the wait for the bed runs past 1:30 */
-  await expect(page.locator('#brewclk')).toContainText(/Brew \d:\d\d · \d+ s ahead of Kasuya/);
-  await expect(pours.locator('.plist li').first()).toHaveClass(/done/);
-  await expect(pours.locator('.plist li').nth(1)).toHaveClass(/cur/);
-  /* waiting for the bed: the clock runs past the recipe's 45 s without ending or turning red */
-  await page.waitForTimeout(2000);
-  await expect(page.locator('#brewclk')).toContainText(/\d+ s behind Kasuya/);
+  await expect(next).toHaveText('Bed shows');
+  /* no Bed shows by the next time: this pour is the slow one, and one tap starts the next */
+  await expect(b1).toHaveText(/^Pour 2 is draining slowly: \d:\d\d$/, { timeout: 10000 });
+  await expect(page.locator('#p-box')).toHaveClass(/late/);
+  await expect(page.locator('#p-b2')).toContainText('Kasuya allows 45 s. Wait for the bed, then pour.');
+  await expect(next).toHaveText('Start pour 3');
+  await expect(pours.locator('.pline .ov').first()).toBeVisible();
+  await expect(page.locator('#p-lag')).toContainText(/\d+ s behind Kasuya/);
   expect(await noOverflow(page)).toBe(true);
-  const sec = s => s.split(':').reduce((a, b) => a * 60 + Number(b), 0);
-  expect(sec(await clock.innerText())).toBeGreaterThan(60);
-  await expect(clock).not.toHaveClass(/over/);
-  await expect(page.locator('#pause')).toHaveText('Pause');
-  for (const t of ['Pour 3 of 5', 'Pour 4 of 5', 'Pour 5 of 5']) {
-    await page.click('#next');
-    await expect(page.locator('#stage')).toHaveText(t);
-  }
+  await next.click();
+  await expect(page.locator('#stage')).toHaveText('Pour 3 of 5');
+  /* late now: the next pour is due the recipe's gap after this one, so the countdown still means something */
+  const due = sec((await b1.innerText()).match(/at (\d+:\d\d)$/)[1]);
+  expect(due).toBeGreaterThan(135);
+  for (const t of ['Pour 4 of 5', 'Pour 5 of 5']) { await nextPour(page); await expect(page.locator('#stage')).toHaveText(t); }
   await expect(pours.locator('.pnow')).toHaveText('Pour to 300 g');
-  await expect(pours.locator('.pt')).toContainText('Kasuya lifts the dripper off at 3:30');
-  await expect(pours.locator('.pnow')).toHaveText('Lift the dripper off', { timeout: 6000 });
-  await expect(pours.locator('.plist li').last()).toHaveClass(/cur/);
-  await page.click('#next');
+  await expect(next).toHaveText('Drained');
+  await expect(b1).toHaveText(/^Lift the dripper off at \d:\d\d$/);
+  await expect(b1).toHaveText('Lift the dripper off now', { timeout: 15000 });
+  await expect(next).toHaveText('Lifted off');
+  await next.click();
+  /* after the pours: the timeline and a row per pour */
   await expect(page.locator('#stage')).toHaveText('Swirl and serve');
-  await expect(page.locator('#pours')).toBeHidden();
   await expect(page.locator('#detail')).toContainText('260 g');
-  await expect(page.locator('#brewclk')).toContainText(/Brew took \d:\d\d · .*Kasuya \(3:30\)/);
+  await expect(pours).toHaveClass(/sum/);
+  await expect(pours.locator('.phead')).toContainText(/Brew took \d:\d\d · .*Kasuya \(3:30\)/);
+  await expect(pours.locator('.ptab tr')).toHaveCount(6);
+  await expect(pours.locator('.ptab tr').nth(1)).toContainText('bed at');
+  await expect(pours.locator('.ptab tr').nth(2).locator('td').nth(3)).toHaveClass('late');
+  await expect(pours.locator('.ptab tr').nth(5)).toContainText('5 · lift');
+  expect(await noOverflow(page)).toBe(true);
 });
 
 test('a last pour that starts after 3:30 still says to pour, and the lift-off comes 45 s later', async ({ page }) => {
@@ -106,20 +126,18 @@ test('a last pour that starts after 3:30 still says to pour, and the lift-off co
   await pick(page, 'V60 4:6');
   await page.click('#dry');
   await page.click('#next'); await page.click('#next');
-  await page.click('#pause');                      /* Start */
-  await page.waitForTimeout(7600);                 /* past 3:30 on the brew clock before pour 5 */
-  for (let i = 0; i < 4; i++) await page.click('#next');
+  await page.click('#next');                       /* Start */
+  await page.waitForTimeout(7600);                 /* past 3:30 on the brew clock before pour 2 */
+  for (let i = 0; i < 4; i++) await nextPour(page);
   await expect(page.locator('#stage')).toHaveText('Pour 5 of 5');
-  const pours = page.locator('#pours');
-  await expect(pours.locator('.pnow')).toHaveText('Pour to 300 g');
-  const lastItem = await pours.locator('.plist li').last().innerText();
-  const sec = s => s.split(':').reduce((a, b) => a * 60 + Number(b), 0);
-  expect(sec(lastItem.match(/\d+:\d\d/)[0])).toBeGreaterThan(210 + 45);
-  await expect(pours.locator('.pnow')).toHaveText('Lift the dripper off', { timeout: 5000 });
-  await expect(pours.locator('.plist li').last()).toHaveClass(/cur/);
+  await expect(page.locator('#pours .pnow')).toHaveText('Pour to 300 g');
+  const at = (await page.locator('#p-b1').innerText()).match(/^Lift the dripper off at (\d+:\d\d)$/);
+  expect(at).not.toBeNull();
+  expect(sec(at[1])).toBeGreaterThan(210 + 45);
+  await expect(page.locator('#p-b1')).toHaveText('Lift the dripper off now', { timeout: 5000 });
 });
 
-test('double bloom: three pour steps, the main pour runs until it drains', async ({ page }) => {
+test('double bloom: the blooms go on time with no Bed shows, then the main pour drains', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('fp.v1', JSON.stringify({ dspeed: 60 })));
   await page.goto('./');
   await pick(page, 'V60 double bloom');
@@ -127,22 +145,26 @@ test('double bloom: three pour steps, the main pour runs until it drains', async
   await page.click('#next'); await page.click('#next');
   await expect(page.locator('#stage')).toHaveText('Bloom');
   await expect(page.locator('#pours .pt')).toHaveText('Gently, then leave it.');
-  await page.click('#pause');
+  await expect(page.locator('#pours .pline .gs')).toHaveCount(0);
+  await page.click('#next');                       /* Start */
+  await expect(page.locator('#next')).toHaveText('Start second bloom');
+  await expect(page.locator('#p-b1')).toHaveText('Next: second bloom to 90 g at 0:30');
+  await expect(page.locator('#p-b1')).toHaveText('Pour now: second bloom to 90 g', { timeout: 3000 });
   await page.click('#next');
   await expect(page.locator('#stage')).toHaveText('Second bloom');
   await expect(page.locator('#pours .pnow')).toHaveText('Pour to 90 g');
+  await expect(page.locator('#next')).toHaveText('Start main pour');
   await page.click('#next');
   await expect(page.locator('#stage')).toHaveText('Main pour');
   await expect(page.locator('#pours .pnow')).toHaveText('Pour to 225 g');
   await expect(page.locator('#pours .pt')).toContainText('Fast, from higher up');
-  await expect(page.locator('#pours .pnext')).toContainText('Hedrick pours this at 1:00, done by about 2:15');
-  await expect(page.locator('#detail')).toContainText('Tap Next when it has drained');
-  await expect(page.locator('#pours .plist li')).toHaveCount(3);
-  await page.waitForTimeout(3000);
-  await expect(page.locator('#pours .pnow')).toHaveText('Pour to 225 g');   /* no lift-off cut for this recipe */
+  await expect(page.locator('#p-b1')).toHaveText(/^Done by about \d:\d\d$/);
+  await expect(page.locator('#next')).toHaveText('Drained');
+  await expect(page.locator('#p-b1')).toHaveText(/^Draining slowly: \d:\d\d$/, { timeout: 5000 });
+  await expect(page.locator('#p-b2')).toContainText('Hedrick is done by about 2:15');
 });
 
-test('a real V60 brew reaches the log after the bloom and is scored without a decant field', async ({ page }) => {
+test('a real V60 brew reaches the log after the bloom, keeps when the bed showed, and is scored twice', async ({ page }) => {
   await page.goto('./');
   await pick(page, 'V60 4:6');
   await page.click('#start');
@@ -150,21 +172,26 @@ test('a real V60 brew reaches the log after the bloom and is scored without a de
   await page.click('#next');
   await expect(page.locator('#stage')).toHaveText('Pour 1 of 5: the bloom');
   expect(await log(page)).toEqual([]);
-  await page.click('#pause');                      /* Start */
+  await page.click('#next');                       /* Start */
   await page.waitForTimeout(1100);
-  await page.click('#next');                       /* the bloom has drained: the brew is in the log */
+  await page.click('#next');                       /* Bed shows */
+  await page.waitForTimeout(1100);
+  await page.click('#next');                       /* Start pour 2: the brew is in the log */
   let l = await log(page);
   expect(l).toHaveLength(1);
   expect(l[0].recipe).toBe('v_46');
   expect(l[0].unfinished).toBe(true);
   expect(l[0].steps.map(s => s.k)).toEqual(['dose', 'prep', 'pour']);
-  expect(l[0].steps[2].actual).toBeGreaterThanOrEqual(1);
-  for (let i = 0; i < 5; i++) await page.click('#next');
+  expect(l[0].steps[2].actual).toBeGreaterThanOrEqual(2);
+  expect(l[0].steps[2].bed).toBeGreaterThanOrEqual(1);
+  expect(l[0].steps[2].bed).toBeLessThan(l[0].steps[2].actual);
+  for (let i = 0; i < 12 && !(await page.isVisible('#sc-review')); i++) await page.click('#next');
   await expect(page.locator('#sc-review')).toBeVisible();
   await expect(page.locator('#rv-decg')).toBeHidden();
-  await expect(page.locator('#rv-fin')).toBeVisible();
   await expect(page.locator('#rv-fin')).toHaveAttribute('placeholder', '260 planned');
   await page.click('#rv-score [data-v="4"]');
+  await page.click('#rv-like [data-v="3"]');
+  await expect(page.locator('#rv-lval')).toHaveText('3 / 5');
   await page.click('#rv-save');
   l = await log(page);
   expect(l).toHaveLength(1);
@@ -177,7 +204,13 @@ test('a real V60 brew reaches the log after the bloom and is scored without a de
   expect(e.params.paper).toBe(true);
   expect(e.calc).toMatchObject({ dose: 20, press: 300, pour: 260, decant: 0 });
   expect(e.log.decant).toBeNull();
+  expect(e.log.score).toBe(4);
+  expect(e.log.like).toBe(3);
   await expect(page.locator('.entry').first()).toContainText('V60 4:6');
+  await expect(page.locator('.entry').first().locator('.sc')).toHaveText('4/5 · liked 3');
   await page.locator('.entry').first().click();
-  await expect(page.locator('#dt-' + e.id)).toContainText(/Brew took 0:0\d · 3:2\d ahead of Kasuya \(3:30\)/);
+  const dt = page.locator('#dt-' + e.id);
+  await expect(dt.locator('.phead')).toContainText(/Brew took 0:0\d · 3:2\d ahead of Kasuya \(3:30\)/);
+  await expect(dt.locator('.ptab tr')).toHaveCount(6);
+  expect(await noOverflow(page)).toBe(true);
 });

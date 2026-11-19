@@ -55,7 +55,7 @@ test.describe('synced through GitHub', () => {
     await expect(page.locator('#log-sync')).toContainText('Synced to GitHub');
     await expect(page.locator('.entry')).toHaveCount(19);
     await page.click('#log-back');
-    await expect(page.locator('#pack-sum')).toContainText('Hill Estate');
+    await expect(page.locator('#pack-sel option:checked')).toContainText('Hill Estate');
     await expect(page.locator('#banners')).toContainText('waiting for a score');
     await page.click('#open-try');
     await expect(page.locator('#try-sum')).toContainText('of ' + fixture().tries.length + ' tried');

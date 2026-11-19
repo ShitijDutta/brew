@@ -70,16 +70,35 @@ picker:
 - **Pour-over (V60)**, recipes made for a coarser grind than usual: **V60 4:6** (Tetsu Kasuya: five equal pours at 0:00, 0:45,
   1:30, 2:15 and 2:45, dripper off at 3:30) and **V60 double bloom** (Lance Hedrick: two small blooms, then one fast pour from
   higher up; done by about 2:15). Water at about 93 °C for light roasts (88 medium, 83 dark). The target is the water poured;
-  the cup is about 2 g less per gram of coffee. Each pour is its own step: the mark to pour to in large type, a clock counting
-  up for that pour, the recipe's time for it ("Kasuya pours this at 1:30"), and above Total elapsed a brew clock from the
-  first pour with how far ahead of or behind the recipe you are ("Brew 2:07 · 37 s behind Kasuya"); the log shows the same
-  against the recipe's end. Tap Next once the bed
-  shows, so a slow drain is saved against the pour it followed. The first pour waits for **Start**; later pours start on Next.
-  4:6's last pour chimes at 3:30 to lift the dripper off; if that pour started late, the screen still says to pour first,
-  and the lift-off comes 45 s after it began (the recipe's own gap from 2:45 to 3:30).
+  the cup is about 2 g less per gram of coffee. Each pour is its own step, on one clock:
+  - **The brew clock**, large, from the first pour (recipes are written in brew time). The first pour waits for **Start**.
+  - **The mark to pour to** ("Pour to 180 g") and a **timeline** of the recipe's pour times with their grams and the gap
+    between them (a gap shorter than the one before, like 4:6's 30 s, is marked). Your pours show as dots, now as a line, and
+    the stretch a pour ran past its gap in amber.
+  - **What comes next**, in a box: a countdown to the next pour; *Pour now* when it is time; or, when a pour runs past the
+    recipe's gap without the bed showing, which pour is slow and what to do ("Pour 3 is draining slowly: 0:52. Kasuya allows
+    45 s. Wait for the bed, then pour."). Once a pour starts late, the next is due the recipe's gap after it, never before the
+    recipe's own time; the lift-off works the same way. Below it, how far behind or ahead of the recipe the whole brew is.
+  - **One button** that says what it does: *Bed shows*, then *Start pour 4*. Tapping Bed shows before the recipe's time
+    makes you wait for it; after the time, one tap does both. 4:6 pours wait for the bed; the double bloom's blooms go on
+    time. The last pour ends with *Drained* or, for 4:6, *Lifted off*.
+  - **A soft tone** only when it is time to pour: the bed has shown and the time has come, an on-time bloom, or the lift-off.
+  - **After the pours**, and in the log: the timeline and a row per pour with the recipe's gap, yours (and when the bed
+    showed, if you then waited), what that pour added, and how far behind that left you.
 
 Milk drinks use a handheld frother: heat first to 60–65 °C, then froth just under the surface and then deeper; cold foam uses
 the whisk attachment on cold milk. Press coffee is weaker than espresso, so milk stays close to 1:1 with the coffee.
+
+## Coffee and scores
+
+- **The coffee in use** is a dropdown at the top of the recipe screen: open packs, last used first, each with days since
+  grinding and grams left. *Add a pack* is at the end of the list; *Manage packs* below the recipes holds the pack details,
+  editing, finishing and reopening. The brew screen shows the coffee under the step count.
+- **Wrong pack?** Change it when scoring, or later from the log (Edit). The brew takes that pack's roast and grind ages as
+  of the brew's own day, and its grams move to that pack.
+- **Two scores:** *How it came out* (well brewed and true to the pack, whether or not it is your taste; 1–5 with a slider)
+  and *How much you liked it* (1–5). Averages, best brews and insights use the first. Scores from before the split count as
+  how it came out.
 
 ## People
 

@@ -106,9 +106,6 @@ details[open]>summary::after{content:" \2212"}
 .acts.two{grid-template-columns:104px 1fr}
 .acts .go,.acts .flat{margin-bottom:0}
 .total{text-align:center;color:var(--faint);font-size:13px;margin-top:6px}
-.brewclk{text-align:center;color:var(--ink);font-size:15px;margin-top:8px;font-variant-numeric:tabular-nums}
-.brewclk .late{color:var(--warn)}
-.brewclk .early{color:var(--acc)}
 .upnext{text-align:center;color:var(--steel);font-size:13.5px;margin-top:20px}
 .upnext b{font-weight:500;color:var(--ink)}
 
@@ -402,14 +399,45 @@ details.newdrinks>summary{font-size:14px;color:var(--steel)}
 .xlist button[aria-pressed="true"]{background:var(--acc);border:1px solid var(--acc);color:var(--on-acc);font-weight:500}
 
 /* pour-over: the mark to pour to now, large enough to read with a jug in hand, and the schedule under it */
-.pours{margin:-8px 0 22px;padding:12px 14px;background:var(--panel);border-radius:10px}
-.pours .pnow{font-size:28px;line-height:1.15;margin:0;color:var(--steel)}
+.pours{margin:-4px 0 22px}
+.pours.sum{padding:12px 14px;background:var(--panel);border-radius:10px}
+.pours.inlog{margin:0 0 12px}
+.pclock{text-align:center;margin:0 0 12px}
+.pclock b{display:block;font-size:64px;font-weight:500;letter-spacing:-2.5px;line-height:1;font-variant-numeric:tabular-nums}
+.pclock span{display:block;font-size:12.5px;color:var(--faint);margin-top:6px}
+.pours .pnow{font-size:24px;line-height:1.2;margin:0;color:var(--steel)}
 .pours .pnow b{color:var(--acc);font-weight:600}
 .pours .pt{margin:2px 0 0;font-size:14.5px;color:var(--ink)}
-.pours .pnext{margin:6px 0 0;font-size:14px;color:var(--steel);min-height:1.4em}
-.pours .plist{list-style:none;margin:10px 0 0;padding:8px 0 0;border-top:1px solid var(--sunk);font-size:13.5px;color:var(--faint);display:flex;flex-wrap:wrap;gap:4px 14px}
-.pours .plist li{white-space:nowrap}
-.pours .plist .when{font-variant-numeric:tabular-nums}
-.pours .plist li.done{color:var(--faint);text-decoration:line-through}
-.pours .plist li.cur{color:var(--acc);font-weight:500}
-.pours .plist b{font-weight:500}
+.pline{display:block;width:100%;height:auto;margin:12px 0 4px;overflow:visible}
+.pline .tr{stroke:var(--line);stroke-width:2}
+.pline .tk{stroke:var(--steel);stroke-width:1.5}
+.pline .tk.end{stroke-dasharray:3 2}
+.pline text{font-size:11px;text-anchor:middle;fill:var(--steel);font-variant-numeric:tabular-nums}
+.pline .gl{fill:var(--faint)}
+.pline .gl.gs{fill:var(--warn);font-weight:600}
+.pline .ov{fill:var(--warn);opacity:.45}
+.pline .dot{fill:var(--acc)}
+.pline .nowl{stroke:var(--ink);stroke-width:2}
+.pbox{border-radius:10px;padding:10px 12px;background:var(--panel);margin:4px 0 0}
+.pbox.late{background:var(--warn-soft)}
+.pbox.late p{color:var(--warn)}
+.pbox.now{background:var(--acc-soft)}
+.pbox.now .pb1{color:var(--acc)}
+.pb1{margin:0;font-size:16px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums}
+.pb2{margin:2px 0 0;font-size:13.5px;color:var(--steel);line-height:1.5;font-variant-numeric:tabular-nums}
+.plag{margin:8px 0 0;font-size:13.5px;color:var(--steel);text-align:center}
+.plag .late,.phead .late,.ptab .late{color:var(--warn)}
+.plag .early,.phead .early{color:var(--acc)}
+.phead{margin:0 0 4px;font-size:14px;color:var(--ink)}
+.ptab td,.ptab th{padding-left:6px;font-variant-numeric:tabular-nums}
+.ptab .pw{display:block;font-size:11.5px;color:var(--faint)}
+/* the coffee in use, as the phone's own dropdown, at the top of the recipe screen and when scoring */
+.beanrow{margin:0 0 18px}
+.beanrow label{display:block;font-size:12.5px;color:var(--faint);margin:0 0 6px}
+select.tin{color:var(--ink);font-weight:500;appearance:auto;-webkit-appearance:auto;min-width:0;max-width:100%;text-overflow:ellipsis}
+.beanrow select.tin{margin:0}
+.beanline{font-size:13px;color:var(--steel);margin:6px 0 0;line-height:1.5}
+.beanline .age{color:var(--faint)}
+.beanline .age.old{color:var(--warn)}
+.brewbean{font-size:13px;color:var(--steel);margin:-6px 0 14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lhint{font-size:13px;color:var(--faint);margin:-4px 0 10px}

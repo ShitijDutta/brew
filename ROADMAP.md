@@ -14,6 +14,13 @@ Roughly in the order they would help.
 
 ## Done
 
+- **V60 pour screen on one clock.** Brew clock from the first pour, a timeline of the recipe's pours against yours, a
+  next-pour box that counts down, names a slow pour and says what to do, and one button (*Bed shows*, *Start pour N*);
+  the next pour is due the recipe's gap after a late one; a per-pour summary after the pours and in the log.
+- **Coffee dropdown and fixing a brew's pack.** Open packs, last used first, at the top of the recipe screen; a brew's
+  pack can be changed when scoring or later, with ages dated to the brew and grams moving with it.
+- **Two scores.** How it came out (used by every analysis) and how much you liked it.
+
 - Pour-over on the V60 under Something new: Kasuya's 4:6 and Hedrick's double bloom, with a counting-up pour timer that
   shows each mark to pour to (Nov 2026).
 - Brews reach the log at the pour, marked unfinished, so one left half-done is never lost and can be scored later

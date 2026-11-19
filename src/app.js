@@ -156,17 +156,18 @@ function paintBeans(){
   box.innerHTML='<button data-bk="*" aria-pressed="'+(beanFilter===null)+'">All packs</button>'
     +list.map(function(x){return '<button data-bk="'+esc(x[0])+'" aria-pressed="'+(beanFilter===x[0])+'">'+esc(x[1])+'</button>'}).join('');
 }
-function daysSince(d){
+/* whole days from a date to today, or to the day of ref (an ISO time) when given */
+function daysSince(d,ref){
   if(!d)return null;
   var a=new Date(d+'T00:00:00'); if(isNaN(a))return null;
-  var n=new Date(); n.setHours(0,0,0,0);
+  var n=ref?new Date(ref):new Date(); n.setHours(0,0,0,0);
   return Math.max(0,Math.round((n-a)/86400000));
 }
-function grindAge(b){
+function grindAge(b,ref){
   b=b||{};
-  var g=daysSince(b.ground);
+  var g=daysSince(b.ground,ref);
   if(g!==null)return {age:g,est:false};
-  if(b.pre){var r=daysSince(b.roasted);if(r!==null)return {age:r,est:true};var t=daysSince(b.bought);if(t!==null)return {age:t,est:true}}
+  if(b.pre){var r=daysSince(b.roasted,ref);if(r!==null)return {age:r,est:true};var t=daysSince(b.bought,ref);if(t!==null)return {age:t,est:true}}
   return {age:null,est:false};
 }
 function fmtScore(v){v=Math.round(Number(v)*10)/10;return v%1===0?String(v):v.toFixed(1)}
@@ -199,13 +200,35 @@ function paceOf(p){
 function fmtWk(t){return new Date(t).toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'})}
 function fmtAt(iso){return new Date(iso).toLocaleDateString(undefined,{day:'numeric',month:'short'})}
 function packLabel(id,e){var p=packById(id);if(p)return p.name+(p.roasted?' · roasted '+fmtDay(p.roasted):'');return (e&&e.bean&&e.bean.name)||'No pack'}
-function beanSnap(){
-  var p=activePack();
+/* the bean as recorded on a brew: the pack in use now, or pack p as it was on the day of ref (fixing a brew later) */
+function beanSnap(p,ref){
+  if(p===undefined)p=activePack();
   if(!p)return {packId:'',name:'',roaster:'',roasted:'',ground:'',bought:'',pre:false,grind:'',roastAge:null,groundAge:null,groundAgeEst:false};
-  var ga=grindAge(p);
+  var ga=grindAge(p,ref);
   return {packId:p.id,name:p.name||'',roaster:p.roaster||'',roasted:p.roasted||'',ground:p.ground||'',
           bought:p.bought||'',pre:!!p.pre,grind:p.grind||'',
-          roastAge:daysSince(p.roasted),groundAge:ga.age,groundAgeEst:ga.est};
+          roastAge:daysSince(p.roasted,ref),groundAge:ga.age,groundAgeEst:ga.est};
+}
+/* open packs, the one brewed from most recently first (a new pack, by when it was added) */
+function lastUse(p){var t=p.since?new Date(p.since).getTime():(p.created?new Date(p.created).getTime():0);packBrews(p).forEach(function(e){t=Math.max(t,new Date(e.at).getTime())});return t}
+function packsByUse(list){return list.slice().sort(function(a,b){return lastUse(b)-lastUse(a)})}
+/* one line per pack, for a dropdown: name, days since grinding, grams left */
+function packOpt(p,ref){var g=grindAge(p,ref), l=ref?null:leftG(p);
+  return p.name+(g.age!==null?' · '+(g.est?'~':'')+g.age+' d ground':'')+(l!==null?' · '+l+' g left':'')}
+/* the packs a logged brew can be moved to: open ones first, then finished ones, newest first; a bean logged before
+   packs existed keeps its own entry so it can stay as it is */
+function packChoices(e){
+  var cur=brewPack(e), op=packsByUse(openPacks()), fin=PK.packs.filter(function(p){return p.status==='finished'}).slice().reverse(), h='', seen=false;
+  function o(p){if(p.id===cur)seen=true;return '<option value="'+esc(p.id)+'"'+(p.id===cur?' selected':'')+'>'+esc(p.name+(p.roasted?' · roasted '+fmtDay(p.roasted):''))+'</option>'}
+  h+=op.map(o).join('');
+  if(fin.length)h+='<optgroup label="Finished packs">'+fin.map(o).join('')+'</optgroup>';
+  if(!seen)h='<option value="" selected>'+esc(((e.bean&&e.bean.name)||'No pack')+' (as logged)')+'</option>'+h;
+  return h;
+}
+/* moving a logged brew to another pack: the bean as that pack was on the day of the brew; its grams move with it */
+function setBrewPack(e,id){
+  var p=packById(id); if(!p||brewPack(e)===id)return false;
+  e.bean=beanSnap(p,e.at); return true;
 }
 function savePK(){try{localStorage.setItem(PKEY,JSON.stringify(PK))}catch(e){}}
 function touchPK(){PK.rev=Date.now();savePK();pushPacks();refreshAll()}
@@ -221,10 +244,16 @@ function paintPack(){
     else if(ap.pre)bits.push('no grind date');
     if(l!==null)bits.push(l+' g left');
     var warn=(g.age!==null&&g.age>14)||(g.age===null&&ra!==null&&ra>28)||(l!==null&&l<d);
-    sum.innerHTML=esc(ap.name)+(ap.pre?' · pre-ground':'')+(bits.length?' <span class="age'+(warn?' old':'')+'">· '+esc(bits.join(' · '))+'</span>':'');
-  } else sum.textContent=op.length?'Pick a pack':'No pack in use — add one';
+    $('pack-line').innerHTML=(ap.roaster?esc(ap.roaster)+' · ':'')+(ap.pre?'pre-ground':'whole bean')+(bits.length?' <span class="age'+(warn?' old':'')+'">· '+esc(bits.join(' · '))+'</span>':'');
+  } else $('pack-line').textContent=op.length?'Pick the pack you are brewing from.':'No pack in use: add the one you are brewing from.';
+  /* the pack in use sits at the top as the phone's own dropdown: open packs, last used first */
+  var sel=$('pack-sel'), so=packsByUse(op).map(function(p){return '<option value="'+esc(p.id)+'"'+(ap&&p.id===ap.id?' selected':'')+'>'+esc(packOpt(p))+'</option>'}).join('');
+  if(!ap)so='<option value="" selected disabled>'+(op.length?'Pick a pack':'No pack in use')+'</option>'+so;
+  so+='<option value="__new">Add a pack</option>';
+  if(sel.innerHTML!==so&&document.activeElement!==sel)sel.innerHTML=so;
+  sum.textContent='Manage packs';
   var pick=$('pack-pick');
-  pick.classList.toggle('hide',op.length<2);
+  pick.classList.add('hide');
   pick.innerHTML=op.map(function(p){return '<button data-pk="'+esc(p.id)+'" aria-pressed="'+(!!ap&&p.id===ap.id)+'">'+esc(packLabel(p.id))+'</button>'}).join('');
   var meta;
   if(ap){
@@ -388,15 +417,19 @@ var RECIPES={
    hint:'Lance Hedrick’s double bloom: two small blooms, then one fast pour from higher up to stir the bed. Made for a coarser grind than usual pour-over.'}
 };
 /* pour-over: each pour is its own step. at = when the recipe pours it (seconds from the first pour), to = the scale reading,
-   t = step title, note = shown only where it matters. end = when the recipe is done (4:6 lifts the dripper off then) */
+   t = step title, note = shown only where it matters, btn = what the button says to start it ("Start pour 2").
+   wait = what the next pour waits for: 'bed' (pour once the bed shows, at the recipe's time at the earliest) or 'time'
+   (pour at the recipe's time, bed or not). end = when the recipe is done (4:6 lifts the dripper off then).
+   slow = what to do when a pour drains slower than the recipe's gap. */
 var POUR={
-  v_46:{who:'Kasuya',end:210,lift:true,pours:function(W){var at=[0,45,90,135,165],p=[];
-    for(var i=0;i<5;i++)p.push({at:at[i],to:Math.round(W*(i+1)/5),t:'Pour '+(i+1)+' of 5'+(i?'':': the bloom'),
-      note:i===0?'Gently, wetting every ground. A smaller first pour makes it sweeter, a bigger one brighter.':(i===4?'Kasuya lifts the dripper off at 3:30 if it is still dripping.':'')});
+  v_46:{who:'Kasuya',end:210,lift:true,slow:'Wait for the bed, then pour. The pours stay the same; the brew just ends later.',
+    pours:function(W){var at=[0,45,90,135,165],p=[];
+    for(var i=0;i<5;i++)p.push({at:at[i],to:Math.round(W*(i+1)/5),t:'Pour '+(i+1)+' of 5'+(i?'':': the bloom'),btn:'pour '+(i+1),wait:'bed',
+      note:i===0?'Gently, wetting every ground. A smaller first pour makes it sweeter, a bigger one brighter.':(i===4?'If it is still dripping when the time comes, Kasuya lifts the dripper off.':'')});
     return p}},
-  v_bloom:{who:'Hedrick',end:135,pours:function(W,D){var b=Math.min(3*D,Math.round(W/5));
-    return [{at:0,to:b,t:'Bloom',note:'Gently, then leave it.'},{at:30,to:2*b,t:'Second bloom',note:'Gently again.'},
-      {at:60,to:W,t:'Main pour',note:'Fast, from higher up, to stir the bed. Then let it drain.'}]}}
+  v_bloom:{who:'Hedrick',end:135,slow:'Let it finish draining.',pours:function(W,D){var b=Math.min(3*D,Math.round(W/5));
+    return [{at:0,to:b,t:'Bloom',btn:'bloom',wait:'time',note:'Gently, then leave it.'},{at:30,to:2*b,t:'Second bloom',btn:'second bloom',wait:'time',note:'Gently again.'},
+      {at:60,to:W,t:'Main pour',btn:'main pour',note:'Fast, from higher up, to stir the bed. Then let it drain.'}]}}
 };
 function isPour(k){return !!POUR[k]}
 /* base: hot concentrate made now, or cold brew concentrate overnight; part: the share of the drink that is not coffee */
@@ -656,8 +689,8 @@ function buildSteps(oIn){
   };
 
   if(o.pours){
-    /* pour-over: one step per pour. Its clock counts up from the pour until you tap Next once the bed shows,
-       so a slow drain shows up against the pour it followed. The first pour waits for Start. */
+    /* pour-over: one step per pour, from starting it to starting the next, so a slow drain shows up against the pour it
+       followed. The first pour waits for Start; the screen runs on one brew clock (paintPours). */
     var PR=POUR[R], np=o.pours.length;
     s.push(step('dose','Weigh the water',B(o.ved+' g')+' Vedica + '+B(o.ro+' g')+' RO, '+B(o.boil+' g')+' in all. Boil, then cool to about 93 \u00B0C.',
       {w:[W('Heat '+B(o.rinse+' g')+' plain RO for the paper rinse')],more:'About 93 \u00B0C for light roasts, 88 \u00B0C for medium, 83 \u00B0C for dark: Kasuya avoids freshly boiled water. Your thermometer in the kettle tells you when.'}));
@@ -666,9 +699,9 @@ function buildSteps(oIn){
     o.pours.forEach(function(p,i){
       var last=i===np-1, nxt=last?o.end:o.pours[i+1].at;
       s.push({k:i?'pour'+(i+1):'pour',t:p.t,s:Math.max(1,nxt-p.at),up:true,open:true,hold:i===0,
-        d:'Pour to '+B(p.to+' g')+'. Tap Next when '+(last?'it has drained.':'the bed shows.'),
-        pour:{i:i,n:np,at:p.at,to:p.to,note:p.note||'',who:PR.who,end:last?o.end:0,lift:last&&!!PR.lift},
-        more:i===0?'Hold the jug spout low, a centimetre or two above the bed, and pour into the middle in small circles, off the walls. If the last pour is still pooling, wait for it: the clock is there to show you how long it took, not to rush you.':undefined});
+        d:'Pour to '+B(p.to+' g')+'.',
+        pour:{i:i,n:np,at:p.at,to:p.to,note:p.note||'',who:PR.who,end:last?o.end:0,lift:last&&!!PR.lift,wait:p.wait||'bed'},
+        more:i===0?'Hold the spout low, a centimetre or two above the bed, and pour into the middle in small circles, off the walls. If a pour is still pooling at the next time, wait for it: the app counts the wait against the pour that ran long.':undefined});
     });
     s.push(step('off','Swirl and serve','Swirl the jug, then into your cup, about '+B(o.T+' g')+'.'));
     return s;
@@ -842,12 +875,14 @@ function buildSteps(oIn){
 var steps=[],idx=0,left=0,dur=0,running=false,tid=null,elapsed=0,wl=null,ac=null;
 var brewT0=0,tStart=0,tBase=0;
 var actuals=[],stepT0=0,runCalc=null,runMeta=null,runId=null,pourT0=0;
+/* pour-over: when you tapped Bed shows on this pour (0 until then) */
+var bedAt=0;
 /* when a step's timer ran out, so the clock can keep counting past zero (shown as minus time) */
 var tOver0=0, over=0;
 function saveRun(){
   if(!steps.length)return;
   try{localStorage.setItem(RKEY,JSON.stringify({steps:steps,idx:idx,actuals:actuals,brewT0:brewT0,tStart:tStart,tBase:tBase,
-    running:running,dur:dur,stepT0:stepT0,tOver0:tOver0,speed:speed,testMode:testMode,runCalc:runCalc,meta:runMeta,runId:runId,pourT0:pourT0,savedAt:Date.now()}))}catch(e){}
+    running:running,dur:dur,stepT0:stepT0,tOver0:tOver0,speed:speed,testMode:testMode,runCalc:runCalc,meta:runMeta,runId:runId,pourT0:pourT0,bedAt:bedAt,savedAt:Date.now()}))}catch(e){}
 }
 function clearRun(){try{localStorage.removeItem(RKEY)}catch(e){}}
 function readRun(){
@@ -860,7 +895,7 @@ function readRun(){
   return null;
 }
 function resumeRun(r){
-  steps=r.steps; idx=r.idx; actuals=r.actuals||[]; brewT0=r.brewT0; tStart=r.tStart; tBase=r.tBase; runId=r.runId||null; pourT0=r.pourT0||0;
+  steps=r.steps; idx=r.idx; actuals=r.actuals||[]; brewT0=r.brewT0; tStart=r.tStart; tBase=r.tBase; runId=r.runId||null; pourT0=r.pourT0||0; bedAt=r.bedAt||0;
   running=!!r.running; dur=r.dur||0; stepT0=r.stepT0; tOver0=r.tOver0||0; speed=r.speed||1; testMode=!!r.testMode; runCalc=r.runCalc; runMeta=r.meta;
   left=Math.max(0,dur-tBase); cueDone={}; cueQuiet=true; closeRunPanel();
   $('dryflag').classList.toggle('hide',!testMode);
@@ -900,17 +935,21 @@ function paint(){
   var st=steps[idx];
   $('count').textContent=(idx+1)+' of '+steps.length;
   $('stage').textContent=st.t;
+  var bn=runMeta&&runMeta.bean&&runMeta.bean.name; $('brewbean').classList.toggle('hide',!bn); $('brewbean').textContent=bn?'Coffee: '+bn:'';
   $('detail').innerHTML=st.d+(st.ready?' '+readyText(st):'');
   paintWait(); paintGot(); pourAt=-1;
   var mo=$('more'); mo.open=false; mo.classList.toggle('hide',!st.more); $('more-b').innerHTML=st.more||'';
   paintRunBar(); paintRunPanel();
-  var timed=!!st.s;
-  $('timed').classList.toggle('hide',!timed);
+  /* a pour has its own clock, mark and next-pour box (paintPours), one button, and no pause: the coffee keeps draining */
+  var timed=!!st.s, po=!!st.pour;
+  $('detail').classList.toggle('hide',po);
+  $('timed').classList.toggle('hide',!timed||po);
   $('manual').classList.toggle('hide',timed);
-  $('pause').classList.toggle('hide',!timed);
-  $('acts').classList.toggle('two',timed);
+  $('pause').classList.toggle('hide',!timed||po);
+  $('acts').classList.toggle('two',timed&&!po);
   $('next').textContent=idx===steps.length-1?'Finish':'Next';
   var nx=steps[idx+1], u=$('upnext');
+  u.classList.toggle('hide',po);
   if(nx)u.innerHTML='Next \u2014 <b>'+nx.t+'</b>'+(nx.open?'':(nx.s?', '+mmss(nx.s)+' timer':', no timer'));
   else u.textContent='Last step';
   tickPaint();
@@ -925,47 +964,110 @@ function brewSpent(){return pourT0?((Date.now()-pourT0)/1000)*speed:0}
 /* ahead of or behind the recipe's own times, in seconds (positive = behind) */
 function lagText(l){l=Math.round(l);if(Math.abs(l)<3)return 'on time';var a=Math.abs(l),t=a<60?a+' s':mmss(a);return t+(l>0?' behind':' ahead of')}
 function lagSpan(l,who){var t=lagText(l);return t==='on time'?'on time with '+who:'<span class="'+(l>0?'late':'early')+'">'+t+'</span> '+who}
-/* the brew clock: time since the first pour, against the recipe. On a pour it is the larger of how late that pour
-   started and how far past the recipe's next mark you are while the bed drains; on the last pour, against the end. */
-function paintBrewClock(){
-  var el=$('brewclk'), st=steps[idx]||{}, p=st.pour, P=runCalc&&runCalc.pours;
-  if(!P){el.classList.add('hide');return}
-  var R=POUR[(runMeta&&runMeta.recipe)||S.recipe], who=R?R.who:'';
-  var pt=actuals.filter(function(a){return /^pour/.test(a.k)}).reduce(function(x,a){return x+a.actual},0);
-  if(p){
-    if(st.hold&&!running&&!tBase){el.classList.add('hide');return}
-    var now=brewSpent(), start=pourT0?((stepT0-pourT0)/1000)*speed:0, nxt=p.i<p.n-1?P[p.i+1].at:p.end;
-    el.innerHTML='Brew <b>'+mmss(now)+'</b> \u00B7 '+lagSpan(Math.max(start-p.at,now-nxt),who);
-  } else if(pt>0&&idx>0&&steps[idx-1]&&steps[idx-1].pour){
-    var end=R?R.end:0;
-    el.innerHTML='Brew took <b>'+mmss(pt)+'</b> \u00B7 '+lagSpan(pt-end,who)+' ('+mmss(end)+')';
-  } else {el.classList.add('hide');return}
-  el.classList.remove('hide');
+/* The pour-over screen runs on one clock, the brew clock: time since the first pour, which is how recipes are written.
+   Each pour shows the mark to pour to, a timeline of the recipe's pour times against yours, and a box saying what comes
+   next: a countdown to the next pour, or, when a pour runs past the recipe's gap, which pour is slow and what to do.
+   Once a pour starts late, the next one is due the recipe's gap after it (never before the recipe's own time); the
+   lift-off works the same way. Bed shows splits a pour into draining and waiting; past the time, one tap does both.
+   A soft tone sounds only when it is time to pour: the bed has shown and the time has come, a pour the recipe makes on
+   time, or the lift-off. */
+var pourAt=-1, pourPh='';
+function pourStart(){return pourT0?((stepT0-pourT0)/1000)*speed:0}
+function pourGap(P,end,j){return (j<P.length-1?P[j+1].at:end)-P[j].at}
+function pourDue(p,P,S0){var nx=p.i<p.n-1?P[p.i+1].at:p.end;return Math.max(nx,Math.round(S0)+nx-p.at)}
+function secs(v){v=Math.round(Math.abs(v));return v<60?v+' s':mmss(v)}
+function addS(v){return Math.abs(v)<3?'0':(v>0?'+':'−')+secs(v)}
+function behindS(v){return Math.abs(v)<3?'0':(v>0?secs(v):secs(v)+' ahead')}
+function lcFirst(t){return t.charAt(0).toLowerCase()+t.slice(1)}
+/* mine: your pours as {s: when it started, a: how long it ran, null while it runs}, in brew seconds; now: the brew clock or null */
+function pourLine(P,end,lift,mine,now){
+  var span=end; mine.forEach(function(m){span=Math.max(span,m.s+(m.a===null?0:m.a))}); if(now!==null)span=Math.max(span,now);
+  span=span*1.08+5;
+  var X0=14,X1=306,x=function(t){return X0+(X1-X0)*Math.max(0,t)/span},f=function(v){return v.toFixed(1)},h='';
+  h+='<line class="tr" x1="'+X0+'" y1="30" x2="'+X1+'" y2="30"/>';
+  mine.forEach(function(m,j){
+    var g=pourGap(P,end,j), e=m.a===null?now:m.s+m.a;
+    if(e!==null&&e>m.s+g+0.5)h+='<rect class="ov" x="'+f(x(m.s+g))+'" y="25" width="'+f(x(e)-x(m.s+g))+'" height="10"/>';
+  });
+  P.forEach(function(q,j){
+    var g=pourGap(P,end,j), pg=j?pourGap(P,end,j-1):g;
+    h+='<line class="tk" x1="'+f(x(q.at))+'" y1="21" x2="'+f(x(q.at))+'" y2="39"/><text x="'+f(x(q.at))+'" y="13">'+q.to+'</text>'
+      +'<text class="gl'+(g<pg?' gs':'')+'" x="'+f(x(q.at+g/2))+'" y="56">'+g+' s</text>';
+  });
+  h+='<line class="tk end" x1="'+f(x(end))+'" y1="21" x2="'+f(x(end))+'" y2="39"/><text x="'+f(x(end))+'" y="13">'+(lift?'lift':'done')+'</text>';
+  mine.forEach(function(m){h+='<circle class="dot" cx="'+f(x(m.s))+'" cy="30" r="4.5"/>'});
+  if(now!==null)h+='<line class="nowl" x1="'+f(x(now))+'" y1="16" x2="'+f(x(now))+'" y2="44"/>';
+  return '<svg class="pline" viewBox="0 0 320 62" role="img" aria-label="The recipe’s pour times against yours">'+h+'</svg>';
 }
-/* a pour step: the mark to pour to, large; its note where it has one; the brew clock against the recipe's;
-   and the whole schedule underneath. 4:6's last pour chimes at 3:30 to lift the dripper off, or 45 s after
-   the last pour began if it began late. */
-var pourAt=-1;
+/* after the pours: per pour, the recipe's gap, how long yours ran (and when the bed showed, if you then waited), what that
+   pour added, and how far behind the recipe it left you, which is the running total of what the pours added */
+function pourSummary(P,end,lift,who,recs,head){
+  recs=recs.slice(0,P.length);
+  var s=0, mine=[], h='';
+  var rows=recs.map(function(r,j){var g=pourGap(P,end,j);mine.push({s:s,a:r.actual});s+=r.actual;
+    return {j:j,g:g,a:r.actual,bed:r.bed,add:r.actual-g,behind:s-(j<P.length-1?P[j+1].at:end)}});
+  if(head&&rows.length===P.length)h+='<p class="phead">Brew took <b>'+mmss(s)+'</b> · '+lagSpan(s-end,who)+' ('+mmss(end)+')</p>';
+  h+=pourLine(P,end,lift,mine,null);
+  h+='<table class="ptab"><tr><th>Pour</th><th>'+esc(who)+'</th><th>Yours</th><th>Added</th><th>Behind</th></tr>';
+  rows.forEach(function(r){
+    var w=r.bed!==undefined&&r.a-r.bed>=3;
+    h+='<tr><td>'+(r.j+1)+(r.j===P.length-1&&lift?' · lift':'')+'</td><td>'+secs(r.g)+'</td><td>'+secs(r.a)+(w?'<span class="pw">bed at '+secs(r.bed)+'</span>':'')+'</td>'
+      +'<td'+(r.add>=3?' class="late"':'')+'>'+addS(r.add)+'</td><td>'+behindS(r.behind)+'</td></tr>';
+  });
+  return h+'</table>';
+}
+/* a logged brew's pours, when it was made with one step per pour */
+function entryPours(e){
+  var R=POUR[e.recipe]; if(!R||!e.calc)return '';
+  var P=R.pours(e.calc.press,e.calc.dose), recs=(e.steps||[]).filter(function(x){return /^pour/.test(x.k)});
+  if(!recs.length||recs.length>P.length||(recs.length<P.length&&!e.unfinished))return '';
+  return '<div class="pours sum inlog">'+pourSummary(P,R.end,!!R.lift,R.who,recs,!e.unfinished)+'</div>';
+}
 function paintPours(force){
-  var st=steps[idx], el=$('pours'), p=st&&st.pour;
-  if(!p){el.classList.add('hide');el.innerHTML='';pourAt=-1;return}
+  var st=steps[idx], el=$('pours'), p=st&&st.pour, P=runCalc&&runCalc.pours, R=POUR[(runMeta&&runMeta.recipe)||S.recipe]||{};
+  var prev=idx>0&&steps[idx-1]&&steps[idx-1].pour;
+  if(!P||(!p&&!prev)){el.classList.add('hide');el.innerHTML='';pourAt=-1;return}
   el.classList.remove('hide');
-  /* a late last pour still gets the recipe's gap (2:45 to 3:30) before the lift-off, so the pour is never skipped */
-  var bt=brewSpent(), start=pourT0?((stepT0-pourT0)/1000)*speed:0, liftAt=Math.max(p.end,Math.round(start)+p.end-p.at),
-      lift=p.lift&&bt>=liftAt, ph=lift?1:0;
-  if(force||ph!==pourAt){
-    if(ph>pourAt&&pourAt>=0&&!cueQuiet)chime();
-    pourAt=ph;
-    var all=(runCalc&&runCalc.pours)||[];
-    el.innerHTML=(lift?'<p class="pnow"><b>Lift the dripper off</b></p><p class="pt">If it is still dripping. Tap Next when it is done.</p>'
-        :'<p class="pnow">Pour to <b>'+p.to+' g</b></p>'+(p.note?'<p class="pt">'+esc(p.note)+'</p>':''))
-      +'<p class="pnext" id="pnext"></p>'
-      +'<ol class="plist">'+all.map(function(q,i){return '<li class="'+(i<p.i?'done':(i===p.i?'cur':''))+'"><span class="when">'+mmss(q.at)+'</span> to <b>'+q.to+' g</b></li>'}).join('')
-      +(p.lift?'<li class="'+(lift?'cur':'')+'"><span class="when">'+mmss(liftAt)+'</span> lift the dripper off</li>':'')+'</ol>';
+  var end=runCalc.end||R.end||0, recs=actuals.filter(function(a){return /^pour/.test(a.k)});
+  if(!p){
+    if(force||pourAt!=='sum'){pourAt='sum';el.className='pours sum';el.innerHTML=pourSummary(P,end,!!R.lift,R.who||'',recs,true)}
+    return;
   }
-  var pn=$('pnext'); if(!pn)return;
-  if(st.hold&&!running&&!tBase)pn.textContent='Tap Start as the water hits the coffee.';
-  else pn.textContent=(p.i===0?p.who+' starts here':p.who+' pours this at '+mmss(p.at))+(p.end&&!p.lift?', done by about '+mmss(p.end):'');
+  if(force||pourAt!=='live'){
+    pourAt='live'; el.className='pours';
+    el.innerHTML='<div class="pclock"><b id="pc-t">0:00</b><span id="pc-c"></span></div>'
+      +'<p class="pnow">Pour to <b>'+p.to+' g</b></p>'+(p.note?'<p class="pt">'+esc(p.note)+'</p>':'')
+      +'<div id="p-line"></div><div class="pbox" id="p-box"><p class="pb1" id="p-b1"></p><p class="pb2" id="p-b2"></p></div><p class="plag" id="p-lag"></p>';
+  }
+  var started=!(st.hold&&!running&&!tBase), t=started?brewSpent():0, S0=pourStart(), last=p.i===p.n-1, nx=last?null:P[p.i+1],
+      M=pourDue(p,P,S0), g=pourGap(P,end,p.i), who=p.who, b=bedAt&&pourT0?((bedAt-pourT0)/1000)*speed:-1,
+      go=nx?'Start '+(nx.btn||('pour '+(p.i+2))):'', inn='In '+mmss(Math.max(0,Math.ceil(M-t))), ph, b1, b2='', cls='', act;
+  if(!started){ph='hold';b1='Tap Start as the water hits the coffee.';act='Start'}
+  else if(last){
+    if(t<M){ph='e0';b1=(p.lift?'Lift the dripper off at ':'Done by about ')+mmss(M);b2=inn+'. Tap Drained when the water has gone through.';act='Drained'}
+    else if(p.lift){ph='lift';cls='now';b1='Lift the dripper off now';b2='If it is still dripping. Then tap Lifted off.';act='Lifted off'}
+    else{ph='slow';cls='late';b1='Draining slowly: '+mmss(t-S0);b2=who+' is done by about '+mmss(p.end)+'. '+(R.slow||'')+' Then tap Drained.';act='Drained'}
+  }
+  else if((p.wait||'bed')==='time'){
+    if(t<M){ph='t0';b1='Next: '+lcFirst(nx.t)+' to '+nx.to+' g at '+mmss(M);b2=inn+'.';act=go}
+    else{ph='t1';cls='now';b1='Pour now: '+lcFirst(nx.t)+' to '+nx.to+' g';b2='Tap '+go+' as you begin.';act=go}
+  }
+  else if(b<0){
+    if(t<M){ph='d0';b1='Next: pour to '+nx.to+' g at '+mmss(M);b2=inn+'. Tap Bed shows when the water has gone down.';act='Bed shows'}
+    else{ph='slow';cls='late';b1='Pour '+(p.i+1)+' is draining slowly: '+mmss(t-S0);b2=who+' allows '+g+' s. '+(R.slow||'');act=go}
+  }
+  else if(t<M){ph='b0';b1='Next: pour to '+nx.to+' g at '+mmss(M);b2='Bed showed at '+mmss(b)+'. '+inn+': wait for '+who+'’s time.';act=go}
+  else{ph='b1';cls='now';b1='Pour now: to '+nx.to+' g';b2='Tap '+go+' as you begin.';act=go}
+  if(pourPh&&ph!==pourPh&&(ph==='b1'||ph==='t1'||ph==='lift'))chime();
+  pourPh=ph;
+  var mine=[], s=0; recs.forEach(function(r){mine.push({s:s,a:r.actual});s+=r.actual});
+  if(started)mine.push({s:S0,a:null});
+  $('pc-t').textContent=mmss(t);
+  $('pc-c').textContent=started?'Brew clock, from your first pour':'Starts when you tap Start';
+  $('p-line').innerHTML=pourLine(P,end,!!R.lift,mine,started?t:null);
+  $('p-box').className='pbox'+(cls?' '+cls:''); $('p-b1').textContent=b1; $('p-b2').textContent=b2;
+  $('p-lag').innerHTML=started?'Overall '+lagSpan(Math.max(S0-p.at,t-(nx?nx.at:p.end)),who):'';
+  var nb=$('next'); if(nb.textContent!==act)nb.textContent=act;
 }
 function tickPaint(){
   var c=$('clock'), cs=steps[idx];
@@ -973,12 +1075,12 @@ function tickPaint(){
     c.textContent=mmss(stepSpent());
     c.className='clock up'+(over>0&&!cs.open?' over':'');
   } else {
-    c.textContent=over>0?'\u2212'+mmss(over):mmss(left);
+    c.textContent=over>0?'−'+mmss(over):mmss(left);
     c.className='clock'+(left<=0?' done':(left<=10?' low':''))+(over>0?' over':'');
   }
-  paintPours(false); paintBrewClock();
+  paintPours(false);
   $('bar').style.width=dur?Math.min(100,((dur-left)/dur)*100)+'%':'0%';
-  $('total').textContent='Total elapsed '+mmss(elapsed);
+  $('total').textContent=(runCalc&&runCalc.pours?'Since you began ':'Total elapsed ')+mmss(elapsed);
   var rl=document.getElementById('rp-left'); if(rl)rl.textContent=leftText();
 }
 function loop(){
@@ -1141,7 +1243,7 @@ $('got').addEventListener('input',function(){
 function go(i){
   idx=i; var st=steps[idx];
   dur=st.s?st.s:0; left=dur; running=!!st.s&&!st.hold; tBase=0; tStart=Date.now();
-  stepT0=Date.now(); cueDone={}; cueQuiet=true; tOver0=0; over=0;
+  stepT0=Date.now(); cueDone={}; cueQuiet=true; tOver0=0; over=0; bedAt=0; pourPh='';
   if(st.pour&&running&&!pourT0)pourT0=Date.now();
   if(st.long)unlock(); else if(!wl)lock();
   $('pause').textContent=st.hold?'Start':'Pause';
@@ -1149,7 +1251,10 @@ function go(i){
 }
 function leaveStep(){
   var st=steps[idx];
-  actuals.push({k:st.k,t:st.t,target:st.s||0,actual:((Date.now()-stepT0)/1000)*speed});
+  var a={k:st.k,t:st.t,target:st.s||0,actual:((Date.now()-stepT0)/1000)*speed};
+  /* a pour where you tapped Bed shows and then waited: how long it took to drain, apart from the wait */
+  if(st.pour&&bedAt)a.bed=((bedAt-stepT0)/1000)*speed;
+  actuals.push(a);
 }
 function startBrew(isTest){
   /* a brew left half-done is replaced: if it had reached the log, it stays there, unfinished */
@@ -1193,7 +1298,7 @@ function brewEntry(id){
     log:{temp:null,decant:(runCalc&&runCalc.got)||null,score:null,tastes:[],faults:[],note:''}};
 }
 function calcOf(o){return {boil:o.boil,vedica:o.ved,ro:o.ro,dose:o.D,press:o.press,decant:Math.round(o.decant),jug:o.Y,pour:Math.round(o.recipe==='viet'?o.conc:o.T),ice:o.ice||0,milk:o.milk||0,cm:o.cm||0}}
-function stepRecs(a){return (a||[]).map(function(x){return {k:x.k,t:x.t,target:Math.round(x.target),actual:Math.round(x.actual)}})}
+function stepRecs(a){return (a||[]).map(function(x){var r={k:x.k,t:x.t,target:Math.round(x.target),actual:Math.round(x.actual)};if(x.bed!==undefined)r.bed=Math.round(x.bed);return r})}
 function fillEntry(e){
   e.steps=stepRecs(actuals); e.contact=Math.round(contactOf(actuals));
   e.total=Math.round(((Date.now()-brewT0)/1000)*speed);
@@ -1276,7 +1381,9 @@ function openReview(id,notice,fresh){
   $('rv-temp').setAttribute('data-def',String(servedCold(e.recipe)?6:(lastT||58)));
   $('rv-note').value=l.note||'';
   $('rv-wt').value=(e.params&&e.params.temp!==undefined)?e.params.temp:S.temp;
-  rvScore=l.score||0; rvFaults={}; rvTastes={}; rvShare=(l.share!==undefined&&l.share!==null)?l.share:1;
+  rvScore=l.score||0; rvLike=l.like||0; rvFaults={}; rvTastes={}; rvShare=(l.share!==undefined&&l.share!==null)?l.share:1;
+  /* the coffee can be fixed here if the wrong pack was in use; a cup of someone else's brew keeps theirs */
+  rvBean=brewPack(e)||''; $('rv-bean-wrap').classList.toggle('hide',cup); $('rv-bean').innerHTML=cup?'':packChoices(e);
   (l.faults||[]).forEach(function(f){rvFaults[f]=1}); (l.tastes||[]).forEach(function(t){rvTastes[t]=1});
   var sk=$('skip'); sk.removeAttribute('data-armed'); sk.innerHTML=skipLabel();
   $('rv-steps').open=false; $('rv-steps-body').innerHTML=cup?'':stepEditHTML(e,'rs');
@@ -1284,7 +1391,8 @@ function openReview(id,notice,fresh){
   if(dr&&(dr.at||0)>(e.rev||0)){
     ['wt','jug','temp','dec','fin'].forEach(function(k){if(dr[k]!==undefined)$('rv-'+k).value=dr[k]});
     if(dr.note!==undefined)$('rv-note').value=dr.note;
-    if(dr.share!==undefined)rvShare=dr.share; if(dr.score)rvScore=dr.score;
+    if(dr.share!==undefined)rvShare=dr.share; if(dr.score)rvScore=dr.score; if(dr.like)rvLike=dr.like;
+    if(dr.bean&&!cup&&packById(dr.bean)){rvBean=dr.bean;$('rv-bean').value=dr.bean}
     if(dr.tastes)rvTastes=dr.tastes; if(dr.faults)rvFaults=dr.faults;
     if(dr.with&&!cup)rvWith=dr.with;
   }
@@ -1298,7 +1406,7 @@ function deleteEntry(id,isTest){
   if(cup){cup.skipped=true;delete cup.pending;cup.log=cup.log||{};cup.log.share=0;cup.rev=Date.now();cup.synced=false;saveL();pushPending();return}
   LOG=LOG.filter(function(x){return String(x.id)!==did});saveL();DEL.push(did);saveDel();pushPending();
 }
-var rvScore=0, rvFaults={}, rvTastes={}, rvShare=1, rvWith={}, rvShareAuto=false;
+var rvScore=0, rvLike=0, rvBean='', rvFaults={}, rvTastes={}, rvShare=1, rvWith={}, rvShareAuto=false;
 function rname(e){var r=RECIPES[(e&&e.recipe)||'black'];return r?r.name:'Black'}
 function skipLabel(){return RV&&RV.cup?'Didn’t have any':'Discard'}
 /* grams of finished drink the brew made: the whole glass for Vietnamese, the cup for everything else */
@@ -1333,6 +1441,8 @@ function paintReview(){
   Array.prototype.forEach.call($('rv-score').children,function(b){
     b.setAttribute('aria-pressed',String(rvScore>0&&Number(b.dataset.v)===Math.round(rvScore)));
   });
+  $('rv-lval').textContent=rvLike?rvLike+' / 5':'not scored yet';
+  Array.prototype.forEach.call($('rv-like').children,function(b){b.setAttribute('aria-pressed',String(Number(b.dataset.v)===rvLike))});
   syncChips($('rv-faults'),FAULTS,'f',String,function(f){return rvFaults[f]});
   syncChips($('rv-tastes'),TASTES,'t',String,function(f){return rvTastes[f]});
   if(!$('rv-with-wrap').classList.contains('hide')){
@@ -1367,6 +1477,8 @@ $('rv-score').addEventListener('click',function(e){
   rvScore=Number(b.dataset.v); paintReview();
 });
 $('rv-fine').addEventListener('input',function(){rvScore=Math.round(parseFloat(this.value)*10)/10;paintReview()});
+$('rv-like').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;var v=Number(b.dataset.v);rvLike=rvLike===v?0:v;paintReview()});
+$('rv-bean').addEventListener('change',function(){rvBean=this.value;saveDraftSoon()});
 $('rv-faults').addEventListener('click',function(e){
   var b=e.target.closest('button'); if(!b)return;
   var f=b.dataset.f; if(rvFaults[f])delete rvFaults[f]; else rvFaults[f]=1;
@@ -1379,7 +1491,7 @@ function saveDraftSoon(){
   if(!RV)return; var id=RV.id; clearTimeout(draftT);
   draftT=setTimeout(function(){if(!RV||String(RV.id)!==String(id))return;
     try{localStorage.setItem('fp.rvdraft'+WHO.suffix+'.'+id,JSON.stringify({at:Date.now(),wt:$('rv-wt').value,jug:$('rv-jug').value,temp:$('rv-temp').value,dec:$('rv-dec').value,fin:$('rv-fin').value,
-      note:$('rv-note').value,share:rvShare,score:rvScore,tastes:rvTastes,faults:rvFaults,with:rvWith}))}catch(e){}},250);
+      note:$('rv-note').value,share:rvShare,score:rvScore,like:rvLike,bean:rvBean,tastes:rvTastes,faults:rvFaults,with:rvWith}))}catch(e){}},250);
 }
 $('sc-review').addEventListener('input',saveDraftSoon);
 function saveReview(){
@@ -1390,7 +1502,8 @@ function saveReview(){
   var jv=parseFloat($('rv-jug').value), fin=Math.round(Number($('rv-fin').value))||null;
   e.log={temp:Number($('rv-temp').value)||null, decant:Number($('rv-dec').value)||null, fin:fin||undefined,
          jug:(e.recipe==='iced'&&!isNaN(jv))?jv:undefined,
-         score:rvScore||null, tastes:tl, faults:fl, note:$('rv-note').value.trim(), share:Math.round(rvShare*1000)/1000, drank:drinkTotal(e,fin||0)?Math.round(rvShare*drinkTotal(e,fin||0)):undefined};
+         score:rvScore||null, like:rvLike||undefined, tastes:tl, faults:fl, note:$('rv-note').value.trim(), share:Math.round(rvShare*1000)/1000, drank:drinkTotal(e,fin||0)?Math.round(rvShare*drinkTotal(e,fin||0)):undefined};
+  if(!e.ref&&rvBean)setBrewPack(e,rvBean);
   if(!e.test&&!e.ref){
     var w=Object.keys(rvWith).filter(function(pid){return othersList().some(function(p){return p.id===pid})});
     if(w.length)e.with=w; else delete e.with;
@@ -1613,9 +1726,11 @@ function entryDetail(e,editing){
     h+='<p class="note" style="margin:0 0 10px;color:var(--steel)">'+(lv?'In progress':'Unfinished')+': '+n+(e.planned?' of '+e.planned:'')+' step'+((e.planned||n)===1?'':'s')+' done'
       +(lv?'. It updates as you go.':'. Score it like any other brew, or delete it.')+'</p>';
   }
-  if(isPour(e.recipe)&&e.contact&&!e.unfinished){
-    var PR=POUR[e.recipe];
-    h+='<p class="note" style="margin:0 0 10px;color:var(--steel)">Brew took '+mmss(e.contact)+' \u00B7 '+lagText(e.contact-PR.end)+(lagText(e.contact-PR.end)==='on time'?' with ':' ')+PR.who+' ('+mmss(PR.end)+')</p>';
+  if(isPour(e.recipe)&&e.contact){
+    /* one step per pour: the timeline and per-pour table; brews from before that get the one line */
+    var PR=POUR[e.recipe], ph=entryPours(e);
+    if(ph)h+=ph;
+    else if(!e.unfinished)h+='<p class="note" style="margin:0 0 10px;color:var(--steel)">Brew took '+mmss(e.contact)+' \u00B7 '+lagText(e.contact-PR.end)+(lagText(e.contact-PR.end)==='on time'?' with ':' ')+PR.who+' ('+mmss(PR.end)+')</p>';
   }
   h+='<table><tr><th>Step</th><th>Target</th><th>Actual</th><th>Drift</th></tr>';
   e.steps.forEach(function(s){
@@ -1684,19 +1799,22 @@ function expand(id){var w=$('dt-'+id),en=findEntry(id);if(!w||!en)return;w.inner
 var ED=null;
 function editForm(e){
   var l=e.log||{}, cup=!!e.ref;
-  ED={id:e.id,score:l.score||0,faults:{},tastes:{},share:(l.share!==undefined&&l.share!==null)?l.share:1,total:drinkTotal(e),with:{}};
+  ED={id:e.id,score:l.score||0,like:l.like||0,faults:{},tastes:{},share:(l.share!==undefined&&l.share!==null)?l.share:1,total:drinkTotal(e),with:{}};
   (l.faults||[]).forEach(function(f){ED.faults[f]=1});
   (l.tastes||[]).forEach(function(f){ED.tastes[f]=1});
   (e.with||[]).forEach(function(pid){ED.with[pid]=1});
   return '<div class="edit">'
+    +(cup?'':'<label class="lab" for="ed-bean">Coffee</label><select id="ed-bean" class="tin">'+packChoices(e)+'</select>')
     +(cup||coldBase(e.recipe)?'':'<label class="lab" for="ed-wt">Water &deg;C</label>'+stpH('ed-wt',e.params&&e.params.temp,0.5,60,100,'','water temperature',S.temp))
     +'<label class="lab" for="ed-ct">Cup &deg;C at first sip</label>'+stpH('ed-ct',l.temp,1,0,95,'not taken','cup temperature',servedCold(e.recipe)?6:58)
     +((e.recipe==='iced'&&!cup)?'<label class="lab" for="ed-jg">Jug &deg;C after stirring</label>'+stpH('ed-jg',l.jug,0.5,0,40,'not taken','jug temperature',8):'')
     +(cup||isPour(e.recipe)?'':'<label class="lab" for="ed-dc">Grams actually decanted</label>'+stpH('ed-dc',l.decant,1,0,900,'','grams decanted',e.calc&&e.calc.decant))
     +(cup?'':'<label class="lab" for="ed-fn">Final drink in the glass, grams</label>'+stpH('ed-fn',l.fin,1,0,3000,'not weighed','final drink grams',drinkTotal(e,0)||''))
-    +'<label class="lab" for="ed-fine">Overall <span class="sval" id="ed-val"></span></label><div class="scale" id="ed-sc" role="group" aria-label="Score">'
+    +'<label class="lab" for="ed-fine">How it came out <span class="sval" id="ed-val"></span></label><div class="scale" id="ed-sc" role="group" aria-label="How it came out">'
     +[1,2,3,4,5].map(function(v){return '<button data-esc="'+v+'" aria-pressed="false">'+v+'</button>'}).join('')+'</div>'
     +'<div class="fine"><input type="range" id="ed-fine" min="1" max="5" step="0.1" value="3"><span class="fh">slide to fine-tune</span></div>'
+    +'<label class="lab">How much you liked it <span class="sval" id="ed-lval"></span></label><div class="scale" id="ed-lk" role="group" aria-label="How much you liked it">'
+    +[1,2,3,4,5].map(function(v){return '<button data-elk="'+v+'" aria-pressed="false">'+v+'</button>'}).join('')+'</div>'
     +((e.test||cup||!othersList().length)?'':'<label class="lab">Shared this carafe with</label><div class="chips" id="ed-with"></div>')
     +(e.test?'':'<label class="lab">How much of this brew did you drink</label><div class="chips" id="ed-sh"></div>'
       +'<label class="sr" for="ed-drank">Grams you drank</label>'+stpH('ed-drank',null,5,0,drinkTotal(e)||null,'grams','grams you drank',null)
@@ -1718,6 +1836,8 @@ function edPaint(){
   if($('ed-val'))$('ed-val').textContent=ED.score?fmtScore(ED.score)+' / 5':'not scored';
   if($('ed-fine')&&document.activeElement!==$('ed-fine'))$('ed-fine').value=ED.score||3;
   if(sc)Array.prototype.forEach.call(sc.children,function(b){b.setAttribute('aria-pressed',String(ED.score>0&&Number(b.dataset.esc)===Math.round(ED.score)))});
+  if($('ed-lval'))$('ed-lval').textContent=ED.like?ED.like+' / 5':'not scored';
+  if($('ed-lk'))Array.prototype.forEach.call($('ed-lk').children,function(b){b.setAttribute('aria-pressed',String(Number(b.dataset.elk)===ED.like))});
   var ts=$('ed-ts');
   if(ts){
     var allT=TASTES.slice(); for(var t in ED.tastes)if(allT.indexOf(t)<0)allT.push(t);
@@ -1750,6 +1870,8 @@ function saveEdit(id){
   if($('ed-with')){var w=Object.keys(ED.with).filter(function(pid){return othersList().some(function(p){return p.id===pid})});if(w.length)e.with=w;else delete e.with}
   if($('ed-jg')){var jg=parseFloat($('ed-jg').value);e.log.jug=isNaN(jg)?null:jg}
   e.log.score=ED.score||null;
+  if(ED.like)e.log.like=ED.like; else delete e.log.like;
+  if($('ed-bean')&&$('ed-bean').value)setBrewPack(e,$('ed-bean').value);
   var fl=[]; FAULTS.forEach(function(f){if(ED.faults[f])fl.push(f)});
   for(var f in ED.faults)if(FAULTS.indexOf(f)<0)fl.push(f);
   e.log.faults=fl;
@@ -1933,7 +2055,7 @@ function openLog(v){
   var live=isT?'':liveRunId();
   function scText(e,l){
     if(String(e.id)===live)return 'In progress';
-    var s=l.score?fmtScore(l.score)+'/5':(e.pending?'Not scored':'');
+    var s=l.score?fmtScore(l.score)+'/5'+(l.like?' \u00B7 liked '+l.like:''):(e.pending?'Not scored':'');
     return e.unfinished?'Unfinished'+(s?' · '+s:''):s;
   }
   list.innerHTML=arr.map(function(e){
@@ -1956,6 +2078,7 @@ $('log-list').addEventListener('click',function(e){
   if((x=e.target.closest('[data-edit]'))){openEdit(x.dataset.edit);return}
   if((x=e.target.closest('[data-esh]'))){if(ED){ED.share=parseFloat(x.dataset.esh);edPaint()}return}
   if((x=e.target.closest('[data-esc]'))){if(ED){ED.score=Number(x.dataset.esc);edPaint()}return}
+  if((x=e.target.closest('[data-elk]'))){if(ED){var lv=Number(x.dataset.elk);ED.like=ED.like===lv?0:lv;edPaint()}return}
   if((x=e.target.closest('[data-et]'))){if(ED){var et=x.dataset.et;if(ED.tastes[et])delete ED.tastes[et];else ED.tastes[et]=1;edPaint()}return}
   if((x=e.target.closest('[data-ef]'))){if(ED){var ef=x.dataset.ef;if(ED.faults[ef])delete ED.faults[ef];else ED.faults[ef]=1;edPaint()}return}
   if((x=e.target.closest('[data-ewp]'))){if(ED){var wp=x.dataset.ewp;if(ED.with[wp])delete ED.with[wp];else ED.with[wp]=1;edPaint()}return}
@@ -2016,6 +2139,10 @@ $('pause').addEventListener('click',function(){
   ctx();loop();saveRun();
 });
 $('next').addEventListener('click',function(){
+  var st=steps[idx]||{}, now=Date.now();
+  /* on a pour the one button starts the clock, marks the bed showing, or starts the next pour: whatever it says now */
+  if(st.pour&&st.hold&&!running&&!tBase){tStart=now;stepT0=now;running=true;if(!pourT0)pourT0=now;pourPh='';ctx();loop();saveRun();return}
+  if(st.pour&&pourPh==='d0'){bedAt=now;loop();saveRun();return}
   leaveStep();
   if(idx<steps.length-1){go(idx+1);keepEntry()} else finishBrew();
 });
@@ -2091,6 +2218,11 @@ $('pack-done').addEventListener('click',function(){
   });
 });
 $('pack-pick').addEventListener('click',function(e){var b=e.target.closest('[data-pk]');if(!b)return;PK.active=b.dataset.pk;touchPK()});
+$('pack-sel').addEventListener('change',function(){
+  var v=this.value;
+  if(v==='__new'){$('packbox').open=true;openPackForm('new');paintPack();$('pack-form').scrollIntoView({block:'start'});return}
+  if(v){PK.active=v;touchPK()}
+});
 $('pack-old-list').addEventListener('click',function(e){
   var b=e.target.closest('[data-reopen]'); if(!b)return;
   var p=packById(b.dataset.reopen); if(!p)return;
