@@ -21,6 +21,7 @@ test('the V60 recipes sit in their own group with water-to-pour numbers and no f
   await expect(num(page, 'Coffee')).toHaveText('20 g');
   await expect(num(page, 'Water to pour')).toHaveText('300 g');
   await expect(num(page, 'Pours')).toHaveText('5 × 60 g, the last at 2:45');
+  await expect(num(page, 'Time to pour')).toHaveText('about 10 s each');
   await expect(num(page, 'Lift the dripper off at')).toHaveText('3:30');
   await expect(num(page, 'In the cup')).toHaveText('about 260 g');
   await expect(num(page, 'Boil')).toHaveText('350 g');
@@ -30,6 +31,7 @@ test('the V60 recipes sit in their own group with water-to-pour numbers and no f
   await pick(page, 'V60 double bloom');
   await expect(num(page, 'Coffee')).toHaveText('15 g');
   await expect(num(page, 'Pours')).toHaveText('45 g, 45 g, then to 225 g');
+  await expect(num(page, 'Time to pour')).toHaveText('about 6, 6 and 13 s');
   await expect(num(page, 'Done by about')).toHaveText('2:15');
   await expect(num(page, 'In the cup')).toHaveText('about 195 g');
   expect(await noOverflow(page)).toBe(true);
@@ -44,6 +46,34 @@ async function nextPour(page) {
   if ((await page.locator('#next').innerText()) === 'Bed shows') await page.click('#next');
   await page.click('#next');
 }
+
+test('while a pour goes in, the box says what the scale should read at the recipe\'s pace and when to be done', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('fp.v1', JSON.stringify({ dspeed: 2 })));   /* the slowest dry run */
+  await page.goto('./');
+  await pick(page, 'V60 4:6');
+  await page.click('#dry');
+  await page.click('#next'); await page.click('#next');
+  await expect(page.locator('#p-b2')).toHaveText('Then pour to 60 g in about 10 s.');
+  /* the recipe's pouring windows on the timeline, one per pour */
+  await expect(page.locator('#pours .pline .pw')).toHaveCount(5);
+  await page.click('#next');                       /* Start */
+  await expect(page.locator('#p-box')).toHaveClass(/pouring/);
+  await expect(page.locator('#p-b1')).toHaveText(/^Scale should read \d+ g$/);
+  await expect(page.locator('#p-b2')).toHaveText('Pour to 60 g by 0:10, about 6 g a second.');
+  await page.waitForTimeout(1500);
+  const g = Number((await page.locator('#p-b1').innerText()).match(/(\d+) g/)[1]);
+  expect(g).toBeGreaterThanOrEqual(6);
+  expect(g).toBeLessThanOrEqual(40);
+  await expect(page.locator('#next')).toHaveText('Bed shows');   /* the button keeps its job while pouring */
+  expect(await noOverflow(page)).toBe(true);
+  /* double bloom: the blooms at about 8 g a second */
+  await page.click('#abandon'); if (await page.isVisible('#abandon')) await page.click('#abandon');
+  await pick(page, 'V60 double bloom');
+  await page.click('#dry');
+  await page.click('#next'); await page.click('#next');
+  await page.click('#next');
+  await expect(page.locator('#p-b2')).toHaveText('Pour to 45 g by 0:06, about 8 g a second.');
+});
 
 test('4:6 runs on one brew clock: Start, Bed shows, waiting for the time, a slow pour, a late pour, lift-off, then the summary', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('fp.v1', JSON.stringify({ dspeed: 20 })));
@@ -96,9 +126,11 @@ test('4:6 runs on one brew clock: Start, Bed shows, waiting for the time, a slow
   await expect(pours.locator('.pline .ov').first()).toBeVisible();
   await expect(page.locator('#p-lag')).toContainText(/\d+ s behind Kasuya/);
   expect(await noOverflow(page)).toBe(true);
+  await page.waitForTimeout(500);                           /* let pour 2 run clearly long */
   await next.click();
   await expect(page.locator('#stage')).toHaveText('Pour 3 of 5');
   /* late now: the next pour is due the recipe's gap after this one, so the countdown still means something */
+  await expect(b1).toHaveText(/^Next: pour to 240 g at \d+:\d\d$/);     /* once the pour itself is in */
   const due = sec((await b1.innerText()).match(/at (\d+:\d\d)$/)[1]);
   expect(due).toBeGreaterThan(135);
   for (const t of ['Pour 4 of 5', 'Pour 5 of 5']) { await nextPour(page); await expect(page.locator('#stage')).toHaveText(t); }
@@ -131,6 +163,7 @@ test('a last pour that starts after 3:30 still says to pour, and the lift-off co
   for (let i = 0; i < 4; i++) await nextPour(page);
   await expect(page.locator('#stage')).toHaveText('Pour 5 of 5');
   await expect(page.locator('#pours .pnow')).toHaveText('Pour to 300 g');
+  await expect(page.locator('#p-b1')).toHaveText(/^Lift the dripper off at \d+:\d\d$/);
   const at = (await page.locator('#p-b1').innerText()).match(/^Lift the dripper off at (\d+:\d\d)$/);
   expect(at).not.toBeNull();
   expect(sec(at[1])).toBeGreaterThan(210 + 45);

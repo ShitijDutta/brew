@@ -79,6 +79,11 @@ picker:
     recipe's gap without the bed showing, which pour is slow and what to do ("Pour 3 is draining slowly: 0:52. Kasuya allows
     45 s. Wait for the bed, then pour."). Once a pour starts late, the next is due the recipe's gap after it, never before the
     recipe's own time; the lift-off works the same way. Below it, how far behind or ahead of the recipe the whole brew is.
+  - **The pour's own pace.** While the water goes in, the box says what the scale should read at the recipe's pace
+    ("Scale should read 23 g", climbing) and when to be done ("Pour to 45 g by 0:06, about 8 g a second"); the timeline
+    shows each pour's window. 4:6 pours 60 g in about 10 s (a Japanese retailer's guide to the method; Kasuya himself
+    gives only the 45 s drain); the double bloom's blooms go at about 8 g/s and the main pour at about 10.5 g/s (write-ups
+    of Hedrick's video). The time scales with the amount, and the recipe screen lists it under *Time to pour*.
   - **One button** that says what it does: *Bed shows*, then *Start pour 4*. Tapping Bed shows before the recipe's time
     makes you wait for it; after the time, one tap does both. 4:6 pours wait for the bed; the double bloom's blooms go on
     time. The last pour ends with *Drained* or, for 4:6, *Lifted off*.

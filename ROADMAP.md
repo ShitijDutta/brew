@@ -14,6 +14,9 @@ Roughly in the order they would help.
 
 ## Done
 
+- **Pour pace.** Each V60 pour shows what the scale should read at the recipe's pace and when to be done, with the
+  pouring windows on the timeline and *Time to pour* on the recipe screen.
+
 - **V60 pour screen on one clock.** Brew clock from the first pour, a timeline of the recipe's pours against yours, a
   next-pour box that counts down, names a slow pour and says what to do, and one button (*Bed shows*, *Start pour N*);
   the next pour is due the recipe's gap after a late one; a per-pour summary after the pours and in the log.

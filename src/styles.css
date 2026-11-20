@@ -416,6 +416,9 @@ details.newdrinks>summary{font-size:14px;color:var(--steel)}
 .pline .gl{fill:var(--faint)}
 .pline .gl.gs{fill:var(--warn);font-weight:600}
 .pline .ov{fill:var(--warn);opacity:.45}
+.pline .pw{fill:var(--acc);opacity:.35}
+.pbox.pouring{background:var(--acc-soft)}
+.pbox.pouring .pb1{color:var(--acc);font-size:20px}
 .pline .dot{fill:var(--acc)}
 .pline .nowl{stroke:var(--ink);stroke-width:2}
 .pbox{border-radius:10px;padding:10px 12px;background:var(--panel);margin:4px 0 0}

@@ -420,18 +420,23 @@ var RECIPES={
    t = step title, note = shown only where it matters, btn = what the button says to start it ("Start pour 2").
    wait = what the next pour waits for: 'bed' (pour once the bed shows, at the recipe's time at the earliest) or 'time'
    (pour at the recipe's time, bed or not). end = when the recipe is done (4:6 lifts the dripper off then).
-   slow = what to do when a pour drains slower than the recipe's gap. */
+   slow = what to do when a pour drains slower than the recipe's gap. rate = how fast the recipe pours, in g a second
+   (4:6: 60 g in about 10 s, from a Japanese retailer's guide to it; double bloom: about 8 g/s for the blooms and
+   10-11 g/s for the main pour, from write-ups of Hedrick's video), so the pour's own time scales with the amount. */
 var POUR={
   v_46:{who:'Kasuya',end:210,lift:true,slow:'Wait for the bed, then pour. The pours stay the same; the brew just ends later.',
     pours:function(W){var at=[0,45,90,135,165],p=[];
-    for(var i=0;i<5;i++)p.push({at:at[i],to:Math.round(W*(i+1)/5),t:'Pour '+(i+1)+' of 5'+(i?'':': the bloom'),btn:'pour '+(i+1),wait:'bed',
+    for(var i=0;i<5;i++)p.push({at:at[i],to:Math.round(W*(i+1)/5),t:'Pour '+(i+1)+' of 5'+(i?'':': the bloom'),btn:'pour '+(i+1),wait:'bed',rate:6,
       note:i===0?'Gently, wetting every ground. A smaller first pour makes it sweeter, a bigger one brighter.':(i===4?'If it is still dripping when the time comes, Kasuya lifts the dripper off.':'')});
     return p}},
   v_bloom:{who:'Hedrick',end:135,slow:'Let it finish draining.',pours:function(W,D){var b=Math.min(3*D,Math.round(W/5));
-    return [{at:0,to:b,t:'Bloom',btn:'bloom',wait:'time',note:'Gently, then leave it.'},{at:30,to:2*b,t:'Second bloom',btn:'second bloom',wait:'time',note:'Gently again.'},
-      {at:60,to:W,t:'Main pour',btn:'main pour',note:'Fast, from higher up, to stir the bed. Then let it drain.'}]}}
+    return [{at:0,to:b,t:'Bloom',btn:'bloom',wait:'time',rate:8,note:'Gently, then leave it.'},{at:30,to:2*b,t:'Second bloom',btn:'second bloom',wait:'time',rate:8,note:'Gently again.'},
+      {at:60,to:W,t:'Main pour',btn:'main pour',rate:10.5,note:'Fast, from higher up, to stir the bed. Then let it drain.'}]}}
 };
 function isPour(k){return !!POUR[k]}
+/* how long pour j itself takes at the recipe's pace, in seconds, and the scale reading it starts from */
+function pourFrom(P,j){return j?P[j-1].to:0}
+function pourTime(P,j){return Math.max(1,Math.round((P[j].to-pourFrom(P,j))/(P[j].rate||6)))}
 /* base: hot concentrate made now, or cold brew concentrate overnight; part: the share of the drink that is not coffee */
 var XDRINK={
   x_latte:{base:'hot',part:0.5,with:'full-cream milk'},
@@ -539,6 +544,8 @@ function numRows(o,mode,loc){
     var P0=o.pours;
     rows.push(['Water to pour',o.press+' g','lead']);
     rows.push(['Pours',rk==='v_46'?P0.length+' × '+P0[0].to+' g, the last at '+mmss(P0[P0.length-1].at):P0[0].to+' g, '+(P0[1].to-P0[0].to)+' g, then to '+o.press+' g','accent']);
+    var pt=P0.map(function(q,j){return pourTime(P0,j)});
+    rows.push(['Time to pour',pt.every(function(v){return v===pt[0]})?'about '+pt[0]+' s each':'about '+pt.slice(0,-1).join(', ')+' and '+pt[pt.length-1]+' s','']);
     rows.push([POUR[rk].lift?'Lift the dripper off at':'Done by about',mmss(o.end),'']);
     rows.push(['In the cup','about '+o.T+' g','lead']);
     return rows;
@@ -700,7 +707,7 @@ function buildSteps(oIn){
       var last=i===np-1, nxt=last?o.end:o.pours[i+1].at;
       s.push({k:i?'pour'+(i+1):'pour',t:p.t,s:Math.max(1,nxt-p.at),up:true,open:true,hold:i===0,
         d:'Pour to '+B(p.to+' g')+'.',
-        pour:{i:i,n:np,at:p.at,to:p.to,note:p.note||'',who:PR.who,end:last?o.end:0,lift:last&&!!PR.lift,wait:p.wait||'bed'},
+        pour:{i:i,n:np,at:p.at,to:p.to,from:pourFrom(o.pours,i),rate:p.rate||6,pd:pourTime(o.pours,i),note:p.note||'',who:PR.who,end:last?o.end:0,lift:last&&!!PR.lift,wait:p.wait||'bed'},
         more:i===0?'Hold the spout low, a centimetre or two above the bed, and pour into the middle in small circles, off the walls. If a pour is still pooling at the next time, wait for it: the app counts the wait against the pour that ran long.':undefined});
     });
     s.push(step('off','Swirl and serve','Swirl the jug, then into your cup, about '+B(o.T+' g')+'.'));
@@ -979,6 +986,7 @@ function secs(v){v=Math.round(Math.abs(v));return v<60?v+' s':mmss(v)}
 function addS(v){return Math.abs(v)<3?'0':(v>0?'+':'−')+secs(v)}
 function behindS(v){return Math.abs(v)<3?'0':(v>0?secs(v):secs(v)+' ahead')}
 function lcFirst(t){return t.charAt(0).toLowerCase()+t.slice(1)}
+function fmtRate(r){return String(Math.round(r*10)/10)}
 /* mine: your pours as {s: when it started, a: how long it ran, null while it runs}, in brew seconds; now: the brew clock or null */
 function pourLine(P,end,lift,mine,now){
   var span=end; mine.forEach(function(m){span=Math.max(span,m.s+(m.a===null?0:m.a))}); if(now!==null)span=Math.max(span,now);
@@ -989,6 +997,7 @@ function pourLine(P,end,lift,mine,now){
     var g=pourGap(P,end,j), e=m.a===null?now:m.s+m.a;
     if(e!==null&&e>m.s+g+0.5)h+='<rect class="ov" x="'+f(x(m.s+g))+'" y="25" width="'+f(x(e)-x(m.s+g))+'" height="10"/>';
   });
+  P.forEach(function(q,j){h+='<rect class="pw" x="'+f(x(q.at))+'" y="27" width="'+f(x(q.at+pourTime(P,j))-x(q.at))+'" height="6"/>'});
   P.forEach(function(q,j){
     var g=pourGap(P,end,j), pg=j?pourGap(P,end,j-1):g;
     h+='<line class="tk" x1="'+f(x(q.at))+'" y1="21" x2="'+f(x(q.at))+'" y2="39"/><text x="'+f(x(q.at))+'" y="13">'+q.to+'</text>'
@@ -1060,6 +1069,12 @@ function paintPours(force){
   else{ph='b1';cls='now';b1='Pour now: to '+nx.to+' g';b2='Tap '+go+' as you begin.';act=go}
   if(pourPh&&ph!==pourPh&&(ph==='b1'||ph==='t1'||ph==='lift'))chime();
   pourPh=ph;
+  /* while the pour itself is going in: what the scale should read now at the recipe's pace, and when to be done.
+     The button keeps its action; this only changes what the box says. */
+  var pd=p.pd||pourTime(P,p.i), from=p.from!==undefined?p.from:pourFrom(P,p.i), rate=p.rate||6, into=t-S0;
+  if(!started)b2='Then pour to '+p.to+' g in about '+pd+' s.';
+  else if(into<pd){cls='pouring';b1='Scale should read '+Math.min(p.to,Math.round(from+into*rate))+' g';
+    b2='Pour to '+p.to+' g by '+mmss(Math.round(S0)+pd)+', about '+fmtRate(rate)+' g a second.'}
   var mine=[], s=0; recs.forEach(function(r){mine.push({s:s,a:r.actual});s+=r.actual});
   if(started)mine.push({s:S0,a:null});
   $('pc-t').textContent=mmss(t);
