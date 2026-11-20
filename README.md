@@ -69,8 +69,12 @@ picker:
 - **From a cold brew batch** (overnight, keeps 3–4 days): Cold brew + milk, Cold brew tonic, Coconut cold brew, Orange cold brew.
 - **Pour-over (V60)**, recipes made for a coarser grind than usual: **V60 4:6** (Tetsu Kasuya: five equal pours at 0:00, 0:45,
   1:30, 2:15 and 2:45, dripper off at 3:30) and **V60 double bloom** (Lance Hedrick: two small blooms, then one fast pour from
-  higher up; done by about 2:15). Water at about 93 °C for light roasts (88 medium, 83 dark). The target is the water poured;
-  the cup is about 2 g less per gram of coffee. Each pour is its own step, on one clock:
+  higher up; done by about 2:15), both made for a coarser grind than usual; and, for a standard V60 grind, **V60 Hoffmann**
+  (James Hoffmann's Ultimate V60: a bloom of twice the coffee with a swirl, then two 30-second pours at 0:45 and 1:15, a stir
+  each way and a last swirl; water straight off the boil; done by 3:30) and **V60 Rao** (Scott Rao: a bloom of three times
+  the coffee spun hard, a second pour at 0:40, the last once about 70% has drained; 97 °C; done in 4:00–4:30). Each recipe
+  carries its own water temperature (4:6 about 93 °C for light roasts, 88 medium, 83 dark; double bloom about 93 °C). The
+  target is the water poured; the cup is about 2 g less per gram of coffee. Each pour is its own step, on one clock:
   - **The brew clock**, large, from the first pour (recipes are written in brew time). The first pour waits for **Start**.
   - **The mark to pour to** ("Pour to 180 g") and a **timeline** of the recipe's pour times with their grams and the gap
     between them (a gap shorter than the one before, like 4:6's 30 s, is marked). Your pours show as dots, now as a line, and
@@ -86,7 +90,9 @@ picker:
     of Hedrick's video). The time scales with the amount, and the recipe screen lists it under *Time to pour*.
   - **One button** that says what it does: *Bed shows*, then *Start pour 4*. Tapping Bed shows before the recipe's time
     makes you wait for it; after the time, one tap does both. 4:6 pours wait for the bed; the double bloom's blooms go on
-    time. The last pour ends with *Drained* or, for 4:6, *Lifted off*.
+    time, as do Hoffmann's pours and Rao's first two. Rao's last pour has no set time: the box says to pour once about 70%
+    has drained, nothing counts as late against it, and its gaps show as a dash in the summary. The last pour ends with
+    *Drained* or, for 4:6, *Lifted off*.
   - **A soft tone** only when it is time to pour: the bed has shown and the time has come, an on-time bloom, or the lift-off.
   - **After the pours**, and in the log: the timeline and a row per pour with the recipe's gap, yours (and when the bed
     showed, if you then waited), what that pour added, and how far behind that left you.

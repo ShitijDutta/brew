@@ -15,7 +15,9 @@
 - Pour-over recipes (`POUR`, `isPour`): one step per pour (`pour`, `pour2`…), each `up` + `open` (`s` is the recipe's gap to
   the next pour) with `pour: {i, n, at, to, note, who, end, lift, wait}`. Each recipe's pours carry `btn` (the button's
   "Start …"), `wait` ('bed' or 'time') and `rate` (g/s; `pourTime` = grams / rate, `pourFrom` = the reading it starts
-  at; the step's `pour` keeps `from`, `rate`, `pd`); the recipe carries `slow` (what to say when a pour runs long).
+  at; the step's `pour` keeps `from`, `rate`, `pd`); the recipe carries `slow` (what to say when a pour runs long),
+  `water`/`boilTo`/`tempMore` (its temperature) and optional `endText`. A pour with `at: null` and `when` waits on the drain
+  alone (Rao's last): `pourGap`/`pourDue` return null for it, it is never late, and the summary shows a dash.
   While a pour is within `pd`, the box shows the scale reading at that pace (display only: the button keeps its action).
   `paintPours` draws the whole pour screen on the brew clock (`brewSpent`, from `pourT0`): the timeline (`pourLine`),
   the next-pour box, and the one button, whose action is the painted phase `pourPh` ('hold', 'd0' = Bed shows, …); the

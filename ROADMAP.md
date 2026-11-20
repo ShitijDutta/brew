@@ -14,6 +14,9 @@ Roughly in the order they would help.
 
 ## Done
 
+- **V60 Hoffmann and V60 Rao** for a standard V60 grind, on the same pour screen, each recipe with its own water
+  temperature; a pour can wait on the drain alone (Rao's last).
+
 - **Pour pace.** Each V60 pour shows what the scale should read at the recipe's pace and when to be done, with the
   pouring windows on the timeline and *Time to pour* on the recipe screen.
 

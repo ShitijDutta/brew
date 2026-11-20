@@ -44,7 +44,7 @@ function applyStepEdits(e,px){
 var DEF={black:{tgt:200,ratio:16.9},hoff:{tgt:300,ratio:16.7},iced:{tgt:280,ratio:16.9},aulait:{tgt:300,ratio:12.5},viet:{tgt:110,ratio:7.3},cold:{tgt:500,ratio:8},
   x_latte:{tgt:300,ratio:9},x_icedlatte:{tgt:300,ratio:8},x_kaapi:{tgt:200,ratio:8},x_shaken:{tgt:150,ratio:9},x_affogato:{tgt:120,ratio:7},
   x_cbmilk:{tgt:400,ratio:8},x_tonic:{tgt:480,ratio:8},x_coconut:{tgt:600,ratio:8},x_orange:{tgt:400,ratio:8},
-  v_46:{tgt:300,ratio:15},v_bloom:{tgt:225,ratio:15},
+  v_46:{tgt:300,ratio:15},v_bloom:{tgt:225,ratio:15},v_hoff:{tgt:333,ratio:16.7},v_rao:{tgt:330,ratio:16.5},
   vietHot:{tgt:140,ratio:7.3},vietIced:{tgt:290,ratio:7.3}};
 var S={recipe:'black',mode:'direct',vmode:'iced',pratio:14.6,ved:20,ceil:450,temp:94,panloss:30,dspeed:10,lead:3,theme:'',
   r:{black:{tgt:200,ratio:16.9},iced:{tgt:280,ratio:16.9},aulait:{tgt:300,ratio:12.5},vietHot:{tgt:140,ratio:7.3},vietIced:{tgt:290,ratio:7.3}},
@@ -410,11 +410,15 @@ var RECIPES={
    hint:'Cold brew concentrate with chilled tender coconut water, about 1 to 2, over ice. Sweet without sugar.'},
  x_orange:{extra:'cold',name:'Orange cold brew',label:'Finished drinks',unit:'grams, about 200 g a glass',modes:false,
    hint:'Cold brew concentrate with fresh orange juice, about 1:1, over ice. Fruity coffees with citrus notes suit it.'},
- /* pour-over on the V60, with recipes built for a coarser grind than usual */
+ /* pour-over on the V60: two recipes built for a coarser grind than usual, two for a standard V60 grind */
  v_46:{extra:'pour',name:'V60 4:6',label:'Water to pour',unit:'grams through the coffee; the cup is about 2 g less per gram of coffee',modes:false,
    hint:'Tetsu Kasuya’s 4:6: five equal pours, about 45 seconds apart, the last at 2:45. The first two set sweetness against acidity, the last three set the body. Short pours that drain in between suit a coarse grind.'},
  v_bloom:{extra:'pour',name:'V60 double bloom',label:'Water to pour',unit:'grams through the coffee; the cup is about 2 g less per gram of coffee',modes:false,
-   hint:'Lance Hedrick’s double bloom: two small blooms, then one fast pour from higher up to stir the bed. Made for a coarser grind than usual pour-over.'}
+   hint:'Lance Hedrick’s double bloom: two small blooms, then one fast pour from higher up to stir the bed. Made for a coarser grind than usual pour-over.'},
+ v_hoff:{extra:'pour',name:'V60 Hoffmann',label:'Water to pour',unit:'grams through the coffee; the cup is about 2 g less per gram of coffee',modes:false,
+   hint:'James Hoffmann’s Ultimate V60: a bloom of twice the coffee with a swirl, then two 30-second pours, to 60% and to 100%, a stir each way and a last swirl. For a standard V60 grind; water straight off the boil.'},
+ v_rao:{extra:'pour',name:'V60 Rao',label:'Water to pour',unit:'grams through the coffee; the cup is about 2 g less per gram of coffee',modes:false,
+   hint:'Scott Rao’s V60: a bloom of three times the coffee, spun hard; a second pour at 0:40; the last once about 70% has drained, with gentle spins. Done in 4:00 to 4:30, at 97 °C.'}
 };
 /* pour-over: each pour is its own step. at = when the recipe pours it (seconds from the first pour), to = the scale reading,
    t = step title, note = shown only where it matters, btn = what the button says to start it ("Start pour 2").
@@ -422,16 +426,36 @@ var RECIPES={
    (pour at the recipe's time, bed or not). end = when the recipe is done (4:6 lifts the dripper off then).
    slow = what to do when a pour drains slower than the recipe's gap. rate = how fast the recipe pours, in g a second
    (4:6: 60 g in about 10 s, from a Japanese retailer's guide to it; double bloom: about 8 g/s for the blooms and
-   10-11 g/s for the main pour, from write-ups of Hedrick's video), so the pour's own time scales with the amount. */
+   10-11 g/s for the main pour, from write-ups of Hedrick's video; Hoffmann: 30 s for each main pour; blooms and Rao's
+   pours, for which no pace is given, at 6 g/s), so the pour's own time scales with the amount.
+   at = null with when: a pour made on the drain alone (Rao's last, "once about 70% has drained"); it has no recipe time,
+   so nothing is late against it and its gaps show as a dash. water / boilTo / tempMore: the water temperature, as the
+   recipe screen, the first step and its More put it. endText: the recipe's own range for when it is done. */
 var POUR={
   v_46:{who:'Kasuya',end:210,lift:true,slow:'Wait for the bed, then pour. The pours stay the same; the brew just ends later.',
+    water:'at about 93 \u00B0C for a light roast (88 medium, 83 dark)',boilTo:'Boil, then cool to about 93 \u00B0C.',
+    tempMore:'About 93 \u00B0C for light roasts, 88 \u00B0C for medium, 83 \u00B0C for dark: Kasuya avoids freshly boiled water.',
     pours:function(W){var at=[0,45,90,135,165],p=[];
     for(var i=0;i<5;i++)p.push({at:at[i],to:Math.round(W*(i+1)/5),t:'Pour '+(i+1)+' of 5'+(i?'':': the bloom'),btn:'pour '+(i+1),wait:'bed',rate:6,
       note:i===0?'Gently, wetting every ground. A smaller first pour makes it sweeter, a bigger one brighter.':(i===4?'If it is still dripping when the time comes, Kasuya lifts the dripper off.':'')});
     return p}},
-  v_bloom:{who:'Hedrick',end:135,slow:'Let it finish draining.',pours:function(W,D){var b=Math.min(3*D,Math.round(W/5));
+  v_bloom:{who:'Hedrick',end:135,slow:'Let it finish draining.',
+    water:'at about 93 \u00B0C',boilTo:'Boil, then cool to about 93 \u00B0C.',tempMore:'Write-ups of Hedrick\u2019s video give 92\u201393 \u00B0C.',
+    pours:function(W,D){var b=Math.min(3*D,Math.round(W/5));
     return [{at:0,to:b,t:'Bloom',btn:'bloom',wait:'time',rate:8,note:'Gently, then leave it.'},{at:30,to:2*b,t:'Second bloom',btn:'second bloom',wait:'time',rate:8,note:'Gently again.'},
-      {at:60,to:W,t:'Main pour',btn:'main pour',rate:10.5,note:'Fast, from higher up, to stir the bed. Then let it drain.'}]}}
+      {at:60,to:W,t:'Main pour',btn:'main pour',rate:10.5,note:'Fast, from higher up, to stir the bed. Then let it drain.'}]}},
+  v_hoff:{who:'Hoffmann',end:210,slow:'Let it finish draining.',
+    water:'straight off the boil',boilTo:'Boil, and use it straight off the boil.',tempMore:'Hoffmann: \u201Cthe hotter, the better\u201D, especially for lighter roasts.',
+    pours:function(W,D){var b=2*D, m=Math.round(W*0.6);
+    return [{at:0,to:b,t:'Bloom',btn:'bloom',wait:'time',rate:6,note:'Then swirl until every ground is wet.'},
+      {at:45,to:m,t:'First pour',btn:'first pour',wait:'time',rate:(m-b)/30,note:'Over 30 s, to 60% of the water. Keep the cone fairly full; pouring onto the paper is fine.'},
+      {at:75,to:W,t:'Second pour',btn:'second pour',rate:(W-m)/30,note:'Over 30 s, a little gentler. Then stir once each way; once it has drained a little, swirl gently.'}]}},
+  v_rao:{who:'Rao',end:270,endText:'4:00\u20134:30',slow:'Let it finish draining.',
+    water:'at about 97 \u00B0C',boilTo:'Boil, then let it settle to about 97 \u00B0C.',tempMore:'Rao brews at 97 \u00B0C, in a plastic V60 for the heat it holds.',
+    pours:function(W,D){var b=3*D, m=Math.round(W*200/330);
+    return [{at:0,to:b,t:'Bloom',btn:'bloom',wait:'time',rate:6,note:'Then spin it hard straight away.'},
+      {at:40,to:m,t:'Second pour',btn:'second pour',rate:6,note:'Low and steady. Then a very short spin, under a second, to fill the ribs.'},
+      {at:null,when:'once about 70% has drained',to:W,t:'Last pour',btn:'last pour',rate:6,note:'Low and steady, then one gentle spin.'}]}}
 };
 function isPour(k){return !!POUR[k]}
 /* how long pour j itself takes at the recipe's pace, in seconds, and the scale reading it starts from */
@@ -546,7 +570,7 @@ function numRows(o,mode,loc){
     rows.push(['Pours',rk==='v_46'?P0.length+' × '+P0[0].to+' g, the last at '+mmss(P0[P0.length-1].at):P0[0].to+' g, '+(P0[1].to-P0[0].to)+' g, then to '+o.press+' g','accent']);
     var pt=P0.map(function(q,j){return pourTime(P0,j)});
     rows.push(['Time to pour',pt.every(function(v){return v===pt[0]})?'about '+pt[0]+' s each':'about '+pt.slice(0,-1).join(', ')+' and '+pt[pt.length-1]+' s','']);
-    rows.push([POUR[rk].lift?'Lift the dripper off at':'Done by about',mmss(o.end),'']);
+    rows.push([POUR[rk].lift?'Lift the dripper off at':'Done by about',POUR[rk].endText||mmss(o.end),'']);
     rows.push(['In the cup','about '+o.T+' g','lead']);
     return rows;
   }
@@ -609,8 +633,9 @@ function render(){
   } else if(S.recipe==='iced'){
     $('blurb').textContent='The press runs at about 1:'+(o.press/o.D).toFixed(1)+' and the ice brings it to your ratio. Glass ice depends on the jug: none at 10\u00B0C or below, up to 40 g above it.';
   } else if(isPour(S.recipe)){
-    $('blurb').textContent='Water at about 93 \u00B0C for a light roast (88 medium, 83 dark). Each pour is a step: pour to the mark the app shows, '
-      +'then tap Next once the bed shows, so a slow drain is timed against the pour it followed. The recipe is done by '+mmss(o.end)+'.';
+    var PRb=POUR[S.recipe];
+    $('blurb').textContent='Water '+PRb.water+'. Each pour is a step on one brew clock: pour to the mark at the pace shown, then tap what '
+      +'the button says, so a slow drain is timed against the pour it followed. '+PRb.who+' is done by '+(PRb.endText||mmss(o.end))+'.';
   } else if(XDRINK[S.recipe]){
     $('blurb').textContent=coldBase(S.recipe)
       ?'Cold brew concentrate at about 1:'+R1(o.press/o.D)+', overnight in the fridge. It keeps 3\u20134 days, so one batch makes several drinks.'
@@ -699,15 +724,15 @@ function buildSteps(oIn){
     /* pour-over: one step per pour, from starting it to starting the next, so a slow drain shows up against the pour it
        followed. The first pour waits for Start; the screen runs on one brew clock (paintPours). */
     var PR=POUR[R], np=o.pours.length;
-    s.push(step('dose','Weigh the water',B(o.ved+' g')+' Vedica + '+B(o.ro+' g')+' RO, '+B(o.boil+' g')+' in all. Boil, then cool to about 93 \u00B0C.',
-      {w:[W('Heat '+B(o.rinse+' g')+' plain RO for the paper rinse')],more:'About 93 \u00B0C for light roasts, 88 \u00B0C for medium, 83 \u00B0C for dark: Kasuya avoids freshly boiled water. Your thermometer in the kettle tells you when.'}));
+    s.push(step('dose','Weigh the water',B(o.ved+' g')+' Vedica + '+B(o.ro+' g')+' RO, '+B(o.boil+' g')+' in all. '+PR.boilTo,
+      {w:[W('Heat '+B(o.rinse+' g')+' plain RO for the paper rinse')],more:PR.tempMore+' Your thermometer in the kettle tells you when.'}));
     s.push(step('prep','Rinse and dose','Rinse the paper with the hot RO, tip it out. '+B(o.D+' g')+' of coffee in, level. Dripper on the jug, on the scale, tared.',
       {more:'The first pour waits for you to tap Start, so get the water to temperature first. A small dip in the middle of the bed helps the bloom wet it all.'}));
     o.pours.forEach(function(p,i){
-      var last=i===np-1, nxt=last?o.end:o.pours[i+1].at;
-      s.push({k:i?'pour'+(i+1):'pour',t:p.t,s:Math.max(1,nxt-p.at),up:true,open:true,hold:i===0,
+      var last=i===np-1, gap=pourGap(o.pours,o.end,i);
+      s.push({k:i?'pour'+(i+1):'pour',t:p.t,s:gap===null?1:Math.max(1,gap),up:true,open:true,hold:i===0,
         d:'Pour to '+B(p.to+' g')+'.',
-        pour:{i:i,n:np,at:p.at,to:p.to,from:pourFrom(o.pours,i),rate:p.rate||6,pd:pourTime(o.pours,i),note:p.note||'',who:PR.who,end:last?o.end:0,lift:last&&!!PR.lift,wait:p.wait||'bed'},
+        pour:{i:i,n:np,at:p.at,when:p.when,free:gap===null,to:p.to,from:pourFrom(o.pours,i),rate:p.rate||6,pd:pourTime(o.pours,i),note:p.note||'',who:PR.who,end:last?o.end:0,lift:last&&!!PR.lift,wait:p.wait||'bed'},
         more:i===0?'Hold the spout low, a centimetre or two above the bed, and pour into the middle in small circles, off the walls. If a pour is still pooling at the next time, wait for it: the app counts the wait against the pour that ran long.':undefined});
     });
     s.push(step('off','Swirl and serve','Swirl the jug, then into your cup, about '+B(o.T+' g')+'.'));
@@ -980,11 +1005,11 @@ function lagSpan(l,who){var t=lagText(l);return t==='on time'?'on time with '+wh
    time, or the lift-off. */
 var pourAt=-1, pourPh='';
 function pourStart(){return pourT0?((stepT0-pourT0)/1000)*speed:0}
-function pourGap(P,end,j){return (j<P.length-1?P[j+1].at:end)-P[j].at}
-function pourDue(p,P,S0){var nx=p.i<p.n-1?P[p.i+1].at:p.end;return Math.max(nx,Math.round(S0)+nx-p.at)}
-function secs(v){v=Math.round(Math.abs(v));return v<60?v+' s':mmss(v)}
-function addS(v){return Math.abs(v)<3?'0':(v>0?'+':'−')+secs(v)}
-function behindS(v){return Math.abs(v)<3?'0':(v>0?secs(v):secs(v)+' ahead')}
+function pourGap(P,end,j){var a=P[j].at,b=j<P.length-1?P[j+1].at:end;return a==null||b==null?null:b-a}
+function pourDue(p,P,S0){var nx=p.i<p.n-1?P[p.i+1].at:p.end;if(nx==null)return null;return p.at==null?nx:Math.max(nx,Math.round(S0)+nx-p.at)}
+function secs(v){if(v==null)return '—';v=Math.round(Math.abs(v));return v<60?v+' s':mmss(v)}
+function addS(v){return v==null?'—':Math.abs(v)<3?'0':(v>0?'+':'−')+secs(v)}
+function behindS(v){return v==null?'—':Math.abs(v)<3?'0':(v>0?secs(v):secs(v)+' ahead')}
 function lcFirst(t){return t.charAt(0).toLowerCase()+t.slice(1)}
 function fmtRate(r){return String(Math.round(r*10)/10)}
 /* mine: your pours as {s: when it started, a: how long it ran, null while it runs}, in brew seconds; now: the brew clock or null */
@@ -995,13 +1020,14 @@ function pourLine(P,end,lift,mine,now){
   h+='<line class="tr" x1="'+X0+'" y1="30" x2="'+X1+'" y2="30"/>';
   mine.forEach(function(m,j){
     var g=pourGap(P,end,j), e=m.a===null?now:m.s+m.a;
-    if(e!==null&&e>m.s+g+0.5)h+='<rect class="ov" x="'+f(x(m.s+g))+'" y="25" width="'+f(x(e)-x(m.s+g))+'" height="10"/>';
+    if(g!==null&&e!==null&&e>m.s+g+0.5)h+='<rect class="ov" x="'+f(x(m.s+g))+'" y="25" width="'+f(x(e)-x(m.s+g))+'" height="10"/>';
   });
-  P.forEach(function(q,j){h+='<rect class="pw" x="'+f(x(q.at))+'" y="27" width="'+f(x(q.at+pourTime(P,j))-x(q.at))+'" height="6"/>'});
+  P.forEach(function(q,j){if(q.at!=null)h+='<rect class="pw" x="'+f(x(q.at))+'" y="27" width="'+f(x(q.at+pourTime(P,j))-x(q.at))+'" height="6"/>'});
   P.forEach(function(q,j){
+    if(q.at==null)return;
     var g=pourGap(P,end,j), pg=j?pourGap(P,end,j-1):g;
-    h+='<line class="tk" x1="'+f(x(q.at))+'" y1="21" x2="'+f(x(q.at))+'" y2="39"/><text x="'+f(x(q.at))+'" y="13">'+q.to+'</text>'
-      +'<text class="gl'+(g<pg?' gs':'')+'" x="'+f(x(q.at+g/2))+'" y="56">'+g+' s</text>';
+    h+='<line class="tk" x1="'+f(x(q.at))+'" y1="21" x2="'+f(x(q.at))+'" y2="39"/><text x="'+f(x(q.at))+'" y="13">'+q.to+'</text>';
+    if(g!==null)h+='<text class="gl'+(pg!==null&&g<pg?' gs':'')+'" x="'+f(x(q.at+g/2))+'" y="56">'+g+' s</text>';
   });
   h+='<line class="tk end" x1="'+f(x(end))+'" y1="21" x2="'+f(x(end))+'" y2="39"/><text x="'+f(x(end))+'" y="13">'+(lift?'lift':'done')+'</text>';
   mine.forEach(function(m){h+='<circle class="dot" cx="'+f(x(m.s))+'" cy="30" r="4.5"/>'});
@@ -1014,14 +1040,15 @@ function pourSummary(P,end,lift,who,recs,head){
   recs=recs.slice(0,P.length);
   var s=0, mine=[], h='';
   var rows=recs.map(function(r,j){var g=pourGap(P,end,j);mine.push({s:s,a:r.actual});s+=r.actual;
-    return {j:j,g:g,a:r.actual,bed:r.bed,add:r.actual-g,behind:s-(j<P.length-1?P[j+1].at:end)}});
+    var nt=j<P.length-1?P[j+1].at:end;
+    return {j:j,g:g,a:r.actual,bed:r.bed,add:g===null?null:r.actual-g,behind:nt==null?null:s-nt}});
   if(head&&rows.length===P.length)h+='<p class="phead">Brew took <b>'+mmss(s)+'</b> · '+lagSpan(s-end,who)+' ('+mmss(end)+')</p>';
   h+=pourLine(P,end,lift,mine,null);
   h+='<table class="ptab"><tr><th>Pour</th><th>'+esc(who)+'</th><th>Yours</th><th>Added</th><th>Behind</th></tr>';
   rows.forEach(function(r){
     var w=r.bed!==undefined&&r.a-r.bed>=3;
     h+='<tr><td>'+(r.j+1)+(r.j===P.length-1&&lift?' · lift':'')+'</td><td>'+secs(r.g)+'</td><td>'+secs(r.a)+(w?'<span class="pw">bed at '+secs(r.bed)+'</span>':'')+'</td>'
-      +'<td'+(r.add>=3?' class="late"':'')+'>'+addS(r.add)+'</td><td>'+behindS(r.behind)+'</td></tr>';
+      +'<td'+(r.add!==null&&r.add>=3?' class="late"':'')+'>'+addS(r.add)+'</td><td>'+behindS(r.behind)+'</td></tr>';
   });
   return h+'</table>';
 }
@@ -1050,13 +1077,14 @@ function paintPours(force){
   }
   var started=!(st.hold&&!running&&!tBase), t=started?brewSpent():0, S0=pourStart(), last=p.i===p.n-1, nx=last?null:P[p.i+1],
       M=pourDue(p,P,S0), g=pourGap(P,end,p.i), who=p.who, b=bedAt&&pourT0?((bedAt-pourT0)/1000)*speed:-1,
-      go=nx?'Start '+(nx.btn||('pour '+(p.i+2))):'', inn='In '+mmss(Math.max(0,Math.ceil(M-t))), ph, b1, b2='', cls='', act;
+      go=nx?'Start '+(nx.btn||('pour '+(p.i+2))):'', inn=M===null?'':'In '+mmss(Math.max(0,Math.ceil(M-t))), ph, b1, b2='', cls='', act;
   if(!started){ph='hold';b1='Tap Start as the water hits the coffee.';act='Start'}
   else if(last){
     if(t<M){ph='e0';b1=(p.lift?'Lift the dripper off at ':'Done by about ')+mmss(M);b2=inn+'. Tap Drained when the water has gone through.';act='Drained'}
     else if(p.lift){ph='lift';cls='now';b1='Lift the dripper off now';b2='If it is still dripping. Then tap Lifted off.';act='Lifted off'}
     else{ph='slow';cls='late';b1='Draining slowly: '+mmss(t-S0);b2=who+' is done by about '+mmss(p.end)+'. '+(R.slow||'')+' Then tap Drained.';act='Drained'}
   }
+  else if(M===null){ph='f0';b1='Next: pour to '+nx.to+' g '+(nx.when||'once the bed shows');b2='Tap '+go+' as you begin.';act=go}
   else if((p.wait||'bed')==='time'){
     if(t<M){ph='t0';b1='Next: '+lcFirst(nx.t)+' to '+nx.to+' g at '+mmss(M);b2=inn+'.';act=go}
     else{ph='t1';cls='now';b1='Pour now: '+lcFirst(nx.t)+' to '+nx.to+' g';b2='Tap '+go+' as you begin.';act=go}
@@ -1081,7 +1109,11 @@ function paintPours(force){
   $('pc-c').textContent=started?'Brew clock, from your first pour':'Starts when you tap Start';
   $('p-line').innerHTML=pourLine(P,end,!!R.lift,mine,started?t:null);
   $('p-box').className='pbox'+(cls?' '+cls:''); $('p-b1').textContent=b1; $('p-b2').textContent=b2;
-  $('p-lag').innerHTML=started?'Overall '+lagSpan(Math.max(S0-p.at,t-(nx?nx.at:p.end)),who):'';
+  /* how far behind the recipe overall: from this pour's start and the next time, where the recipe has them; against
+     the end alone (a pour made on the drain), only once you are past it */
+  var la=p.at!=null?S0-p.at:null, nt=nx?nx.at:p.end, lb=nt!=null?t-nt:null,
+      lag=la===null?(lb!==null&&lb>0?lb:null):(lb===null?la:Math.max(la,lb));
+  $('p-lag').innerHTML=started&&lag!==null?'Overall '+lagSpan(lag,who):'';
   var nb=$('next'); if(nb.textContent!==act)nb.textContent=act;
 }
 function tickPaint(){
@@ -1266,7 +1298,7 @@ function go(i){
 }
 function leaveStep(){
   var st=steps[idx];
-  var a={k:st.k,t:st.t,target:st.s||0,actual:((Date.now()-stepT0)/1000)*speed};
+  var a={k:st.k,t:st.t,target:st.pour&&st.pour.free?0:(st.s||0),actual:((Date.now()-stepT0)/1000)*speed};
   /* a pour where you tapped Bed shows and then waited: how long it took to drain, apart from the wait */
   if(st.pour&&bedAt)a.bed=((bedAt-stepT0)/1000)*speed;
   actuals.push(a);
