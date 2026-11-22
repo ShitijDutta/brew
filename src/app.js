@@ -44,7 +44,7 @@ function applyStepEdits(e,px){
 var DEF={black:{tgt:200,ratio:16.9},hoff:{tgt:300,ratio:16.7},iced:{tgt:280,ratio:16.9},aulait:{tgt:300,ratio:12.5},viet:{tgt:110,ratio:7.3},cold:{tgt:500,ratio:8},
   x_latte:{tgt:300,ratio:9},x_icedlatte:{tgt:300,ratio:8},x_kaapi:{tgt:200,ratio:8},x_shaken:{tgt:150,ratio:9},x_affogato:{tgt:120,ratio:7},
   x_cbmilk:{tgt:400,ratio:8},x_tonic:{tgt:480,ratio:8},x_coconut:{tgt:600,ratio:8},x_orange:{tgt:400,ratio:8},
-  v_46:{tgt:300,ratio:15},v_bloom:{tgt:225,ratio:15},v_hoff:{tgt:333,ratio:16.7},v_rao:{tgt:330,ratio:16.5},
+  v_46:{tgt:300,ratio:15},v_bloom:{tgt:225,ratio:15},v_hoff:{tgt:500,ratio:16.7},v_hoff1:{tgt:250,ratio:16.7},v_rao:{tgt:330,ratio:16.5},
   vietHot:{tgt:140,ratio:7.3},vietIced:{tgt:290,ratio:7.3}};
 var S={recipe:'black',mode:'direct',vmode:'iced',pratio:14.6,ved:20,ceil:450,temp:94,panloss:30,dspeed:10,lead:3,theme:'',
   r:{black:{tgt:200,ratio:16.9},iced:{tgt:280,ratio:16.9},aulait:{tgt:300,ratio:12.5},vietHot:{tgt:140,ratio:7.3},vietIced:{tgt:290,ratio:7.3}},
@@ -417,6 +417,8 @@ var RECIPES={
    hint:'Lance Hedrick’s double bloom: two small blooms, then one fast pour from higher up to stir the bed. Made for a coarser grind than usual pour-over.'},
  v_hoff:{extra:'pour',name:'V60 Hoffmann',label:'Water to pour',unit:'grams through the coffee; the cup is about 2 g less per gram of coffee',modes:false,
    hint:'James Hoffmann’s Ultimate V60: a bloom of twice the coffee with a swirl, then two 30-second pours, to 60% and to 100%, a stir each way and a last swirl. For a standard V60 grind; water straight off the boil.'},
+ v_hoff1:{extra:'pour',name:'V60 Hoffmann 1-cup',label:'Water to pour',unit:'grams through the coffee; the cup is about 2 g less per gram of coffee',modes:false,
+   hint:'James Hoffmann’s 1-cup V60, written for 15 g of coffee and 250 g of water: a bloom of a fifth of the water with a gentle swirl, then four more fifths at 0:45, 1:10, 1:30 and 1:50, a last swirl, done around 3:00. Water straight off the boil.'},
  v_rao:{extra:'pour',name:'V60 Rao',label:'Water to pour',unit:'grams through the coffee; the cup is about 2 g less per gram of coffee',modes:false,
    hint:'Scott Rao’s V60: a bloom of three times the coffee, spun hard; a second pour at 0:40; the last once about 70% has drained, with gentle spins. Done in 4:00 to 4:30, at 97 °C.'}
 };
@@ -450,6 +452,15 @@ var POUR={
     return [{at:0,to:b,t:'Bloom',btn:'bloom',wait:'time',rate:6,note:'Then swirl until every ground is wet.'},
       {at:45,to:m,t:'First pour',btn:'first pour',wait:'time',rate:(m-b)/30,note:'Over 30 s, to 60% of the water. Keep the cone fairly full; pouring onto the paper is fine.'},
       {at:75,to:W,t:'Second pour',btn:'second pour',rate:(W-m)/30,note:'Over 30 s, a little gentler. Then stir once each way; once it has drained a little, swirl gently.'}]}},
+  v_hoff1:{who:'Hoffmann',end:180,slow:'Let it finish draining.',
+    water:'straight off the boil for a light roast (about 96 \u00B0C medium, down to 90 \u00B0C for the darkest)',boilTo:'Boil, and use it straight off the boil.',
+    tempMore:'Hoffmann: freshly boiled for light roasts, about 96 \u00B0C for medium, down to 90 \u00B0C for the darkest.',
+    /* each pour is a fifth of the water, in 10 s (the one at 0:45 in 15 s), with short pauses between */
+    pours:function(W){var at=[0,45,70,90,110],dur=[10,15,10,10,10],p=[],prev=0;
+    for(var i=0;i<5;i++){var to=Math.round(W*(i+1)/5);
+      p.push({at:at[i],to:to,t:i?'Pour '+(i+1)+' of 5':'Bloom',btn:i?'pour '+(i+1):'bloom',wait:'time',rate:(to-prev)/dur[i],
+        note:i===0?'Then swirl gently until it is all wet.':(i===4?'Then swirl gently and let it drain.':'')});prev=to}
+    return p}},
   v_rao:{who:'Rao',end:270,endText:'4:00\u20134:30',slow:'Let it finish draining.',
     water:'at about 97 \u00B0C',boilTo:'Boil, then let it settle to about 97 \u00B0C.',tempMore:'Rao brews at 97 \u00B0C, in a plastic V60 for the heat it holds.',
     pours:function(W,D){var b=3*D, m=Math.round(W*200/330);
@@ -567,7 +578,10 @@ function numRows(o,mode,loc){
   if(o.pours){
     var P0=o.pours;
     rows.push(['Water to pour',o.press+' g','lead']);
-    rows.push(['Pours',rk==='v_46'?P0.length+' × '+P0[0].to+' g, the last at '+mmss(P0[P0.length-1].at):P0[0].to+' g, '+(P0[1].to-P0[0].to)+' g, then to '+o.press+' g','accent']);
+    /* what the scale reads at the end of each pour; equal pours read as so many of the same */
+    var eq=P0.every(function(q,j){return q.to-pourFrom(P0,j)===P0[0].to});
+    rows.push(['Pours',eq?P0.length+' × '+P0[0].to+' g, the last at '+mmss(P0[P0.length-1].at)
+      :'to '+P0.slice(0,-1).map(function(q){return q.to}).join(', ')+', then '+o.press+' g','accent']);
     var pt=P0.map(function(q,j){return pourTime(P0,j)});
     rows.push(['Time to pour',pt.every(function(v){return v===pt[0]})?'about '+pt[0]+' s each':'about '+pt.slice(0,-1).join(', ')+' and '+pt[pt.length-1]+' s','']);
     rows.push([POUR[rk].lift?'Lift the dripper off at':'Done by about',POUR[rk].endText||mmss(o.end),'']);
@@ -2392,11 +2406,13 @@ function stpH(id,val,step,mn,mx,ph,lab,def){
     +' step="'+step+'" value="'+esc(val===null||val===undefined?'':val)+'" placeholder="'+esc(ph||'')+'"'+(def!==null&&def!==undefined&&def!==''?' data-def="'+esc(def)+'"':'')+'>'
     +'<button type="button" class="sb" data-st="'+id+'" data-d="'+step+'" aria-label="Raise '+lab+'">+</button></div>';
 }
-function stepVal(id,d){
+/* base = the button's own step: a value off its grid (333 with steps of 10) moves to the next round one (340, or 330) */
+function stepVal(id,d,base){
   var el=$(id); if(!el)return;
   if(el.getAttribute('data-fmt')==='ms'){var cs=parseMS(el.value);if(cs===null)cs=0;el.value=mmss(Math.max(0,Math.min(7200,cs+d)));el.dispatchEvent(new Event('input',{bubbles:true}));return}
-  var mn=parseFloat(el.min), mx=parseFloat(el.max), v=parseFloat(el.value);
+  var mn=parseFloat(el.min), mx=parseFloat(el.max), v=parseFloat(el.value), u=Math.abs(base||d), k;
   if(isNaN(v)){v=parseFloat(el.getAttribute('data-def'));if(isNaN(v))v=isNaN(mn)?0:mn}
+  else if(u&&Math.abs((k=v/u)-Math.round(k))>1e-6)v=(d>0?Math.floor(k)+1:Math.ceil(k)-1)*u;
   else v=v+d;
   if(!isNaN(mn))v=Math.max(mn,v); if(!isNaN(mx))v=Math.min(mx,v);
   el.value=String(Math.round(v*10)/10);
@@ -2409,7 +2425,7 @@ document.addEventListener('pointerdown',function(e){
   endSP(); spSkip=0; var sp={b:b,x:e.clientX,y:e.clientY,held:false,n:0}; SP=sp;
   sp.t=setTimeout(function(){
     if(SP!==sp)return; sp.held=true; var d=parseFloat(b.dataset.d); stepVal(b.dataset.st,d);
-    sp.i=setInterval(function(){if(SP!==sp)return;sp.n++;stepVal(b.dataset.st,d*(sp.n>24?10:sp.n>10?4:1))},110);
+    sp.i=setInterval(function(){if(SP!==sp)return;sp.n++;stepVal(b.dataset.st,d*(sp.n>24?10:sp.n>10?4:1),d)},110);
   },450);
 },true);
 document.addEventListener('pointermove',function(e){if(SP&&!SP.held&&(Math.abs(e.clientX-SP.x)>8||Math.abs(e.clientY-SP.y)>8))endSP()},true);

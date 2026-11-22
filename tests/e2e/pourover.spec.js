@@ -30,7 +30,7 @@ test('the V60 recipes sit in their own group with water-to-pour numbers and no f
   await expect(page.locator('#pwseg')).toBeHidden();
   await pick(page, 'V60 double bloom');
   await expect(num(page, 'Coffee')).toHaveText('15 g');
-  await expect(num(page, 'Pours')).toHaveText('45 g, 45 g, then to 225 g');
+  await expect(num(page, 'Pours')).toHaveText('to 45, 90, then 225 g');
   await expect(num(page, 'Time to pour')).toHaveText('about 6, 6 and 13 s');
   await expect(num(page, 'Done by about')).toHaveText('2:15');
   await expect(num(page, 'In the cup')).toHaveText('about 195 g');
@@ -252,15 +252,29 @@ test('Hoffmann and Rao: their own numbers, water and steps, on the same pour scr
   await page.addInitScript(() => localStorage.setItem('fp.v1', JSON.stringify({ dspeed: 20 })));
   await page.goto('./');
   await pick(page, 'V60 Hoffmann');
-  await expect(num(page, 'Coffee')).toHaveText('20 g');
-  await expect(num(page, 'Water to pour')).toHaveText('333 g');
-  await expect(num(page, 'Pours')).toHaveText('40 g, 160 g, then to 333 g');
-  await expect(num(page, 'Time to pour')).toHaveText('about 7, 30 and 30 s');
+  await expect(num(page, 'Coffee')).toHaveText('30 g');                   /* his own 30 g to 500 g */
+  await expect(num(page, 'Water to pour')).toHaveText('500 g');
+  await expect(num(page, 'Pours')).toHaveText('to 60, 300, then 500 g');
+  await expect(num(page, 'Time to pour')).toHaveText('about 10, 30 and 30 s');
   await expect(num(page, 'Done by about')).toHaveText('3:30');
   await expect(page.locator('#blurb')).toContainText('Water straight off the boil.');
+  /* +/- from an odd amount lands on round tens */
+  await page.fill('#tgt', '333');
+  await page.click('[data-st="tgt"][data-d="10"]');
+  await expect(page.locator('#tgt')).toHaveValue('340');
+  await page.click('[data-st="tgt"][data-d="-10"]');
+  await expect(page.locator('#tgt')).toHaveValue('330');
+  await page.fill('#tgt', '500');
+  await pick(page, 'V60 Hoffmann 1-cup');
+  await expect(num(page, 'Coffee')).toHaveText('15 g');
+  await expect(num(page, 'Water to pour')).toHaveText('250 g');
+  await expect(num(page, 'Pours')).toHaveText('5 × 50 g, the last at 1:50');
+  await expect(num(page, 'Time to pour')).toHaveText('about 10, 15, 10, 10 and 10 s');
+  await expect(num(page, 'Done by about')).toHaveText('3:00');
+  await expect(page.locator('#blurb')).toContainText('Water straight off the boil for a light roast');
   await pick(page, 'V60 Rao');
   await expect(num(page, 'Coffee')).toHaveText('20 g');
-  await expect(num(page, 'Pours')).toHaveText('60 g, 140 g, then to 330 g');
+  await expect(num(page, 'Pours')).toHaveText('to 60, 200, then 330 g');
   await expect(num(page, 'Done by about')).toHaveText('4:00–4:30');
   await expect(page.locator('#blurb')).toContainText('Water at about 97 °C.');
   expect(await noOverflow(page)).toBe(true);
@@ -300,12 +314,37 @@ test('Hoffmann: both main pours go on time, 30 s each, at the pace shown', async
   await expect(page.locator('#pours .pt')).toHaveText('Then swirl until every ground is wet.');
   await page.click('#next');                                               /* Start */
   await expect(page.locator('#next')).toHaveText('Start first pour');
-  await expect(page.locator('#p-b1')).toHaveText('Pour now: first pour to 200 g', { timeout: 8000 });
+  await expect(page.locator('#p-b1')).toHaveText('Pour now: first pour to 300 g', { timeout: 8000 });
   await page.click('#next');
-  await expect(page.locator('#p-b2')).toHaveText(/^Pour to 200 g by 1:\d\d, about 5\.3 g a second\.$/);
+  await expect(page.locator('#p-b2')).toHaveText(/^Pour to 300 g by 1:\d\d, about 8 g a second\.$/);
   await expect(page.locator('#next')).toHaveText('Start second pour');
-  await expect(page.locator('#p-b1')).toHaveText('Pour now: second pour to 333 g', { timeout: 8000 });
+  await expect(page.locator('#p-b1')).toHaveText('Pour now: second pour to 500 g', { timeout: 8000 });
   await page.click('#next');
-  await expect(page.locator('#p-b2')).toHaveText(/^Pour to 333 g by 1:\d\d, about 4\.4 g a second\.$/);
+  await expect(page.locator('#p-b2')).toHaveText(/^Pour to 500 g by 1:\d\d, about 6\.7 g a second\.$/);
   await expect(page.locator('#pours .pt')).toContainText('stir once each way');
+});
+
+test('Hoffmann 1-cup: five fifths on time, the second over 15 s, a swirl at each end', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('fp.v1', JSON.stringify({ dspeed: 10 })));
+  await page.goto('./');
+  await pick(page, 'V60 Hoffmann 1-cup');
+  await page.click('#dry');
+  await page.click('#next'); await page.click('#next');
+  await expect(page.locator('#stage')).toHaveText('Bloom');
+  await expect(page.locator('#pours .pt')).toHaveText('Then swirl gently until it is all wet.');
+  await expect(page.locator('#pours .pline .tk')).toHaveCount(6);
+  await page.click('#next');                                               /* Start */
+  await expect(page.locator('#p-b2')).toHaveText('Pour to 50 g by 0:10, about 5 g a second.');
+  await expect(page.locator('#next')).toHaveText('Start pour 2');
+  await expect(page.locator('#p-b1')).toHaveText('Pour now: pour 2 of 5 to 100 g', { timeout: 8000 });
+  await page.click('#next');
+  await expect(page.locator('#p-b2')).toHaveText(/^Pour to 100 g by \d:\d\d, about 3\.3 g a second\.$/);
+  for (const t of ['Pour 3 of 5', 'Pour 4 of 5', 'Pour 5 of 5']) {
+    await expect(page.locator('#p-b1')).toHaveText(/^Pour now: /, { timeout: 8000 });
+    await page.click('#next');
+    await expect(page.locator('#stage')).toHaveText(t);
+  }
+  await expect(page.locator('#pours .pt')).toHaveText('Then swirl gently and let it drain.');
+  await expect(page.locator('#p-b1')).toHaveText(/^Done by about \d:\d\d$/, { timeout: 5000 });
+  expect(await noOverflow(page)).toBe(true);
 });
