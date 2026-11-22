@@ -41,13 +41,15 @@ function applyStepEdits(e,px){
   return changed;
 }
 
-var DEF={black:{tgt:200,ratio:16.9},hoff:{tgt:300,ratio:16.7},iced:{tgt:280,ratio:16.9},aulait:{tgt:300,ratio:12.5},viet:{tgt:110,ratio:7.3},cold:{tgt:500,ratio:8},
+/* water swirled round the press to warm it before the coffee goes in (Iced) */
+var PREHEAT=100;
+var DEF={black:{tgt:200,ratio:16.9},hoff:{tgt:300,ratio:16.7},iced:{tgt:280,ratio:13.3},aulait:{tgt:300,ratio:12.5},viet:{tgt:110,ratio:7.3},cold:{tgt:500,ratio:8},
   x_latte:{tgt:300,ratio:9},x_icedlatte:{tgt:300,ratio:8},x_kaapi:{tgt:200,ratio:8},x_shaken:{tgt:150,ratio:9},x_affogato:{tgt:120,ratio:7},
   x_cbmilk:{tgt:400,ratio:8},x_tonic:{tgt:480,ratio:8},x_coconut:{tgt:600,ratio:8},x_orange:{tgt:400,ratio:8},
   v_46:{tgt:300,ratio:15},v_bloom:{tgt:225,ratio:15},v_hoff:{tgt:500,ratio:16.7},v_hoff1:{tgt:250,ratio:16.7},v_rao:{tgt:330,ratio:16.5},v_iced:{tgt:300,ratio:9.2},
   vietHot:{tgt:140,ratio:7.3},vietIced:{tgt:290,ratio:7.3}};
 var S={recipe:'black',mode:'direct',vmode:'iced',pratio:14.6,ved:20,ceil:450,temp:94,panloss:30,dspeed:10,lead:3,theme:'',
-  r:{black:{tgt:200,ratio:16.9},iced:{tgt:280,ratio:16.9},aulait:{tgt:300,ratio:12.5},vietHot:{tgt:140,ratio:7.3},vietIced:{tgt:290,ratio:7.3}},
+  r:{black:{tgt:200,ratio:16.9},iced:{tgt:280,ratio:13.3},aulait:{tgt:300,ratio:12.5},vietHot:{tgt:140,ratio:7.3},vietIced:{tgt:290,ratio:7.3}},
   bean:{name:'',roaster:'',roasted:'',ground:'',bought:'',pre:false,grind:''}};
 var LOG=[], TLOG=[], testMode=false, speed=1, logView='real';
 try{var raw=localStorage.getItem(SKEY);if(raw){var p=JSON.parse(raw);for(var k in S){if(p[k]!==undefined&&p[k]!==null)S[k]=p[k]}}}catch(e){}
@@ -384,7 +386,7 @@ var RECIPES={
  hoff:{name:'Hoffmann',label:'Liquid in the cup',unit:'grams, poured straight from the press',modes:false,
    hint:'James Hoffmann\u2019s Ultimate French Press as written: 1:16.7, straight off the boil, no agitation except the crust break, a 5\u20138 minute settle, plunge only to the surface, pour gently. No decanter. Your coarse pre-ground will extract a little less than his medium grind.'},
  iced:{name:'Iced',label:'Finished iced coffee',unit:'grams in the glass, after the ice melts',modes:false,
-   hint:'Japanese style. Half the liquid is brewed hot, half is ice that melts into it. It settles like Black so the paper drains fast, then goes straight onto the ice, which traps the aromatics.'},
+   hint:'After James Hoffmann’s immersion iced coffee: 1:13.3 counting the ice, about 60% brewed hot and 40% ice that melts into it, a preheated press, and a few drops of saline if you like. It settles like Black so the paper drains fast, then goes straight onto the ice, which traps the aromatics.'},
  cold:{name:'Cold brew',label:'Finished cold brew',unit:'grams in the glass, after diluting',modes:false,
    hint:'Steeped overnight in the fridge as a concentrate, filtered, then diluted about 1:1 with cold water. Smoother and less bitter than coffee brewed hot and iced; suits heavier, chocolatey coffees.'},
  aulait:{name:'Caf\u00E9 au lait',label:'Finished drink',unit:'grams, coffee plus milk',modes:false,
@@ -528,7 +530,8 @@ function compute(){
     o.press=Wh; o.decant=T+L; o.bypass=0; o.j=0; o.Y=T; o.extra=0;
     o.maxCup=Math.floor((S.ceil>0?S.ceil:450)*(1-2/R)-20-L);
   } else if(S.recipe==='iced'){
-    o.yield=Math.round(T/2); o.ice=T-o.yield;
+    /* Hoffmann's immersion iced: two thirds of the water hot, one third ice, so the ice is about 40% of the drink */
+    o.yield=Math.round(T*0.6); o.ice=T-o.yield; o.saline=!!st.saline; o.preheat=PREHEAT;
     o.D=Math.round((o.yield+L+20+o.ice)/(R-2));
     o.press=r5(o.yield+L+2*o.D+20);
     o.decant=o.yield+L; o.bypass=0; o.j=0; o.Y=T;
@@ -569,6 +572,7 @@ function compute(){
   }
   o.boil=o.press+Math.max(o.bypass,0)+(coldBase(S.recipe)?0:pl);   /* cold brew water is not boiled, so nothing is lost */
   if(o.pours)o.boil+=20;   /* pouring from a jug in stages leaves a little behind */
+  if(o.preheat)o.boil+=o.preheat;   /* boiled with the rest, swirled round the press to warm it, tipped out */
   o.ved=Math.round(o.boil*vp/100);
   o.ro=o.boil-o.ved;
   o.iceVed=o.ice?Math.round(o.ice*vp/100):0;
@@ -681,6 +685,8 @@ function render(){
   $('pwseg').classList.toggle('hide',!o.paper||!!o.pours);
   $('pw-press').setAttribute('aria-pressed',String(o.pflow==='press')); $('pw-jug').setAttribute('aria-pressed',String(o.pflow==='jug'));
   $('iceseg').classList.toggle('hide',!o.ice);
+  $('salseg').classList.toggle('hide',S.recipe!=='iced');
+  $('sal-off').setAttribute('aria-pressed',String(!o.saline)); $('sal-on').setAttribute('aria-pressed',String(!!o.saline));
   $('ice-blend').setAttribute('aria-pressed',String(o.iceKind!=='other')); $('ice-other').setAttribute('aria-pressed',String(o.iceKind==='other'));
   if(o.paper&&!o.pours)$('blurb').textContent+=o.pflow==='press'
     ?' Paper filter, from the press: the paper is filled straight from the press, held at its tilt while the paper drains.'
@@ -809,8 +815,12 @@ function buildSteps(oIn){
       {more:'That is where the silt sits. Let it cool to a comfortable sip before you score it.'}));
   }
   else if(R==='iced'){
-    push([common.prep,common.dose,common.pour]);
-    s.push(step('steep','Steep','Lid on, plunger up. Don’t touch.',{s:240,w:[W('Serving glass into the fridge'),heatW]}));
+    /* Hoffmann preheats the brewer: the water is boiled first, a little of it warms the press, then the coffee goes in */
+    s.push(step('dose','Weigh the water',B(o.ved+' g')+' Vedica + '+B(o.ro+' g')+' RO, '+B(o.boil+' g')+' in all ('+o.preheat+' g of it preheats the press). Boil it.'));
+    s.push(step('prep','Preheat and dose','Swirl about '+B(o.preheat+' g')+' of the boiled water round the press, tip it out. '+B(o.D+' g')+' of coffee in, level; tare.',
+      {more:'A warm press loses less heat to the glass during the steep. Screen clean and unwarped.'}));
+    push([common.pour]);
+    s.push(step('steep','Steep','Lid on, plunger up. Don’t touch.',{s:240,w:[W('Serving glass into the fridge'),o.saline?W('Saline and dropper out'):null,heatW]}));
     s.push(step('crust','Break the crust','Press the bed down, skim the foam. No stirring. Lid back on.',
       {s:40,more:'Knock stuck grounds off the walls.'}));
     /* the settle drops the fines, so the paper drains quickly and the full amount reaches the ice;
@@ -825,10 +835,11 @@ function buildSteps(oIn){
       {more:'Or stop sooner if the flow slows. The screen holds the bed in place.'}));
     s.push(step('chill','Stir until cold','Stir, don’t shake, until the ice is mostly gone. Note the temperature.',
       {s:30,more:'Shaking puts the fines back into suspension. You should have about '+o.T+' g.'}));
-    s.push(step('off','Serve','Into the cold glass. Above 10°C, add two or three cubes, '+B('40 g')+' at most.',
-      {more:'At 10°C or below, no ice. Unmelted chunks from the jug go in too; they are part of the recipe. Leave the last spoonful in the jug, where the silt sits.'}));
+    s.push(step('off','Serve','Into the cold glass'+(o.saline?' with 2\u20133 drops of saline':'')+'. Above 10°C, add two or three cubes, '+B('40 g')+' at most.',
+      {more:'At 10°C or below, no ice. Unmelted chunks from the jug go in too; they are part of the recipe. Leave the last spoonful in the jug, where the silt sits.'
+        +(o.saline?' Saline: 5 g of salt dissolved in 20 g of water, in a dropper bottle. Hoffmann adds a few drops; salt takes the edge off bitterness.':'')}));
     s.push(step('rest','Taste','Now, and again in ten minutes as it warms.',
-      {more:'Juicy and sweet is right. Bitter up front: try 1:16 next time, since bitterness follows strength. Clean but thin: 1:14. Light, bright coffees suit this method best; heavier medium roasts do better as cold brew. Hold a sip a moment so it warms, for the aroma.'}));
+      {more:'Juicy and sweet is right. Bitter up front: try the saline, or 1:14 to 1:15 next time, since bitterness follows strength. Clean but thin: stronger. Light, bright coffees suit this method best; heavier medium roasts do better as cold brew. Hold a sip a moment so it warms, for the aroma.'}));
   }
   else if(R==='aulait'){
     push([common.prep,common.dose,common.pour,common.steep]);
@@ -1221,6 +1232,7 @@ function paintRunPanel(){
   if(m.recipe==='black')how.push(m.mode==='bypass'?'bypass':'direct');
   if(o)how.push(o.paper?'paper, '+(o.pflow==='press'?'from the press':'from the decanter'):'mesh only');
   if(o&&o.ice)how.push(o.iceKind==='other'?'other ice':'RO + Vedica ice');
+  if(o&&o.saline)how.push('saline');
   if(p.tgt)sub.push(p.tgt+' g'); if(p.ratio)sub.push('1:'+p.ratio); if(p.temp)sub.push(p.temp+'°C'); if(p.loc)sub.push(esc(p.loc));
   if(testMode)sub.push('dry run');
   if(o&&runCalc.got)sub.push('adjusted for '+runCalc.got+' g poured');
@@ -1336,7 +1348,7 @@ function startBrew(isTest){
   var old=readRun(); if(old)endStoredRun(old);
   testMode=!!isTest; speed=testMode?dryX():1;
   steps=buildSteps(); actuals=[]; elapsed=0; runCalc=compute(); brewT0=Date.now(); runId=null; pourT0=0;
-  runMeta={recipe:S.recipe,mode:S.mode,params:{tgt:rs().tgt,ratio:rs().ratio,pratio:S.pratio,ved:S.ved,temp:coldBase(S.recipe)?undefined:S.temp,loc:(curLoc()||{}).name||undefined,vmode:S.recipe==='viet'?S.vmode:undefined,paper:(rs().paper||runCalc.pours)?true:undefined,pfrom:(rs().paper&&!runCalc.pours)?(rs().pflow==='press'?'press':'decanter'):undefined,ice:runCalc.iceKind||undefined},bean:beanSnap()};
+  runMeta={recipe:S.recipe,mode:S.mode,params:{tgt:rs().tgt,ratio:rs().ratio,pratio:S.pratio,ved:S.ved,temp:coldBase(S.recipe)?undefined:S.temp,loc:(curLoc()||{}).name||undefined,vmode:S.recipe==='viet'?S.vmode:undefined,paper:(rs().paper||runCalc.pours)?true:undefined,pfrom:(rs().paper&&!runCalc.pours)?(rs().pflow==='press'?'press':'decanter'):undefined,ice:runCalc.iceKind||undefined,saline:runCalc.saline||undefined},bean:beanSnap()};
   closeRunPanel();
   $('dryflag').classList.toggle('hide',!testMode);
   show('sc-brew'); ctx(); lock();
@@ -1367,7 +1379,7 @@ function findAny(id){var r=null;LOG.concat(TLOG).forEach(function(x){if(String(x
    Left half-done, it stays in the log, unfinished, and can be scored like any other brew. */
 function brewEntry(id){
   var o=runCalc||compute();
-  var m=runMeta||{recipe:S.recipe,mode:S.mode,params:{tgt:rs().tgt,ratio:rs().ratio,pratio:S.pratio,ved:S.ved,temp:S.temp,paper:rs().paper?true:undefined,pfrom:rs().paper?(rs().pflow==='press'?'press':'decanter'):undefined,ice:o.iceKind||undefined},bean:beanSnap()};
+  var m=runMeta||{recipe:S.recipe,mode:S.mode,params:{tgt:rs().tgt,ratio:rs().ratio,pratio:S.pratio,ved:S.ved,temp:S.temp,paper:rs().paper?true:undefined,pfrom:rs().paper?(rs().pflow==='press'?'press':'decanter'):undefined,ice:o.iceKind||undefined,saline:o.saline||undefined},bean:beanSnap()};
   return {id:id, at:new Date(id).toISOString(), rev:id, pending:true,
     test:testMode||undefined, recipe:m.recipe, mode:m.mode, bean:m.bean, params:m.params, calc:calcOf(o), steps:[], total:0, contact:0,
     log:{temp:null,decant:(runCalc&&runCalc.got)||null,score:null,tastes:[],faults:[],note:''}};
@@ -1829,7 +1841,7 @@ function entryDetail(e,editing){
   }
   h+='<p class="note" style="margin:8px 0 0">'+(RECIPES[e.recipe||'black']?RECIPES[e.recipe||'black'].name:'Black')+' \u00B7 '+c.dose+' g into '+c.press+' g \u00B7 decant target '+c.decant+' g'
    +(l.decant?', reached '+l.decant+' g':'')+(l.fin?' \u00B7 '+l.fin+' g in the glass':'')+(paperKept(e)!==null?' \u00B7 paper and jug kept about '+paperKept(e)+' g':'')
-   +(e.params.temp!==undefined?' \u00B7 water '+e.params.temp+'\u00B0C':'')+(e.params.loc?' \u00B7 '+esc(e.params.loc):'')+(e.params.paper?' \u00B7 through a paper filter'+(e.params.pfrom==='press'?', straight from the press':e.params.pfrom==='decanter'?', from the decanter':''):'')+(e.params.ice?' \u00B7 '+(e.params.ice==='other'?'other ice':'RO + Vedica ice'):'')
+   +(e.params.temp!==undefined?' \u00B7 water '+e.params.temp+'\u00B0C':'')+(e.params.loc?' \u00B7 '+esc(e.params.loc):'')+(e.params.paper?' \u00B7 through a paper filter'+(e.params.pfrom==='press'?', straight from the press':e.params.pfrom==='decanter'?', from the decanter':''):'')+(e.params.ice?' \u00B7 '+(e.params.ice==='other'?'other ice':'RO + Vedica ice'):'')+(e.params.saline?' \u00B7 saline':'')
    +(l.jug!==undefined&&l.jug!==null?' \u00B7 jug '+l.jug+'\u00B0C':'')
    +(l.temp?' \u00B7 cup '+l.temp+'\u00B0C':'')+'</p>';
   if(l.tastes&&l.tastes.length)h+='<p class="note tasted" style="margin:8px 0 0">Tasted '+esc(l.tastes.join(', ').toLowerCase())+'</p>';
@@ -2142,7 +2154,7 @@ function openLog(v){
     var by=isA?' \u00B7 '+esc(nameOf(e._by)):e.ref?' \u00B7 '+esc(nameOf(e.ref.who))+'\u2019s brew':(e.with&&e.with.length?' \u00B7 shared':'');
     return '<button class="entry" data-id="'+e.id+'">'
       +'<span class="l1"><span class="d">'+ds+'</span><span class="sc">'+scText(e,l)+'</span></span>'
-      +'<span class="l2">'+rname(e)+(e.params&&e.params.vmode?' ('+e.params.vmode+')':'')+(e.params&&e.params.paper?' \u00B7 paper':'')+(e.params&&e.params.ice==='other'?' \u00B7 other ice':'')+by+' \u00B7 '+e.calc.dose+' g \u00B7 contact '+mmss(e.contact||0)+(l.temp?' \u00B7 cup '+l.temp+'\u00B0C':'')+'</span></button>'
+      +'<span class="l2">'+rname(e)+(e.params&&e.params.vmode?' ('+e.params.vmode+')':'')+(e.params&&e.params.paper?' \u00B7 paper':'')+(e.params&&e.params.ice==='other'?' \u00B7 other ice':'')+(e.params&&e.params.saline?' \u00B7 saline':'')+by+' \u00B7 '+e.calc.dose+' g \u00B7 contact '+mmss(e.contact||0)+(l.temp?' \u00B7 cup '+l.temp+'\u00B0C':'')+'</span></button>'
       +'<div class="detwrap hide" id="dt-'+e.id+'"></div>';
   }).join('');
   $('log-copy').classList.toggle('hide',isA);
@@ -2410,6 +2422,9 @@ $('pw-jug').addEventListener('click',function(){setPflow('jug')});
 function setIce(v){if(v==='other')rs().ice='other';else delete rs().ice;saveS();render()}
 $('ice-blend').addEventListener('click',function(){setIce('blend')});
 $('ice-other').addEventListener('click',function(){setIce('other')});
+function setSaline(on){if(on)rs().saline=true;else delete rs().saline;saveS();render()}
+$('sal-off').addEventListener('click',function(){setSaline(false)});
+$('sal-on').addEventListener('click',function(){setSaline(true)});
 paintLoc();
 setMode(S.mode);
 paintBanners();

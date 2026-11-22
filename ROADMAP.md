@@ -14,6 +14,8 @@ Roughly in the order they would help.
 
 ## Done
 
+- **Iced after Hoffmann's immersion iced coffee:** 1:13.3 with 40% ice, a preheated press, and a logged saline switch.
+
 - **V60 iced** (Hoffmann's iced filter onto ice in the jug) and V60 caffeine counted in full.
 
 - **V60 Hoffmann 1-cup**; V60 Hoffmann starts at his 500 g; Pours read as scale readings; + and − snap to round tens.

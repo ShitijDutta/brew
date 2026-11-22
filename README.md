@@ -49,6 +49,10 @@ the glass, with a timed drain. No jug settle. Brews are tagged, and the Log show
 - A step's timer keeps counting past zero, as minus time, so a glance shows how far over it is.
 - **Iced** (Japanese style) steeps 4:00, breaks the crust and settles 5:00 like Black, so the fines sink and the paper drains
   the full amount onto the ice; the ice comes out in the settle's last minute.
+  After James Hoffmann's immersion iced coffee, it brews at 1:13.3 counting the ice, with about 60% of the drink brewed
+  hot and 40% ice; the water is boiled first and 100 g of it preheats the press before the coffee goes in. A **Saline**
+  switch adds 2–3 drops of saline (5 g salt in 20 g water) at serving, and is logged with the brew so cups with and
+  without can be compared.
 - **Cold brew** is a concentrate (1:8 by default, coffee to press water) steeped overnight in the fridge with room-temperature
   water, filtered, then diluted about 1:1. The fridge step has no timer: set the phone's alarm for 8 hours; the step shows when
   it is ready (8 h) and best by (12 h). The app lets the screen sleep during it and keeps the brew for up to two days.

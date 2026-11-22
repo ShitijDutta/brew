@@ -36,7 +36,7 @@ test('iced: settles like Black, and the ice comes out in the last minute of the 
   await page.click('#dry');
   const titles = [];
   while ((await page.innerText('#stage')) !== 'Settle') { titles.push(await page.innerText('#stage')); await page.click('#next'); }
-  expect(titles).toEqual(['Dose the carafe', 'Weigh the water', 'Boil and pour', 'Steep', 'Break the crust']);
+  expect(titles).toEqual(['Weigh the water', 'Preheat and dose', 'Boil and pour', 'Steep', 'Break the crust']);
   const cue = page.locator('#wait li', { hasText: '1:00 left' });
   await expect(cue).toContainText(ice + ' RO + Vedica ice into the jug, dripper on top, on the scale, tared');
   await expect(cue).not.toHaveClass(/due/);
@@ -45,6 +45,33 @@ test('iced: settles like Black, and the ice comes out in the last minute of the 
   await expect(page.locator('#more-b')).toContainText('ice that melts early');
   await page.click('#next');
   await expect(page.locator('#stage')).toHaveText('Plunge');
+});
+
+test('iced after Hoffmann: 1:13.3 with 40% ice, a preheated press, and saline when switched on', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('fp.v1', JSON.stringify({ dspeed: 60 })));
+  await page.goto('./');
+  await page.click('#rpick [data-r="iced"]');
+  await expect(page.locator('#ratio')).toHaveValue('13.3');
+  await expect(numberRow(page, 'Ice to brew onto')).toHaveText('112 g');          /* 40% of a 280 g drink */
+  await expect(page.locator('#salseg')).toBeVisible();
+  await expect(page.locator('#sal-off')).toHaveAttribute('aria-pressed', 'true');
+  await page.click('#sal-on');
+  await expect(page.locator('#sal-on')).toHaveAttribute('aria-pressed', 'true');
+  await page.click('#dry');
+  await expect(page.locator('#stage')).toHaveText('Weigh the water');
+  await expect(page.locator('#detail')).toContainText('(100 g of it preheats the press). Boil it.');
+  await page.click('#next');
+  await expect(page.locator('#stage')).toHaveText('Preheat and dose');
+  await expect(page.locator('#detail')).toContainText('round the press, tip it out');
+  await page.click('#runbar');
+  await expect(page.locator('#runpanel')).toContainText('saline');
+  await page.mouse.click(5, 5);
+  for (let i = 0; i < 20 && (await page.innerText('#stage')) !== 'Serve'; i++) await page.click('#next');
+  await expect(page.locator('#detail')).toContainText('Into the cold glass with 2–3 drops of saline');
+  /* the switch only shows for Iced */
+  await page.click('#abandon'); if (await page.isVisible('#abandon')) await page.click('#abandon');
+  await page.click('#rpick [data-r="black"]');
+  await expect(page.locator('#salseg')).toBeHidden();
 });
 
 test('This brew panel: the run’s numbers and steps, without touching the timer', async ({ page }) => {
