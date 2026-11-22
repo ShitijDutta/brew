@@ -222,6 +222,8 @@ test('a real V60 brew reaches the log after the bloom, keeps when the bed showed
   await expect(page.locator('#sc-review')).toBeVisible();
   await expect(page.locator('#rv-decg')).toBeHidden();
   await expect(page.locator('#rv-fin')).toHaveAttribute('placeholder', '260 planned');
+  /* a pour-over has no pour-off: its caffeine counts in full (20 g at about 10.8 mg a gram) */
+  await expect(page.locator('#rv-caf')).toContainText('About 215 mg of caffeine for you');
   await page.click('#rv-score [data-v="4"]');
   await page.click('#rv-like [data-v="3"]');
   await expect(page.locator('#rv-lval')).toHaveText('3 / 5');
@@ -245,6 +247,7 @@ test('a real V60 brew reaches the log after the bloom, keeps when the bed showed
   const dt = page.locator('#dt-' + e.id);
   await expect(dt.locator('.phead')).toContainText(/Brew took 0:0\d · 3:2\d ahead of Kasuya \(3:30\)/);
   await expect(dt.locator('.ptab tr')).toHaveCount(6);
+  await expect(dt).toContainText('215 mg');
   expect(await noOverflow(page)).toBe(true);
 });
 

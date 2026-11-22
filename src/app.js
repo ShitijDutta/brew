@@ -1495,7 +1495,7 @@ function paintReview(){
   $('rv-of').textContent=rt?'grams you drank, of the '+rt+' g brew':'grams you drank'; $('rv-drank').max=rt||'';
   if(document.activeElement!==$('rv-drank'))$('rv-drank').value=rt?Math.round(rvShare*rt):'';
   syncChips($('rv-share'),SHARES.map(function(x){return x[0]}),'sh',shareLabel,function(v){return Math.abs(rvShare-v)<0.01});
-  var re=RV&&findAny(RV.id), rc=(re&&!re.test)?cafOf(re.calc,Number($('rv-dec').value)||null,rvShare):null;
+  var re=RV&&findAny(RV.id), rc=(re&&!re.test)?cafOf(re.calc,Number($('rv-dec').value)||null,rvShare,re.recipe):null;
   $('rv-caf').textContent=rc?(rvShare>0?'About '+r5(rc.mid)+' mg of caffeine for you, somewhere between '+r5(rc.low)+' and '+r5(rc.high)+'.':'No caffeine counted for you from this brew.'):'';
   $('rv-val').textContent=rvScore?fmtScore(rvScore)+' / 5':'not scored yet';
   if(document.activeElement!==$('rv-fine'))$('rv-fine').value=rvScore||3;
@@ -1617,10 +1617,13 @@ function paintBanners(){
 /* ---------- caffeine ---------- */
 var EXTRAS=[['Diet Coke can',40],['Cup of tea',45],['Espresso shot',65],['Energy drink can',80]];
 var cafMenu=false;
-function cafOf(c,dec,share){
+/* rk: the recipe. A pour-over has no pour-off: the whole dose's water goes through into the cup, and caffeine dissolves
+   early, so little of it stays in the wet bed; it counts in full */
+function cafOf(c,dec,share,rk){
   if(!c||!c.dose||!c.press)return null;
   var rec=(dec||c.decant||0)/c.press;
   if(c.jug&&c.pour&&c.jug>c.pour)rec*=c.pour/c.jug;
+  if(isPour(rk))rec=1;
   rec=Math.max(0,Math.min(1,rec));
   var sh=(share===undefined||share===null)?1:share;
   /* arabica is roughly 1.0-1.4% caffeine and about 85-95% of it dissolves; the rest stays in the grounds and dregs */
@@ -1628,7 +1631,7 @@ function cafOf(c,dec,share){
 }
 function cafEvents(){
   var ev=[];
-  LOG.forEach(function(e){if(e.test||e.skipped)return;var c=cafOf(e.calc,e.log&&e.log.decant,e.log&&e.log.share);if(c&&c.mid>0)ev.push({t:new Date(e.at).getTime(),mg:c.mid})});
+  LOG.forEach(function(e){if(e.test||e.skipped)return;var c=cafOf(e.calc,e.log&&e.log.decant,e.log&&e.log.share,e.recipe);if(c&&c.mid>0)ev.push({t:new Date(e.at).getTime(),mg:c.mid})});
   (PK.extras||[]).forEach(function(x){ev.push({t:new Date(x.at).getTime(),mg:x.mg})});
   return ev;
 }
@@ -1636,7 +1639,7 @@ function midnight(){var m=new Date();m.setHours(0,0,0,0);return m.getTime()}
 function cafToday(){var m=midnight(),s=0;cafEvents().forEach(function(v){if(v.t>=m)s+=v.mg});return s}
 function cafNow(){var n=Date.now(),s=0;cafEvents().forEach(function(v){var hr=(n-v.t)/3600000;if(hr>=0&&hr<48)s+=v.mg*Math.pow(0.5,hr/5)});return s}
 function paintCaf(){
-  var o=compute(), c=cafOf({dose:o.D,press:o.press,decant:Math.round(o.decant),jug:o.Y,pour:Math.round(o.T)},null,1);
+  var o=compute(), c=cafOf({dose:o.D,press:o.press,decant:Math.round(o.decant),jug:o.Y,pour:Math.round(o.T)},null,1,S.recipe);
   var td=r5(cafToday()), nw=r5(cafNow());
   var h='<p>Caffeine today ≈ <b'+(td>400?' class="hot"':'')+'>'+td+' mg</b> · in your system now ≈ <b>'+nw+' mg</b>'+(c?' · this brew holds ≈ <b>'+r5(c.mid)+' mg</b>':'')+'</p>';
   var m=midnight(), ex=(PK.extras||[]).filter(function(x){return new Date(x.at).getTime()>=m});
@@ -1819,7 +1822,7 @@ function entryDetail(e,editing){
   if(l.faults&&l.faults.length)h+='<p class="note" style="margin:8px 0 0;color:var(--stop)">'+esc(l.faults.join(', '))+'</p>';
   if(l.note)h+='<p class="note" style="margin:8px 0 0;color:var(--steel)">'+esc(l.note)+'</p>';
   var mine=!e._by||e._by===WHO.id;
-  var cf=(e.test||!mine)?null:cafOf(e.calc,l.decant,l.share);
+  var cf=(e.test||!mine)?null:cafOf(e.calc,l.decant,l.share,e.recipe);
   if(cf)h+='<p class="note" style="margin:8px 0 0">Caffeine ≈ '+r5(cf.mid)+' mg for you'+shareNote(l)+'</p>';
   h+=sharedHTML(e);
   if(e.edited)h+='<p class="edited">Edited '+fmtWhen(e.edited)+'</p>';
@@ -1983,7 +1986,7 @@ function brewText(e){
   L.push('Result: '+res.join(' \u00B7 '));
   L.push('Steps, actual (target):');
   (e.steps||[]).forEach(function(s){L.push('  '+s.t+' '+mmss(s.actual)+(s.target?' ('+mmss(s.target)+')':''))});
-  var cft=e.test?null:cafOf(c,l.decant,l.share);
+  var cft=e.test?null:cafOf(c,l.decant,l.share,e.recipe);
   if(cft)L.push('Caffeine: about '+r5(cft.mid)+' mg for me'+shareNote(l).replace('you drank','I drank').replace('your share','my share'));
   if(l.tastes&&l.tastes.length)L.push('Tasted: '+l.tastes.join(', '));
   L.push('Faults: '+(l.faults&&l.faults.length?l.faults.join(', '):'none'));
