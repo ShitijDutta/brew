@@ -14,6 +14,8 @@ Roughly in the order they would help.
 
 ## Done
 
+- **V60 iced** (Hoffmann's iced filter onto ice in the jug) and V60 caffeine counted in full.
+
 - **V60 Hoffmann 1-cup**; V60 Hoffmann starts at his 500 g; Pours read as scale readings; + and − snap to round tens.
 
 - **V60 Hoffmann and V60 Rao** for a standard V60 grind, on the same pour screen, each recipe with its own water

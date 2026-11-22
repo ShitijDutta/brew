@@ -351,3 +351,31 @@ test('Hoffmann 1-cup: five fifths on time, the second over 15 s, a swirl at each
   await expect(page.locator('#p-b1')).toHaveText(/^Done by about \d:\d\d$/, { timeout: 5000 });
   expect(await noOverflow(page)).toBe(true);
 });
+
+test('V60 iced: the ice goes in the jug, a bloom then one slow pour, served over fresh ice', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('fp.v1', JSON.stringify({ dspeed: 10 })));
+  await page.goto('./');
+  await pick(page, 'V60 iced');
+  await expect(num(page, 'Coffee')).toHaveText('33 g');
+  await expect(num(page, 'Water to pour')).toHaveText('300 g');
+  await expect(num(page, 'Pours')).toHaveText('to 99, then 300 g');
+  await expect(num(page, 'Time to pour')).toHaveText('about 17 and 60 s');
+  await expect(num(page, 'Ice in the jug')).toHaveText('200 g');
+  await expect(num(page, 'In the jug, ice melted')).toHaveText('about 434 g');
+  await expect(page.locator('#iceseg')).toBeVisible();
+  expect(await noOverflow(page)).toBe(true);
+  await page.click('#dry');
+  await page.click('#next');
+  await expect(page.locator('#stage')).toHaveText('Rinse and dose');
+  await expect(page.locator('#detail')).toContainText('200 g RO + Vedica ice into the jug, dripper on');
+  await page.click('#next');
+  await expect(page.locator('#stage')).toHaveText('Bloom');
+  await page.click('#next');                                               /* Start */
+  await expect(page.locator('#p-b1')).toHaveText('Pour now: main pour to 300 g', { timeout: 8000 });
+  await page.click('#next');
+  await expect(page.locator('#p-b2')).toHaveText(/^Pour to 300 g by \d:\d\d, about 3\.4 g a second\.$/);
+  await expect(page.locator('#next')).toHaveText('Drained');
+  await page.click('#next');
+  await expect(page.locator('#stage')).toHaveText('Swirl and serve');
+  await expect(page.locator('#detail')).toContainText('over fresh ice in your glass: about 434 g');
+});

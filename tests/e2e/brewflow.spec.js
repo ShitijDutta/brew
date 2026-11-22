@@ -259,13 +259,13 @@ test('Something new: drinks folded away from the daily recipes, each one brews t
   await expect(page.locator('#xpick')).toBeHidden();
   await page.click('#newdrinks summary');
   const drinks = await page.locator('#xpick button').allInnerTexts();
-  expect(drinks).toEqual(['Latte', 'Iced latte', 'Kaapi-style', 'Shaken iced', 'Affogato', 'Cold brew + milk', 'Cold brew tonic', 'Coconut cold brew', 'Orange cold brew', 'V60 4:6', 'V60 double bloom', 'V60 Hoffmann', 'V60 Hoffmann 1-cup', 'V60 Rao']);
+  expect(drinks).toEqual(['Latte', 'Iced latte', 'Kaapi-style', 'Shaken iced', 'Affogato', 'Cold brew + milk', 'Cold brew tonic', 'Coconut cold brew', 'Orange cold brew', 'V60 4:6', 'V60 double bloom', 'V60 Hoffmann', 'V60 Hoffmann 1-cup', 'V60 Rao', 'V60 iced']);
   const ends = {
     'Latte': ['Froth the milk', 'Pour'], 'Iced latte': ['Add the milk'], 'Kaapi-style': ['Froth the milk', 'Pour back and forth'],
     'Shaken iced': ['Shake', 'Pour off the ice'], 'Affogato': ['Over the ice cream'], 'Cold brew + milk': ['Over ice with milk'],
     'Cold brew tonic': ['Build the tonic'], 'Coconut cold brew': ['Over ice'], 'Orange cold brew': ['Over ice'],
     'V60 4:6': ['Pour 4 of 5', 'Pour 5 of 5', 'Swirl and serve'], 'V60 double bloom': ['Second bloom', 'Main pour', 'Swirl and serve'],
-    'V60 Hoffmann': ['First pour', 'Second pour', 'Swirl and serve'], 'V60 Hoffmann 1-cup': ['Pour 4 of 5', 'Pour 5 of 5', 'Swirl and serve'], 'V60 Rao': ['Second pour', 'Last pour', 'Swirl and serve']
+    'V60 Hoffmann': ['First pour', 'Second pour', 'Swirl and serve'], 'V60 Hoffmann 1-cup': ['Pour 4 of 5', 'Pour 5 of 5', 'Swirl and serve'], 'V60 Rao': ['Second pour', 'Last pour', 'Swirl and serve'], 'V60 iced': ['Bloom', 'Main pour', 'Swirl and serve']
   };
   for (const name of drinks) {
     await page.locator('#xpick').getByRole('button', { name, exact: true }).click();

@@ -73,7 +73,10 @@ picker:
   (James Hoffmann's Ultimate V60: a bloom of twice the coffee with a swirl, then two 30-second pours at 0:45 and 1:15, a stir
   each way and a last swirl; water straight off the boil; done by 3:30; starts at his 30 g to 500 g), **V60 Hoffmann
   1-cup** (his recipe for 15 g to 250 g: a bloom of a fifth of the water with a gentle swirl, four more fifths at 0:45,
-  1:10, 1:30 and 1:50, a last swirl, done around 3:00) and **V60 Rao** (Scott Rao: a bloom of three times
+  1:10, 1:30 and 1:50, a last swirl, done around 3:00), **V60 iced** (Hoffmann's iced filter: 65 g of coffee a litre of
+  water and ice together, 60% hot water through the coffee onto 40% ice in the jug, a 45 s bloom of three times the coffee,
+  one slow pour paced over 60 s, done by about 3:00, stirred and swirled until the ice melts and served over fresh ice; the
+  ice-type switch applies) and **V60 Rao** (Scott Rao: a bloom of three times
   the coffee spun hard, a second pour at 0:40, the last once about 70% has drained; 97 °C; done in 4:00–4:30). Each recipe
   carries its own water temperature (4:6 about 93 °C for light roasts, 88 medium, 83 dark; double bloom about 93 °C). The
   target is the water poured; the cup is about 2 g less per gram of coffee. The recipe screen lists the pours as scale

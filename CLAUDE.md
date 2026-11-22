@@ -16,7 +16,8 @@
   the next pour) with `pour: {i, n, at, to, note, who, end, lift, wait}`. Each recipe's pours carry `btn` (the button's
   "Start …"), `wait` ('bed' or 'time') and `rate` (g/s; `pourTime` = grams / rate, `pourFrom` = the reading it starts
   at; the step's `pour` keeps `from`, `rate`, `pd`); the recipe carries `slow` (what to say when a pour runs long),
-  `water`/`boilTo`/`tempMore` (its temperature) and optional `endText`. A pour with `at: null` and `when` waits on the drain
+  `water`/`boilTo`/`tempMore` (its temperature), optional `endText`, and for an iced pour-over `iceFrac` (ice in the jug as a
+  share of the water poured; `compute` sets `o.ice` and adds it to the cup) and `serve` (the last step's words). A pour with `at: null` and `when` waits on the drain
   alone (Rao's last): `pourGap`/`pourDue` return null for it, it is never late, and the summary shows a dash.
   While a pour is within `pd`, the box shows the scale reading at that pace (display only: the button keeps its action).
   `paintPours` draws the whole pour screen on the brew clock (`brewSpent`, from `pourT0`): the timeline (`pourLine`),

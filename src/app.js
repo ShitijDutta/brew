@@ -44,7 +44,7 @@ function applyStepEdits(e,px){
 var DEF={black:{tgt:200,ratio:16.9},hoff:{tgt:300,ratio:16.7},iced:{tgt:280,ratio:16.9},aulait:{tgt:300,ratio:12.5},viet:{tgt:110,ratio:7.3},cold:{tgt:500,ratio:8},
   x_latte:{tgt:300,ratio:9},x_icedlatte:{tgt:300,ratio:8},x_kaapi:{tgt:200,ratio:8},x_shaken:{tgt:150,ratio:9},x_affogato:{tgt:120,ratio:7},
   x_cbmilk:{tgt:400,ratio:8},x_tonic:{tgt:480,ratio:8},x_coconut:{tgt:600,ratio:8},x_orange:{tgt:400,ratio:8},
-  v_46:{tgt:300,ratio:15},v_bloom:{tgt:225,ratio:15},v_hoff:{tgt:500,ratio:16.7},v_hoff1:{tgt:250,ratio:16.7},v_rao:{tgt:330,ratio:16.5},
+  v_46:{tgt:300,ratio:15},v_bloom:{tgt:225,ratio:15},v_hoff:{tgt:500,ratio:16.7},v_hoff1:{tgt:250,ratio:16.7},v_rao:{tgt:330,ratio:16.5},v_iced:{tgt:300,ratio:9.2},
   vietHot:{tgt:140,ratio:7.3},vietIced:{tgt:290,ratio:7.3}};
 var S={recipe:'black',mode:'direct',vmode:'iced',pratio:14.6,ved:20,ceil:450,temp:94,panloss:30,dspeed:10,lead:3,theme:'',
   r:{black:{tgt:200,ratio:16.9},iced:{tgt:280,ratio:16.9},aulait:{tgt:300,ratio:12.5},vietHot:{tgt:140,ratio:7.3},vietIced:{tgt:290,ratio:7.3}},
@@ -420,7 +420,9 @@ var RECIPES={
  v_hoff1:{extra:'pour',name:'V60 Hoffmann 1-cup',label:'Water to pour',unit:'grams through the coffee; the cup is about 2 g less per gram of coffee',modes:false,
    hint:'James Hoffmann’s 1-cup V60, written for 15 g of coffee and 250 g of water: a bloom of a fifth of the water with a gentle swirl, then four more fifths at 0:45, 1:10, 1:30 and 1:50, a last swirl, done around 3:00. Water straight off the boil.'},
  v_rao:{extra:'pour',name:'V60 Rao',label:'Water to pour',unit:'grams through the coffee; the cup is about 2 g less per gram of coffee',modes:false,
-   hint:'Scott Rao’s V60: a bloom of three times the coffee, spun hard; a second pour at 0:40; the last once about 70% has drained, with gentle spins. Done in 4:00 to 4:30, at 97 °C.'}
+   hint:'Scott Rao’s V60: a bloom of three times the coffee, spun hard; a second pour at 0:40; the last once about 70% has drained, with gentle spins. Done in 4:00 to 4:30, at 97 °C.'},
+ v_iced:{extra:'pour',name:'V60 iced',label:'Water to pour',unit:'grams of hot water through the coffee; the ice in the jug under it is two thirds of that again',modes:false,
+   hint:'James Hoffmann’s iced V60: 65 g of coffee a litre of water and ice together, 60% hot water through the coffee onto 40% ice in the jug below. A bloom of three times the coffee for 45 s, then one slow pour, done in 2 to 3 minutes; stir, swirl until the ice melts, serve over fresh ice. The ratio here is on the hot water alone (1:9.2, about 1:15.4 with the ice).'}
 };
 /* pour-over: each pour is its own step. at = when the recipe pours it (seconds from the first pour), to = the scale reading,
    t = step title, note = shown only where it matters, btn = what the button says to start it ("Start pour 2").
@@ -461,6 +463,14 @@ var POUR={
       p.push({at:at[i],to:to,t:i?'Pour '+(i+1)+' of 5':'Bloom',btn:i?'pour '+(i+1):'bloom',wait:'time',rate:(to-prev)/dur[i],
         note:i===0?'Then swirl gently until it is all wet.':(i===4?'Then swirl gently and let it drain.':'')});prev=to}
     return p}},
+  /* iceFrac: ice in the jug under the dripper, as a share of the water poured; serve: the last step's words */
+  v_iced:{who:'Hoffmann',end:180,iceFrac:2/3,slow:'Let it finish draining.',
+    water:'straight off the boil',boilTo:'Boil, and use it straight off the boil.',
+    tempMore:'The write-ups of Hoffmann\u2019s iced video give no temperature; his hot V60 recipes use water straight off the boil.',
+    serve:'Stir once each way and swirl the jug until the ice has melted, then over fresh ice in your glass: about ',
+    pours:function(W,D){var b=Math.min(3*D,W);
+    return [{at:0,to:b,t:'Bloom',btn:'bloom',wait:'time',rate:6,note:'Then swirl until it is all wet, and leave it.'},
+      {at:45,to:W,t:'Main pour',btn:'main pour',rate:(W-b)/60,note:'One slow pour, in small circles, onto the ice below. Then let it drain.'}]}},
   v_rao:{who:'Rao',end:270,endText:'4:00\u20134:30',slow:'Let it finish draining.',
     water:'at about 97 \u00B0C',boilTo:'Boil, then let it settle to about 97 \u00B0C.',tempMore:'Rao brews at 97 \u00B0C, in a plastic V60 for the heat it holds.',
     pours:function(W,D){var b=3*D, m=Math.round(W*200/330);
@@ -504,6 +514,8 @@ function compute(){
     o.paper=true; o.loss=0; o.rinse=PAPER_RINSE; o.pflow=null;
     o.D=Math.round(T/R); o.press=T; o.T=Math.max(0,T-2*o.D); o.Y=o.T; o.decant=0; o.bypass=0; o.j=0; o.extra=0;
     o.pours=POUR[S.recipe].pours(T,o.D); o.end=POUR[S.recipe].end;
+    /* brewed onto ice: the ice is part of the drink once it melts */
+    if(POUR[S.recipe].iceFrac){o.ice=Math.round(T*POUR[S.recipe].iceFrac);o.T+=o.ice;o.Y=o.T}
   } else if(S.recipe==='black'){
     /* without paper, the jug keeps back a little at the end to hold the silt; through paper there is none to hold back */
     o.j=L?0:Math.round(15+T/40); o.Y=T+o.j;
@@ -585,7 +597,8 @@ function numRows(o,mode,loc){
     var pt=P0.map(function(q,j){return pourTime(P0,j)});
     rows.push(['Time to pour',pt.every(function(v){return v===pt[0]})?'about '+pt[0]+' s each':'about '+pt.slice(0,-1).join(', ')+' and '+pt[pt.length-1]+' s','']);
     rows.push([POUR[rk].lift?'Lift the dripper off at':'Done by about',POUR[rk].endText||mmss(o.end),'']);
-    rows.push(['In the cup','about '+o.T+' g','lead']);
+    if(o.ice){rows.push(['Ice in the jug',o.ice+' g','accent']);rows.push(o.iceKind==='other'?['\u2003 which ice','Other ice','']:['\u2003 frozen from',o.iceVed+' / '+o.iceRo+' g Vedica / RO',''])}
+    rows.push([o.ice?'In the jug, ice melted':'In the cup','about '+o.T+' g','lead']);
     return rows;
   }
   if(!coldBase(rk))rows.push(['Water into press',o.press+' g','']);
@@ -740,8 +753,9 @@ function buildSteps(oIn){
     var PR=POUR[R], np=o.pours.length;
     s.push(step('dose','Weigh the water',B(o.ved+' g')+' Vedica + '+B(o.ro+' g')+' RO, '+B(o.boil+' g')+' in all. '+PR.boilTo,
       {w:[W('Heat '+B(o.rinse+' g')+' plain RO for the paper rinse')],more:PR.tempMore+' Your thermometer in the kettle tells you when.'}));
-    s.push(step('prep','Rinse and dose','Rinse the paper with the hot RO, tip it out. '+B(o.D+' g')+' of coffee in, level. Dripper on the jug, on the scale, tared.',
-      {more:'The first pour waits for you to tap Start, so get the water to temperature first. A small dip in the middle of the bed helps the bloom wet it all.'}));
+    s.push(step('prep','Rinse and dose',o.ice?'Rinse the paper, tip it out. '+iceTxt+' into the jug, dripper on. '+B(o.D+' g')+' of coffee in, level; tare.'
+      :'Rinse the paper with the hot RO, tip it out. '+B(o.D+' g')+' of coffee in, level. Dripper on the jug, on the scale, tared.',
+      {more:'The first pour waits for you to tap Start, so get the water to temperature first. A small dip in the middle of the bed helps the bloom wet it all.'+(o.ice?' '+iceMore:'')}));
     o.pours.forEach(function(p,i){
       var last=i===np-1, gap=pourGap(o.pours,o.end,i);
       s.push({k:i?'pour'+(i+1):'pour',t:p.t,s:gap===null?1:Math.max(1,gap),up:true,open:true,hold:i===0,
@@ -749,7 +763,7 @@ function buildSteps(oIn){
         pour:{i:i,n:np,at:p.at,when:p.when,free:gap===null,to:p.to,from:pourFrom(o.pours,i),rate:p.rate||6,pd:pourTime(o.pours,i),note:p.note||'',who:PR.who,end:last?o.end:0,lift:last&&!!PR.lift,wait:p.wait||'bed'},
         more:i===0?'Hold the spout low, a centimetre or two above the bed, and pour into the middle in small circles, off the walls. If a pour is still pooling at the next time, wait for it: the app counts the wait against the pour that ran long.':undefined});
     });
-    s.push(step('off','Swirl and serve','Swirl the jug, then into your cup, about '+B(o.T+' g')+'.'));
+    s.push(step('off','Swirl and serve',(PR.serve||'Swirl the jug, then into your cup, about ')+B(o.T+' g')+'.'));
     return s;
   }
   if(R==='black'){
