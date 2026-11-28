@@ -80,7 +80,10 @@ picker:
   1:10, 1:30 and 1:50, a last swirl, done around 3:00), **V60 iced** (Hoffmann's iced filter: 65 g of coffee a litre of
   water and ice together, 60% hot water through the coffee onto 40% ice in the jug, a 45 s bloom of three times the coffee,
   one slow pour paced over 60 s, done by about 3:00, stirred and swirled until the ice melts and served over fresh ice; the
-  ice-type switch applies) and **V60 Rao** (Scott Rao: a bloom of three times
+  ice-type switch applies), **V60 two and through** (Lance Hedrick's large V60: 30 g to 450 g at 85–88 °C, a gentle
+  bloom of three times the coffee at about 5 g a second, to 150 g at 0:20 no faster than 10 g a second, to 200 g at 0:40
+  faster, then into the centre to 450 g from 1:00 as fast as the kettle allows; drained by about 2:00–2:10, up to 2:30
+  still good) and **V60 Rao** (Scott Rao: a bloom of three times
   the coffee spun hard, a second pour at 0:40, the last once about 70% has drained; 97 °C; done in 4:00–4:30). Each recipe
   carries its own water temperature (4:6 about 93 °C for light roasts, 88 medium, 83 dark; double bloom about 93 °C). The
   target is the water poured; the cup is about 2 g less per gram of coffee. The recipe screen lists the pours as scale

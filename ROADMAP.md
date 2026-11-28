@@ -14,6 +14,8 @@ Roughly in the order they would help.
 
 ## Done
 
+- **V60 two and through** (Lance Hedrick's large V60).
+
 - **Iced after Hoffmann's immersion iced coffee:** 1:13.3 with 40% ice, a preheated press, and a logged saline switch.
 
 - **V60 iced** (Hoffmann's iced filter onto ice in the jug) and V60 caffeine counted in full.

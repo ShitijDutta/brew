@@ -46,7 +46,7 @@ var PREHEAT=100;
 var DEF={black:{tgt:200,ratio:16.9},hoff:{tgt:300,ratio:16.7},iced:{tgt:280,ratio:13.3},aulait:{tgt:300,ratio:12.5},viet:{tgt:110,ratio:7.3},cold:{tgt:500,ratio:8},
   x_latte:{tgt:300,ratio:9},x_icedlatte:{tgt:300,ratio:8},x_kaapi:{tgt:200,ratio:8},x_shaken:{tgt:150,ratio:9},x_affogato:{tgt:120,ratio:7},
   x_cbmilk:{tgt:400,ratio:8},x_tonic:{tgt:480,ratio:8},x_coconut:{tgt:600,ratio:8},x_orange:{tgt:400,ratio:8},
-  v_46:{tgt:300,ratio:15},v_bloom:{tgt:225,ratio:15},v_hoff:{tgt:500,ratio:16.7},v_hoff1:{tgt:250,ratio:16.7},v_rao:{tgt:330,ratio:16.5},v_iced:{tgt:300,ratio:9.2},
+  v_46:{tgt:300,ratio:15},v_bloom:{tgt:225,ratio:15},v_hoff:{tgt:500,ratio:16.7},v_hoff1:{tgt:250,ratio:16.7},v_rao:{tgt:330,ratio:16.5},v_iced:{tgt:300,ratio:9.2},v_two:{tgt:450,ratio:15},
   vietHot:{tgt:140,ratio:7.3},vietIced:{tgt:290,ratio:7.3}};
 var S={recipe:'black',mode:'direct',vmode:'iced',pratio:14.6,ved:20,ceil:450,temp:94,panloss:30,dspeed:10,lead:3,theme:'',
   r:{black:{tgt:200,ratio:16.9},iced:{tgt:280,ratio:13.3},aulait:{tgt:300,ratio:12.5},vietHot:{tgt:140,ratio:7.3},vietIced:{tgt:290,ratio:7.3}},
@@ -424,7 +424,9 @@ var RECIPES={
  v_rao:{extra:'pour',name:'V60 Rao',label:'Water to pour',unit:'grams through the coffee; the cup is about 2 g less per gram of coffee',modes:false,
    hint:'Scott Rao’s V60: a bloom of three times the coffee, spun hard; a second pour at 0:40; the last once about 70% has drained, with gentle spins. Done in 4:00 to 4:30, at 97 °C.'},
  v_iced:{extra:'pour',name:'V60 iced',label:'Water to pour',unit:'grams of hot water through the coffee; the ice in the jug under it is two thirds of that again',modes:false,
-   hint:'James Hoffmann’s iced V60: 65 g of coffee a litre of water and ice together, 60% hot water through the coffee onto 40% ice in the jug below. A bloom of three times the coffee for 45 s, then one slow pour, done in 2 to 3 minutes; stir, swirl until the ice melts, serve over fresh ice. The ratio here is on the hot water alone (1:9.2, about 1:15.4 with the ice).'}
+   hint:'James Hoffmann’s iced V60: 65 g of coffee a litre of water and ice together, 60% hot water through the coffee onto 40% ice in the jug below. A bloom of three times the coffee for 45 s, then one slow pour, done in 2 to 3 minutes; stir, swirl until the ice melts, serve over fresh ice. The ratio here is on the hot water alone (1:9.2, about 1:15.4 with the ice).'},
+ v_two:{extra:'pour',name:'V60 two and through',label:'Water to pour',unit:'grams through the coffee; the cup is about 2 g less per gram of coffee',modes:false,
+   hint:'Lance Hedrick’s large V60, “Two and through”: 30 g to 450 g at 85–88 °C. A gentle bloom of three times the coffee, to 150 g at 0:20 (no faster than 10 g a second), to 200 g at 0:40 (faster), then into the centre to 450 g from 1:00 as fast as the kettle allows. Drained by about 2:00–2:10; up to 2:30 is still good.'}
 };
 /* pour-over: each pour is its own step. at = when the recipe pours it (seconds from the first pour), to = the scale reading,
    t = step title, note = shown only where it matters, btn = what the button says to start it ("Start pour 2").
@@ -473,6 +475,18 @@ var POUR={
     pours:function(W,D){var b=Math.min(3*D,W);
     return [{at:0,to:b,t:'Bloom',btn:'bloom',wait:'time',rate:6,note:'Then swirl until it is all wet, and leave it.'},
       {at:45,to:W,t:'Main pour',btn:'main pour',rate:(W-b)/60,note:'One slow pour, in small circles, onto the ice below. Then let it drain.'}]}},
+  /* Hedrick's large V60, "Two and through" (his video's recipe card and transcript): every pour on time. The bloom goes
+     in gently at about 5 g/s; the second no faster than 10 ml/s, the third faster, the last into the centre as fast as
+     the kettle goes (10, 12 and 15 g/s here are the app's stand-ins for those words). He likes 2:00-2:10; up to 2:30
+     is still good. The spoon in the top centimetre after the last pour is optional, only if grounds stick to the walls */
+  v_two:{who:'Hedrick',end:130,endText:'2:00\u20132:10',slow:'Up to 2:30 is still good, he says; longer runs sweeter and less complex.',
+    water:'at 85\u201388 \u00B0C',boilTo:'Boil, then cool to 85\u201388 \u00B0C.',
+    tempMore:'Hedrick brews this one at 85\u201388 \u00B0C, with soft water: about 20\u201325 ppm general hardness and 5\u201310 carbonate.',
+    pours:function(W,D){var b=Math.min(3*D,Math.round(W/4)), a=Math.round(W/3), c=Math.round(W*4/9);
+    return [{at:0,to:b,t:'Bloom',btn:'bloom',wait:'time',rate:5,note:'Gently, in spirals in to the centre and back out.'},
+      {at:20,to:a,t:'Second pour',btn:'second pour',wait:'time',rate:10,note:'No faster than about 10 g a second. It need not be exact.'},
+      {at:40,to:c,t:'Third pour',btn:'third pour',wait:'time',rate:12,note:'Faster this time, above 10 g a second.'},
+      {at:60,to:W,t:'Main pour',btn:'main pour',rate:15,note:'Straight into the centre, as fast as your kettle allows. If grounds stick to the walls, a spoon through the top centimetre after.'}]}},
   v_rao:{who:'Rao',end:270,endText:'4:00\u20134:30',slow:'Let it finish draining.',
     water:'at about 97 \u00B0C',boilTo:'Boil, then let it settle to about 97 \u00B0C.',tempMore:'Rao brews at 97 \u00B0C, in a plastic V60 for the heat it holds.',
     pours:function(W,D){var b=3*D, m=Math.round(W*200/330);

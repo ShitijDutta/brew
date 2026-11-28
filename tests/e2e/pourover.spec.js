@@ -379,3 +379,30 @@ test('V60 iced: the ice goes in the jug, a bloom then one slow pour, served over
   await expect(page.locator('#stage')).toHaveText('Swirl and serve');
   await expect(page.locator('#detail')).toContainText('over fresh ice in your glass: about 434 g');
 });
+
+test('V60 two and through: Hedrick\'s large V60, four pours on time at 85–88 °C', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('fp.v1', JSON.stringify({ dspeed: 10 })));
+  await page.goto('./');
+  await pick(page, 'V60 two and through');
+  await expect(num(page, 'Coffee')).toHaveText('30 g');
+  await expect(num(page, 'Water to pour')).toHaveText('450 g');
+  await expect(num(page, 'Pours')).toHaveText('to 90, 150, 200, then 450 g');
+  await expect(num(page, 'Time to pour')).toHaveText('about 18, 6, 4 and 17 s');
+  await expect(num(page, 'Done by about')).toHaveText('2:00–2:10');
+  await expect(page.locator('#blurb')).toContainText('Water at 85–88 °C.');
+  expect(await noOverflow(page)).toBe(true);
+  await page.click('#dry');
+  await expect(page.locator('#detail')).toContainText('cool to 85–88 °C');
+  await page.click('#next'); await page.click('#next');
+  await expect(page.locator('#stage')).toHaveText('Bloom');
+  await expect(page.locator('#pours .pline .tk')).toHaveCount(5);
+  await page.click('#next');                                               /* Start */
+  for (const [t, to] of [['Second pour', 150], ['Third pour', 200], ['Main pour', 450]]) {
+    await expect(page.locator('#p-b1')).toHaveText(new RegExp('^Pour now: ' + t.toLowerCase() + ' to ' + to + ' g$'), { timeout: 8000 });
+    await page.click('#next');
+    await expect(page.locator('#stage')).toHaveText(t);
+  }
+  await expect(page.locator('#pours .pt')).toContainText('Straight into the centre, as fast as your kettle allows.');
+  await expect(page.locator('#p-b2')).toHaveText(/^Pour to 450 g by \d:\d\d, about 15 g a second\.$/);
+  await expect(page.locator('#next')).toHaveText('Drained');
+});
